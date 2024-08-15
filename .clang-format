@@ -1,0 +1,4 @@
+BasedOnStyle: Google
+AccessModifierOffset: -2
+ColumnLimit: 160
+IncludeBlocks: Preserve
