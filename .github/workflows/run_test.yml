@@ -42,6 +42,7 @@ jobs:
         wget https://apt.llvm.org/llvm.sh
         chmod +x ./llvm.sh
         sudo ./llvm.sh ${{ matrix.compiler.ver }}
+        export CXXFLAGS=-stdlib=libc++
 
     - name: Setup GCC
       if: matrix.compiler.cxx == 'g++'
