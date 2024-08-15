@@ -44,7 +44,7 @@ jobs:
         run: |
           wget https://apt.llvm.org/llvm.sh
           chmod +x ./llvm.sh
-          sudo ./llvm.sh ${{ matrix.compiler.ver }}
+          sudo ./llvm.sh ${{ matrix.compiler.ver }} all
 
       - name: Setup GCC
         if: matrix.compiler.cxx == 'g++'
