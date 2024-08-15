@@ -36,6 +36,9 @@ jobs:
         echo "build-output-dir=${{ github.workspace }}/build" >> "$GITHUB_OUTPUT"
         echo "cxx-compiler=${{ matrix.compiler.cxx }}-${{ matrix.compiler.ver }}" >> "$GITHUB_OUTPUT"
 
+    - name: Update System Packages
+      run: sudo apt update && sudo apt upgrade
+
     - name: Setup Clang
       if: matrix.compiler.cxx == 'clang++'
       run: |
