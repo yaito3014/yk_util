@@ -6,15 +6,7 @@
 #include <boost/test/unit_test.hpp>
 
 #include <string>
-#include <utility>
 #include <vector>
-#include <version>
-
-#if defined(__cpp_lib_forward_like)
-#define YK_UTIL_STD_HAS_FORWARD_LIKE 1
-#else
-#define YK_UTIL_STD_HAS_FORWARD_LIKE 0
-#endif
 
 namespace utf = boost::unit_test;
 
@@ -34,11 +26,6 @@ BOOST_AUTO_TEST_CASE(SpecializationOf) {
   static_assert(!yk::specialization_of<std::vector<int>, std::basic_string>);
 }
 
-#if YK_UTIL_STD_HAS_FORWARD_LIKE
-template <class T, class U>
-using std_fwd_like_t = decltype(std::forward_like<T>(std::declval<U>()));
-#endif
-
 BOOST_AUTO_TEST_CASE(ForwardLike) {
   // clang-format off
   static_assert(std::is_same_v<yk::forward_like_t<      int&, int  >,       int&>);
@@ -54,22 +41,6 @@ BOOST_AUTO_TEST_CASE(ForwardLike) {
   static_assert(std::is_same_v<yk::forward_like_t<const int, int  >, const int&&>);
   static_assert(std::is_same_v<yk::forward_like_t<const int, int& >, const int&&>);
   static_assert(std::is_same_v<yk::forward_like_t<const int, int&&>, const int&&>);
-
-#if YK_UTIL_STD_HAS_FORWARD_LIKE
-  static_assert(std::is_same_v<yk::forward_like_t<      int&, int  >, std_fwd_like_t<      int&, int  >>);
-  static_assert(std::is_same_v<yk::forward_like_t<      int&, int& >, std_fwd_like_t<      int&, int& >>);
-  static_assert(std::is_same_v<yk::forward_like_t<      int&, int&&>, std_fwd_like_t<      int&, int&&>>);
-  static_assert(std::is_same_v<yk::forward_like_t<const int&, int  >, std_fwd_like_t<const int&, int  >>);
-  static_assert(std::is_same_v<yk::forward_like_t<const int&, int& >, std_fwd_like_t<const int&, int& >>);
-  static_assert(std::is_same_v<yk::forward_like_t<const int&, int&&>, std_fwd_like_t<const int&, int&&>>);
-  
-  static_assert(std::is_same_v<yk::forward_like_t<      int, int  >, std_fwd_like_t<      int, int  >>);
-  static_assert(std::is_same_v<yk::forward_like_t<      int, int& >, std_fwd_like_t<      int, int& >>);
-  static_assert(std::is_same_v<yk::forward_like_t<      int, int&&>, std_fwd_like_t<      int, int&&>>);
-  static_assert(std::is_same_v<yk::forward_like_t<const int, int  >, std_fwd_like_t<const int, int  >>);
-  static_assert(std::is_same_v<yk::forward_like_t<const int, int& >, std_fwd_like_t<const int, int& >>);
-  static_assert(std::is_same_v<yk::forward_like_t<const int, int&&>, std_fwd_like_t<const int, int&&>>);
-#endif
   // clang-format on
 }
 
