@@ -7,7 +7,7 @@
 
 namespace yk {
 
-template <class T, std::convertible_to<T>... Us>
+template <class T, class... Us>
 constexpr std::array<T, sizeof...(Us)> to_array_of(Us&&... xs) {
   return std::array<T, sizeof...(Us)>{static_cast<T>(std::forward<Us>(xs))...};
 }
