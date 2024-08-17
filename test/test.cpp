@@ -1,6 +1,7 @@
 #include "yk/util/forward_like.hpp"
 #include "yk/util/pack_indexing.hpp"
 #include "yk/util/specialization_of.hpp"
+#include "yk/util/to_array_of.hpp"
 
 #define BOOST_TEST_MODULE yk_util_test
 #include <boost/test/unit_test.hpp>
@@ -71,6 +72,11 @@ BOOST_AUTO_TEST_CASE(ForwardLike) {
   static_assert(std::is_same_v<yk::forward_like_t<const int, int&&>, std_fwd_like_t<const int, int&&>>);
 #endif
   // clang-format on
+}
+
+BOOST_AUTO_TEST_CASE(ToArrayOf) {
+  static_assert(yk::to_array_of<int>(3, 1, 4, 1, 5) == std::array{3, 1, 4, 1, 5});
+  static_assert(yk::to_array_of<double>(3.0, 1.0, 4.0, 1.0, 5.0) == std::array{3.0, 1.0, 4.0, 1.0, 5.0});
 }
 
 BOOST_AUTO_TEST_SUITE_END()  // yk_util
