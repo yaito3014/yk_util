@@ -77,7 +77,7 @@ BOOST_AUTO_TEST_CASE(ForwardLike) {
 BOOST_AUTO_TEST_CASE(ToArrayOf) {
   static_assert(yk::to_array_of<int>(3, 1, 4, 1, 5) == std::array{3, 1, 4, 1, 5});
   static_assert(yk::to_array_of<double>(3, 1, 4, 1, 5) == std::array{3.0, 1.0, 4.0, 1.0, 5.0});
-  
+
   enum class StrongID : int {};
   constexpr auto predefined_ids = yk::to_array_of<StrongID>(1, 2, 3);
 }

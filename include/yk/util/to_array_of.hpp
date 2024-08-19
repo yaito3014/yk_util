@@ -8,7 +8,7 @@
 namespace yk {
 
 template <class T, class... Us>
-constexpr std::array<T, sizeof...(Us)> to_array_of(Us&&... xs) {
+constexpr std::array<T, sizeof...(Us)> to_array_of(Us&&... xs) noexcept {
   return std::array<T, sizeof...(Us)>{static_cast<T>(std::forward<Us>(xs))...};
 }
 
