@@ -1,4 +1,5 @@
 #include "yk/allocator/default_init_allocator.hpp"
+#include "yk/stack.hpp"
 #include "yk/util/forward_like.hpp"
 #include "yk/util/pack_indexing.hpp"
 #include "yk/util/reverse.hpp"
@@ -153,6 +154,13 @@ BOOST_AUTO_TEST_CASE(Allocator) {
 
     BOOST_TEST(std::ranges::equal(uninitialized_storage, storage));
   }
+}
+
+BOOST_AUTO_TEST_CASE(Stack) {
+  yk::stack<int> s(std::vector{3, 1, 4, 1, 5});
+  BOOST_TEST(!s.empty());
+  s.clear();
+  BOOST_TEST(s.empty());
 }
 
 BOOST_AUTO_TEST_SUITE_END()  // yk_util
