@@ -46,10 +46,32 @@ public:
   }
 
   // our addition
+  constexpr stack(std::initializer_list<T> il) noexcept(noexcept(stack(il.begin(), il.end()))) : stack(il.begin(), il.end()) {}
+
+  [[nodiscard]] constexpr size_type capacity() const noexcept
+    requires requires(Container c) { c.capacity(); }
+  {
+    return c.capacity();
+  }
+
   constexpr void clear() noexcept(noexcept(c.clear()))
     requires requires(Container c) { c.clear(); }
   {
     c.clear();
+  }
+
+  [[nodiscard]] constexpr size_type max_size() const noexcept { return c.max_size(); }
+
+  constexpr void reserve(size_type n)
+    requires requires(Container c) { c.reserve(n); }
+  {
+    c.reserve(n);
+  }
+
+  constexpr void shrink_to_fit()
+    requires requires(Container c) { c.shrink_to_fit(); }
+  {
+    c.shrink_to_fit();
   }
 
 protected:

@@ -157,7 +157,14 @@ BOOST_AUTO_TEST_CASE(Allocator) {
 }
 
 BOOST_AUTO_TEST_CASE(Stack) {
-  yk::stack<int> s(std::vector{3, 1, 4, 1, 5});
+  yk::stack<int> s{3, 1, 4, 1, 5};
+
+  s.shrink_to_fit();
+  BOOST_TEST(s.capacity() == 5);
+  s.reserve(10);
+  BOOST_TEST(s.capacity() >= 10);
+  BOOST_TEST(s.capacity() <= s.max_size());
+
   BOOST_TEST(!s.empty());
   s.clear();
   BOOST_TEST(s.empty());
