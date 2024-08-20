@@ -31,7 +31,7 @@ public:
     ::new (static_cast<void*>(ptr)) U;
   }
   template <class U, class... Args>
-  constexpr void construct(U* ptr, Args&&... args) {
+  constexpr void construct(U* ptr, Args&&... args) noexcept(noexcept(traits::construct(static_cast<A&>(*this), ptr, std::forward<Args>(args)...))) {
     traits::construct(static_cast<A&>(*this), ptr, std::forward<Args>(args)...);
   }
 };
