@@ -3,6 +3,7 @@
 
 #include "yk/allocator/concepts.hpp"
 
+#include <compare>
 #include <iterator>
 #include <memory>
 #include <ranges>
@@ -86,7 +87,9 @@ public:
   }
 
   [[nodiscard]] friend constexpr auto operator<=>(stack const& lhs, stack const& rhs) noexcept(noexcept(static_cast<base_stack const&>(lhs) <=>
-                                                                                                        static_cast<base_stack const&>(rhs))) {
+                                                                                                        static_cast<base_stack const&>(rhs)))
+    requires std::three_way_comparable<Container>
+  {
     return static_cast<base_stack const&>(lhs) <=> static_cast<base_stack const&>(rhs);
   }
 };
