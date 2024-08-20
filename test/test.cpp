@@ -1,3 +1,4 @@
+#include "yk/allocator/default_init_allocator.hpp"
 #include "yk/util/forward_like.hpp"
 #include "yk/util/pack_indexing.hpp"
 #include "yk/util/reverse.hpp"
@@ -11,7 +12,10 @@
 
 #include <boost/range/iterator_range.hpp>
 
+#include <algorithm>
+#include <cstdint>
 #include <functional>
+#include <memory>
 #include <set>
 #include <string>
 #include <utility>
@@ -125,6 +129,30 @@ BOOST_AUTO_TEST_CASE(ToSubrange) {
   std::vector v{3, 1, 4, 1, 5};
   auto rng = boost::make_iterator_range(v);
   BOOST_TEST((std::ranges::equal(v, yk::to_subrange(rng))));
+}
+
+BOOST_AUTO_TEST_CASE(Allocator) {
+  {
+    unsigned char uninitialized_storage[sizeof(std::uint32_t)] = {0xde, 0xad, 0xbe, 0xef};
+    alignas(std::uint32_t) unsigned char storage[sizeof(std::uint32_t)];
+    std::ranges::copy(uninitialized_storage, storage);
+
+    std::allocator<std::uint32_t> alloc;
+    std::allocator_traits<std::allocator<std::uint32_t>>::construct(alloc, reinterpret_cast<std::uint32_t*>(storage));
+
+    BOOST_TEST(!std::ranges::equal(uninitialized_storage, storage));
+    BOOST_TEST(std::ranges::equal(std::vector<unsigned char>{0, 0, 0, 0}, storage));
+  }
+  {
+    unsigned char uninitialized_storage[sizeof(std::uint32_t)] = {0xde, 0xad, 0xbe, 0xef};
+    alignas(std::uint32_t) unsigned char storage[sizeof(std::uint32_t)];
+    std::ranges::copy(uninitialized_storage, storage);
+
+    yk::default_init_allocator<std::uint32_t> alloc;
+    alloc.construct(storage);
+
+    BOOST_TEST(std::ranges::equal(uninitialized_storage, storage));
+  }
 }
 
 BOOST_AUTO_TEST_SUITE_END()  // yk_util
