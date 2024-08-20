@@ -5,6 +5,7 @@
 
 namespace yk {
 
+// note: Don't use this in projection with `std::forward_as_tuple` as it creates dangling reference
 template <class T>
 struct [[nodiscard]] reverse {
   T val;
