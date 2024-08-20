@@ -1,11 +1,13 @@
 #include "yk/util/forward_like.hpp"
 #include "yk/util/pack_indexing.hpp"
+#include "yk/util/reverse.hpp"
 #include "yk/util/specialization_of.hpp"
 #include "yk/util/to_array_of.hpp"
 
 #define BOOST_TEST_MODULE yk_util_test
 #include <boost/test/included/unit_test.hpp>
 
+#include <functional>
 #include <string>
 #include <utility>
 #include <vector>
@@ -80,6 +82,33 @@ BOOST_AUTO_TEST_CASE(ToArrayOf) {
 
   enum class StrongID : int {};
   constexpr auto predefined_ids = yk::to_array_of<StrongID>(1, 2, 3);
+}
+
+BOOST_AUTO_TEST_CASE(Reverse) {
+  static_assert(yk::reverse(42) < yk::reverse(33 - 4));
+  static_assert(yk::reverse(42) == yk::reverse(42));
+
+  struct S {
+    int a, b, c;
+    constexpr bool operator==(const S&) const noexcept = default;
+  };
+
+  static_assert(std::ranges::equal(
+      []() {
+        std::vector<S> vec{{3, 1, 4}, {1, 5, 9}, {2, 6, 5}, {3, 5, 8}, {9, 7, 9}, {3, 2, 3}, {8, 4, 6}};
+        std::ranges::sort(
+            vec, [](const S& x, const S& y) { return std::forward_as_tuple(x.a, yk::reverse(x.b), x.c) < std::forward_as_tuple(y.a, yk::reverse(y.b), y.c); });
+        return vec;
+      }(),
+      std::vector<S>{{1, 5, 9}, {2, 6, 5}, {3, 5, 8}, {3, 2, 3}, {3, 1, 4}, {8, 4, 6}, {9, 7, 9}}));
+
+  static_assert(std::ranges::equal(
+      []() {
+        std::vector<S> vec{{3, 1, 4}, {1, 5, 9}, {2, 6, 5}, {3, 5, 8}, {9, 7, 9}, {3, 2, 3}, {8, 4, 6}};
+        std::ranges::sort(vec, {}, [](const S& s) { return std::make_tuple(std::cref(s.a), yk::reverse(s.b), std::cref(s.c)); });
+        return vec;
+      }(),
+      std::vector<S>{{1, 5, 9}, {2, 6, 5}, {3, 5, 8}, {3, 2, 3}, {3, 1, 4}, {8, 4, 6}, {9, 7, 9}}));
 }
 
 BOOST_AUTO_TEST_SUITE_END()  // yk_util
