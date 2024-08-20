@@ -4,7 +4,7 @@
 #include "yk/util/to_array_of.hpp"
 
 #define BOOST_TEST_MODULE yk_util_test
-#include <boost/test/unit_test.hpp>
+#include <boost/test/included/unit_test.hpp>
 
 #include <string>
 #include <utility>
