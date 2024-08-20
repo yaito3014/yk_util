@@ -95,11 +95,11 @@ public:
 };
 
 template <class Container>
-  requires !xo::simple_allocator<Container>
-           stack(Container) -> stack<typename Container::value_type, Container>;
+  requires(!xo::simple_allocator<Container>)
+stack(Container) -> stack<typename Container::value_type, Container>;
 
 template <class Container, class Alloc>
-  requires !xo::simple_allocator<Container> && std::uses_allocator_v<Container, Alloc>
+  requires(!xo::simple_allocator<Container>) && std::uses_allocator_v<Container, Alloc>
 stack(Container, Alloc) -> stack<typename Container::value_type, Container>;
 
 #if __cpp_lib_adaptor_iterator_pair_constructor >= 202106L
