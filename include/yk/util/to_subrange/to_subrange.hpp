@@ -7,7 +7,7 @@
 namespace yk {
 
 template <class Iterator>
-constexpr auto to_subrange(const std::pair<Iterator, Iterator>& t) noexcept -> std::ranges::subrange<Iterator> {
+[[nodiscard]] constexpr auto to_subrange(const std::pair<Iterator, Iterator>& t) noexcept -> std::ranges::subrange<Iterator> {
   return std::ranges::subrange(t.first, t.second);
 }
 

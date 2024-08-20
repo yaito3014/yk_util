@@ -6,7 +6,7 @@
 namespace yk {
 
 template <class Iterator>
-constexpr auto to_subrange(boost::iterator_range<Iterator> rng) noexcept -> std::ranges::subrange<Iterator> {
+[[nodiscard]] constexpr auto to_subrange(const boost::iterator_range<Iterator>& rng) noexcept -> std::ranges::subrange<Iterator> {
   return std::ranges::subrange(rng.begin(), rng.end());
 }
 
