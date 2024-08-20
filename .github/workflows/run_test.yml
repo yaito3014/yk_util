@@ -2,9 +2,9 @@ name: Single-Platform Test
 
 on:
   push:
-    branches: ["main"]
+    branches: [ "main" ]
   pull_request:
-    branches: ["main"]
+    branches: [ "main" ]
 
 jobs:
   build:
@@ -21,37 +21,45 @@ jobs:
             ver: 13
           - cxx: g++
             ver: 14
+          - cxx: clang++
+            ver: 19
+          - cxx: clang++
+            ver: 20
 
     steps:
-      - uses: actions/checkout@v4
+    - uses: actions/checkout@v4
 
-      - name: Set reusable strings
-        id: strings
-        shell: bash
-        run: |
-          echo "build-output-dir=${{ github.workspace }}/build" >> "$GITHUB_OUTPUT"
-          echo "cxx-compiler=${{ matrix.compiler.cxx }}-${{ matrix.compiler.ver }}" >> "$GITHUB_OUTPUT"
+    - name: Set reusable strings
+      id: strings
+      shell: bash
+      run: |
+        echo "build-output-dir=${{ github.workspace }}/build" >> "$GITHUB_OUTPUT"
+        echo "cxx-compiler=${{ matrix.compiler.cxx }}-${{ matrix.compiler.ver }}" >> "$GITHUB_OUTPUT"
 
-      - name: Update System Packages
-        run: sudo apt update && sudo apt upgrade
+    - name: Setup Clang
+      if: matrix.compiler.cxx == 'clang++'
+      run: |
+        wget https://apt.llvm.org/llvm.sh
+        chmod +x ./llvm.sh
+        sudo ./llvm.sh ${{ matrix.compiler.ver }} all
 
-      - name: Setup GCC
-        if: matrix.compiler.cxx == 'g++'
-        run: sudo apt update && sudo apt install -y g++-${{ matrix.compiler.ver }}
+    - name: Setup GCC
+      if: matrix.compiler.cxx == 'g++'
+      run: sudo apt update && sudo apt install -y g++-${{ matrix.compiler.ver }}
 
-      - name: Install Deps
-        run: sudo apt update && sudo apt install libboost-test-dev
+    - name: Install Deps
+      run: sudo apt update && sudo apt install libboost-test-dev
 
-      - name: Configure CMake
-        run: >
-          cmake -B ${{ steps.strings.outputs.build-output-dir }}
-          -DCMAKE_CXX_COMPILER=${{ steps.strings.outputs.cxx-compiler }}
-          -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
-          -S ${{ github.workspace }}
+    - name: Configure CMake
+      run: >
+        cmake -B ${{ steps.strings.outputs.build-output-dir }}
+        -DCMAKE_CXX_COMPILER=${{ steps.strings.outputs.cxx-compiler }}
+        -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
+        -S ${{ github.workspace }}
 
-      - name: Build
-        run: cmake --build ${{ steps.strings.outputs.build-output-dir }} --config ${{ matrix.build_type }} --target test
+    - name: Build
+      run: cmake --build ${{ steps.strings.outputs.build-output-dir }} --config ${{ matrix.build_type }} --target test
 
-      - name: Test
-        working-directory: ${{ steps.strings.outputs.build-output-dir }}/test
-        run: ctest --build-config ${{ matrix.build_type }}
+    - name: Test
+      working-directory: ${{ steps.strings.outputs.build-output-dir }}/test
+      run: ctest --build-config ${{ matrix.build_type }}
