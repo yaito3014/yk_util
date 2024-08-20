@@ -3,11 +3,16 @@
 #include "yk/util/reverse.hpp"
 #include "yk/util/specialization_of.hpp"
 #include "yk/util/to_array_of.hpp"
+#include "yk/util/to_subrange.hpp"
+#include "yk/util/to_subrange/boost.hpp"
 
 #define BOOST_TEST_MODULE yk_util_test
 #include <boost/test/included/unit_test.hpp>
 
+#include <boost/range/iterator_range.hpp>
+
 #include <functional>
+#include <set>
 #include <string>
 #include <utility>
 #include <vector>
@@ -109,6 +114,17 @@ BOOST_AUTO_TEST_CASE(Reverse) {
         return vec;
       }(),
       std::vector<S>{{1, 5, 9}, {2, 6, 5}, {3, 5, 8}, {3, 2, 3}, {3, 1, 4}, {8, 4, 6}, {9, 7, 9}}));
+}
+
+BOOST_AUTO_TEST_CASE(ToSubrange) {
+  std::set<int> s{3, 1, 4, 1, 5};
+
+  BOOST_TEST((std::ranges::equal(std::vector<int>{1}, yk::to_subrange(s.equal_range(1)))));
+  BOOST_TEST((std::ranges::equal(std::vector<int>{}, yk::to_subrange(s.equal_range(2)))));
+
+  std::vector v{3, 1, 4, 1, 5};
+  auto rng = boost::make_iterator_range(v);
+  BOOST_TEST((std::ranges::equal(v, yk::to_subrange(rng))));
 }
 
 BOOST_AUTO_TEST_SUITE_END()  // yk_util

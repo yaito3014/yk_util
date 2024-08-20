@@ -33,6 +33,12 @@ set_target_properties(
     PROPERTIES CXX_STANDARD 20 CXX_STANDARD_REQUIRED ON CXX_EXTENSIONS OFF
 )
 
+find_package(Boost CONFIG)
+if(${Boost_FOUND})
+    target_compile_definitions(yk_util INTERFACE YK_UTIL_INCLUDE_BOOST=1)
+    target_link_libraries(yk_util INTERFACE Boost::headers)
+endif()
+
 install(
     TARGETS yk_util
     EXPORT yk_util-export
@@ -45,7 +51,6 @@ install(
     DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake
 )
 
-find_package(Boost CONFIG)
 if(${Boost_FOUND})
     add_subdirectory(test EXCLUDE_FROM_ALL)
 else()
