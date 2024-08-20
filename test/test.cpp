@@ -11,7 +11,7 @@
 #include <vector>
 #include <version>
 
-#if defined(__cpp_lib_forward_like)
+#if defined(__cpp_lib_forward_like) && !(defined(__clang__) && defined(__GLIBCXX__))
 #define YK_UTIL_STD_HAS_FORWARD_LIKE 1
 #else
 #define YK_UTIL_STD_HAS_FORWARD_LIKE 0
