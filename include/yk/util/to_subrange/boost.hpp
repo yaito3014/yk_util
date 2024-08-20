@@ -2,6 +2,7 @@
 #define YK_UTIL_TO_SUBRANGE_BOOST_HPP
 
 #include <boost/range/iterator_range.hpp>
+#include <ranges>
 
 namespace yk {
 
