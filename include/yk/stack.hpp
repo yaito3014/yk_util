@@ -20,11 +20,11 @@ class stack : protected std::stack<T, Container> {
   using base_stack = std::stack<T, Container>;
 
 public:
-  using base_stack::const_reference;
-  using base_stack::container_type;
-  using base_stack::reference;
-  using base_stack::size_type;
-  using base_stack::value_type;
+  using typename base_stack::const_reference;
+  using typename base_stack::container_type;
+  using typename base_stack::reference;
+  using typename base_stack::size_type;
+  using typename base_stack::value_type;
 
   using base_stack::base_stack;
 
