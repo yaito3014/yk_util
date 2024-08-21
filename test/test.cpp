@@ -1,4 +1,5 @@
 #include "yk/allocator/default_init_allocator.hpp"
+#include "yk/par_for_each.hpp"
 #include "yk/stack.hpp"
 #include "yk/util/forward_like.hpp"
 #include "yk/util/pack_indexing.hpp"
@@ -14,7 +15,10 @@
 #include <boost/range/iterator_range.hpp>
 
 #include <algorithm>
+#include <atomic>
 #include <cstdint>
+#include <exception>
+#include <execution>
 #include <functional>
 #include <memory>
 #include <set>
@@ -169,5 +173,42 @@ BOOST_AUTO_TEST_CASE(Stack) {
   s.clear();
   BOOST_TEST(s.empty());
 }
+
+#if __cpp_lib_parallel_algorithm >= 201603L
+
+BOOST_AUTO_TEST_CASE(ParForEach) {
+  std::vector vec{3, 1, 4, 1, 5};
+  std::atomic<int> sum;
+  const auto non_throw_func = [&](int x) { sum += x; };
+  const auto throw_func = [&](int x) {
+    if (x == 4) throw std::runtime_error("");
+    sum += x;
+  };
+
+  std::for_each(std::execution::seq, vec.begin(), vec.end(), non_throw_func);
+
+  {
+    sum = 0;
+    yk::ranges::for_each(yk::execution::abort, std::execution::seq, vec, non_throw_func);
+    BOOST_TEST((sum == 14));
+  }
+  {
+    sum = 0;
+    BOOST_REQUIRE_THROW(yk::ranges::for_each(yk::execution::abort, std::execution::seq, vec, throw_func), std::runtime_error);
+    BOOST_TEST((sum < 14));
+  }
+  {
+    sum = 0;
+    yk::ranges::for_each(yk::execution::proceed, std::execution::seq, vec, non_throw_func);
+    BOOST_TEST((sum == 14));
+  }
+  {
+    sum = 0;
+    BOOST_REQUIRE_THROW(yk::ranges::for_each(yk::execution::proceed, std::execution::seq, vec, throw_func), std::runtime_error);
+    BOOST_TEST((sum == 10));
+  }
+}
+
+#endif  // __cpp_lib_parallel_algorithm
 
 BOOST_AUTO_TEST_SUITE_END()  // yk_util
