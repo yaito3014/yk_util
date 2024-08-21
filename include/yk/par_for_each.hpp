@@ -38,7 +38,7 @@ template <>
 struct is_job_policy<execution::proceed_policy> : std::true_type {};
 
 template <class JobPolicy, class Policy, std::forward_iterator ForwardIterator, class Func>
-void for_each(JobPolicy&& job_policy, Policy&& policy, ForwardIterator first, ForwardIterator last, Func func) {
+void for_each(JobPolicy&&, Policy&& policy, ForwardIterator first, ForwardIterator last, Func func) {
   static_assert(is_job_policy_v<std::remove_cvref_t<JobPolicy>>);
   static_assert(std::is_execution_policy_v<std::remove_cvref_t<Policy>>);
   static_assert(std::is_copy_constructible_v<Func>, "std::for_each requires func to be CopyConstructible");
