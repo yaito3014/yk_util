@@ -1,4 +1,5 @@
 #include "yk/allocator/default_init_allocator.hpp"
+#include "yk/maybe_mutex.hpp"
 #include "yk/par_for_each.hpp"
 #include "yk/stack.hpp"
 #include "yk/util/forward_like.hpp"
@@ -79,7 +80,7 @@ BOOST_AUTO_TEST_CASE(ForwardLike) {
   static_assert(std::is_same_v<yk::forward_like_t<const int&, int  >, std_fwd_like_t<const int&, int  >>);
   static_assert(std::is_same_v<yk::forward_like_t<const int&, int& >, std_fwd_like_t<const int&, int& >>);
   static_assert(std::is_same_v<yk::forward_like_t<const int&, int&&>, std_fwd_like_t<const int&, int&&>>);
-  
+
   static_assert(std::is_same_v<yk::forward_like_t<      int, int  >, std_fwd_like_t<      int, int  >>);
   static_assert(std::is_same_v<yk::forward_like_t<      int, int& >, std_fwd_like_t<      int, int& >>);
   static_assert(std::is_same_v<yk::forward_like_t<      int, int&&>, std_fwd_like_t<      int, int&&>>);
@@ -207,6 +208,11 @@ BOOST_AUTO_TEST_CASE(ParForEach) {
     BOOST_REQUIRE_THROW(yk::ranges::for_each(yk::execution::proceed, std::execution::seq, vec, throw_func), std::runtime_error);
     BOOST_TEST((sum == 10));
   }
+}
+
+BOOST_AUTO_TEST_CASE(MaybeMutex) {
+  static_assert(yk::xo::Lockable<yk::maybe_mutex<std::mutex, std::execution::parallel_policy>>);
+  static_assert(yk::xo::Lockable<yk::maybe_mutex<std::mutex, std::execution::sequenced_policy>>);
 }
 
 #endif  // __cpp_lib_parallel_algorithm
