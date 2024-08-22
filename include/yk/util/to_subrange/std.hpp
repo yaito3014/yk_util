@@ -1,5 +1,5 @@
-#ifndef YK_UTIL_TO_SUBRANGE_TO_SUBRANGE_HPP
-#define YK_UTIL_TO_SUBRANGE_TO_SUBRANGE_HPP
+#ifndef YK_UTIL_TO_SUBRANGE_STD_HPP
+#define YK_UTIL_TO_SUBRANGE_STD_HPP
 
 #include <ranges>
 #include <utility>
@@ -14,4 +14,4 @@ template <class Iterator>
 
 }  // namespace yk
 
-#endif  // YK_UTIL_TO_SUBRANGE_TO_SUBRANGE_HPP
+#endif  // YK_UTIL_TO_SUBRANGE_STD_HPP
