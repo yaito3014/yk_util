@@ -3,6 +3,8 @@
 #include "yk/par_for_each.hpp"
 #include "yk/stack.hpp"
 #include "yk/util/forward_like.hpp"
+#include "yk/util/hash.hpp"
+#include "yk/util/hash/boost.hpp"
 #include "yk/util/pack_indexing.hpp"
 #include "yk/util/reverse.hpp"
 #include "yk/util/specialization_of.hpp"
@@ -216,5 +218,10 @@ BOOST_AUTO_TEST_CASE(MaybeMutex) {
 }
 
 #endif  // __cpp_lib_parallel_algorithm
+
+BOOST_AUTO_TEST_CASE(Hash) {
+  BOOST_TEST(std::hash<int>{}(42) == yk::hash_value_for(42));
+  BOOST_TEST(boost::hash<int>{}(42) == yk::boost_hash_value_for(42));
+}
 
 BOOST_AUTO_TEST_SUITE_END()  // yk_util
