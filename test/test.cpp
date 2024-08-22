@@ -15,6 +15,7 @@
 #define BOOST_TEST_MODULE yk_util_test
 #include <boost/test/included/unit_test.hpp>
 
+#include <boost/container_hash/hash.hpp>
 #include <boost/range/iterator_range.hpp>
 
 #include <algorithm>
@@ -37,6 +38,17 @@
 #endif
 
 namespace utf = boost::unit_test;
+
+namespace hash_test {
+
+template <class T, class... Ts>
+struct S {
+  int val;
+};
+
+}  // namespace hash_test
+
+YK_ADAPT_HASH_TEMPLATE(hash_test, (S<T, Ts...>), val, { return val.val; }, class T, class... Ts)
 
 BOOST_AUTO_TEST_SUITE(yk_util)
 
@@ -222,6 +234,10 @@ BOOST_AUTO_TEST_CASE(MaybeMutex) {
 BOOST_AUTO_TEST_CASE(Hash) {
   BOOST_TEST(std::hash<int>{}(42) == yk::hash_value_for(42));
   BOOST_TEST(boost::hash<int>{}(42) == yk::boost_hash_value_for(42));
+
+  hash_test::S<int, double> s{42};
+  BOOST_TEST(yk::hash_value_for(s) == yk::hash_value_for(42));
+  BOOST_TEST(hash_value(s) == yk::hash_value_for(42));  // call hash_value by ADL
 }
 
 BOOST_AUTO_TEST_SUITE_END()  // yk_util

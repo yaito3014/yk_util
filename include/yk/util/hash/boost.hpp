@@ -1,7 +1,9 @@
 #ifndef YK_UTIL_HASH_BOOST_HPP
 #define YK_UTIL_HASH_BOOST_HPP
 
-#include <boost/container_hash/hash.hpp>
+#include "yk/util/hash/hash.hpp"
+
+#include <boost/container_hash/hash_fwd.hpp>
 
 #include <cstddef>
 
