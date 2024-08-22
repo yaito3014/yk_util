@@ -1,7 +1,7 @@
-#ifndef YK_UTIL_HASH_BOOST_HPP
-#define YK_UTIL_HASH_BOOST_HPP
+#ifndef YK_HASH_BOOST_HPP
+#define YK_HASH_BOOST_HPP
 
-#include "yk/util/hash/hash.hpp"
+#include "yk/hash/hash.hpp"
 
 #include <boost/container_hash/hash_fwd.hpp>
 
@@ -16,4 +16,4 @@ template <class T>
 
 }  // namespace yk
 
-#endif  // YK_UTIL_HASH_BOOST_HPP
+#endif  // YK_HASH_BOOST_HPP

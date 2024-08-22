@@ -1,7 +1,7 @@
-#ifndef YK_UTIL_HASH_STD_HPP
-#define YK_UTIL_HASH_STD_HPP
+#ifndef YK_HASH_STD_HPP
+#define YK_HASH_STD_HPP
 
-#include "yk/util/hash/hash.hpp"
+#include "yk/hash/hash.hpp"
 
 #include <functional>
 
@@ -23,4 +23,4 @@ template <class T>
 
 }  // namespace yk
 
-#endif  // YK_UTIL_HASH_STD_HPP
+#endif  // YK_HASH_STD_HPP
