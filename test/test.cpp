@@ -5,6 +5,7 @@
 #include "yk/util/forward_like.hpp"
 #include "yk/util/hash.hpp"
 #include "yk/util/hash/boost.hpp"
+#include "yk/util/hash/hash_combine.hpp"
 #include "yk/util/pack_indexing.hpp"
 #include "yk/util/reverse.hpp"
 #include "yk/util/specialization_of.hpp"
@@ -46,9 +47,14 @@ struct S {
   int val;
 };
 
+struct MultiS {
+  int a, b;
+};
+
 }  // namespace hash_test
 
-YK_ADAPT_HASH_TEMPLATE(hash_test, (S<T, Ts...>), val, { return val.val; }, class T, class... Ts)
+YK_ADAPT_HASH_TEMPLATE(hash_test, (S<T, Ts...>), val, { return val.val; }, class T, class... Ts);
+YK_ADAPT_HASH(hash_test, MultiS, val, { return yk::hash_combine(val.a, val.b); });
 
 BOOST_AUTO_TEST_SUITE(yk_util)
 
@@ -238,6 +244,13 @@ BOOST_AUTO_TEST_CASE(Hash) {
   hash_test::S<int, double> s{42};
   BOOST_TEST(yk::hash_value_for(s) == yk::hash_value_for(42));
   BOOST_TEST(hash_value(s) == yk::hash_value_for(42));  // call hash_value by ADL
+
+  {
+    hash_test::MultiS s{334, 314151765};
+    std::size_t seed = yk::hash_value_for(s.a);
+    boost::hash_combine(seed, yk::hash_value_for(s.b));
+    BOOST_TEST(hash_value(s) == seed);
+  }
 }
 
 BOOST_AUTO_TEST_SUITE_END()  // yk_util

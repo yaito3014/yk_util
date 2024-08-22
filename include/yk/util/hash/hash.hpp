@@ -1,6 +1,8 @@
 #ifndef YK_UTIL_HASH_HASH_HPP
 #define YK_UTIL_HASH_HASH_HPP
 
+#define YK_PP_REQUIRE_SEMICOLON static_assert(true)
+
 #define YK_ADAPT_HASH(ns, type, param, hash_stmt)                                               \
   namespace std {                                                                               \
   template <>                                                                                   \
@@ -15,7 +17,8 @@
   {                                                                                             \
     return ::yk::hash_value_for(value);                                                         \
   }                                                                                             \
-  } /* ns */
+  } /* ns */                                                                                    \
+  YK_PP_REQUIRE_SEMICOLON
 
 #define YK_PP_EXPAND(...) __VA_ARGS__
 #define YK_PP_REMOVE_PAREN(expr) YK_PP_EXPAND expr
@@ -35,6 +38,7 @@
   {                                                                                                                               \
     return ::yk::hash_value_for(value);                                                                                           \
   }                                                                                                                               \
-  } /* ns */
+  } /* ns */                                                                                                                      \
+  YK_PP_REQUIRE_SEMICOLON
 
 #endif  // YK_UTIL_HASH_HASH_HPP
