@@ -3,6 +3,9 @@
 #include "yk/par_for_each.hpp"
 #include "yk/stack.hpp"
 #include "yk/util/forward_like.hpp"
+#include "yk/util/hash.hpp"
+#include "yk/util/hash/boost.hpp"
+#include "yk/util/hash/hash_combine.hpp"
 #include "yk/util/pack_indexing.hpp"
 #include "yk/util/reverse.hpp"
 #include "yk/util/specialization_of.hpp"
@@ -13,6 +16,7 @@
 #define BOOST_TEST_MODULE yk_util_test
 #include <boost/test/included/unit_test.hpp>
 
+#include <boost/container_hash/hash.hpp>
 #include <boost/range/iterator_range.hpp>
 
 #include <algorithm>
@@ -35,6 +39,22 @@
 #endif
 
 namespace utf = boost::unit_test;
+
+namespace hash_test {
+
+template <class T, class... Ts>
+struct S {
+  int val;
+};
+
+struct MultiS {
+  int a, b, c;
+};
+
+}  // namespace hash_test
+
+YK_ADAPT_HASH_TEMPLATE(hash_test, (S<T, Ts...>), val, { return val.val; }, class T, class... Ts);
+YK_ADAPT_HASH(hash_test, MultiS, val, { return yk::hash_combine(val.a, val.b, val.c); });
 
 BOOST_AUTO_TEST_SUITE(yk_util)
 
@@ -216,5 +236,22 @@ BOOST_AUTO_TEST_CASE(MaybeMutex) {
 }
 
 #endif  // __cpp_lib_parallel_algorithm
+
+BOOST_AUTO_TEST_CASE(Hash) {
+  BOOST_TEST(std::hash<int>{}(42) == yk::std_hash_value_for(42));
+  BOOST_TEST(boost::hash<int>{}(42) == yk::boost_hash_value_for(42));
+
+  hash_test::S<int, double> s{42};
+  BOOST_TEST(yk::hash_value_for(s) == yk::hash_value_for(42));
+  BOOST_TEST(hash_value(s) == yk::hash_value_for(42));  // call hash_value by ADL
+
+  {
+    hash_test::MultiS s{31415, 9265, 3589};
+    std::size_t seed = yk::hash_value_for(s.a);
+    boost::hash_combine(seed, yk::hash_value_for(s.b));
+    boost::hash_combine(seed, yk::hash_value_for(s.c));
+    BOOST_TEST(hash_value(s) == seed);
+  }
+}
 
 BOOST_AUTO_TEST_SUITE_END()  // yk_util
