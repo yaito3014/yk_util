@@ -60,7 +60,7 @@ constexpr T& operator&=(T& a, T b) noexcept {
 }
 
 template <FlagEnabledEnum T>
-std::ostream& operator<<(std::ostream& os, T const& val) {
+std::ostream& operator<<(std::ostream& os, const T& val) {
   return os << to_string(val);
 }
 
@@ -118,7 +118,7 @@ template <FlagEnabledEnum T, class CharT>
 }
 
 template <FlagEnabledEnum T, class CharT>
-[[nodiscard]] constexpr T parse_flag(std::basic_string<CharT> const& str) noexcept {
+[[nodiscard]] constexpr T parse_flag(const std::basic_string<CharT>& str) noexcept {
   return flag_enabled<T>::parse(str);
 }
 
@@ -128,10 +128,10 @@ template <FlagEnabledEnum T, class CharT>
 
   T res{};
 
-  for (auto const& r : str | std::views::split(delim)) {
-    std::basic_string_view<CharT> const part_str{r};
+  for (const auto& r : str | std::views::split(delim)) {
+    const std::basic_string_view<CharT> part_str{r};
 
-    auto const part = parse_flag<T>(part_str);
+    const auto part = parse_flag<T>(part_str);
     if (part == T{}) {
       return T{};
     }
@@ -142,17 +142,17 @@ template <FlagEnabledEnum T, class CharT>
 }
 
 template <FlagEnabledEnum T, class CharT>
-[[nodiscard]] constexpr T parse_flags(std::basic_string<CharT> const& str, std::basic_string_view<CharT> delim) noexcept {
+[[nodiscard]] constexpr T parse_flags(const std::basic_string<CharT>& str, std::basic_string_view<CharT> delim) noexcept {
   return parse_flags<T>(std::basic_string_view<CharT>{str}, delim);
 }
 
 template <FlagEnabledEnum T, class CharT>
-[[nodiscard]] constexpr T parse_flags(std::basic_string_view<CharT> str, std::basic_string<CharT> const& delim) noexcept {
+[[nodiscard]] constexpr T parse_flags(std::basic_string_view<CharT> str, const std::basic_string<CharT>& delim) noexcept {
   return parse_flags<T>(str, std::basic_string_view<CharT>{delim});
 }
 
 template <FlagEnabledEnum T, class CharT>
-[[nodiscard]] constexpr T parse_flags(std::basic_string<CharT> const& str, std::basic_string<CharT> const& delim) noexcept {
+[[nodiscard]] constexpr T parse_flags(const std::basic_string<CharT>& str, const std::basic_string<CharT>& delim) noexcept {
   return parse_flags<T>(std::basic_string_view<CharT>{str}, std::basic_string_view<CharT>{delim});
 }
 
@@ -172,7 +172,7 @@ struct formatter<T, CharT> : formatter<std::underlying_type_t<T>, CharT> {
   }
 
   template <class Context>
-  auto format(T const& val, Context& ctx) const {
+  auto format(const T& val, Context& ctx) const {
     if (has_format_spec_) {
       return base_formatter::format(::yk::to_underlying(val), ctx);
     } else {

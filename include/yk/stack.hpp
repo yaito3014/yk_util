@@ -78,41 +78,41 @@ protected:
   using base_stack::c;
 
 public:
-  [[nodiscard]] friend constexpr bool operator==(stack const& lhs, stack const& rhs) noexcept(noexcept(static_cast<base_stack const&>(lhs) ==
-                                                                                                       static_cast<base_stack const&>(rhs))) {
-    return static_cast<base_stack const&>(lhs) == static_cast<base_stack const&>(rhs);
+  [[nodiscard]] friend constexpr bool operator==(const stack& lhs, const stack& rhs) noexcept(noexcept(static_cast<const base_stack&>(lhs) ==
+                                                                                                       static_cast<const base_stack&>(rhs))) {
+    return static_cast<const base_stack&>(lhs) == static_cast<const base_stack&>(rhs);
   }
 
-  [[nodiscard]] friend constexpr bool operator!=(stack const& lhs, stack const& rhs) noexcept(noexcept(static_cast<base_stack const&>(lhs) !=
-                                                                                                       static_cast<base_stack const&>(rhs))) {
-    return static_cast<base_stack const&>(lhs) != static_cast<base_stack const&>(rhs);
+  [[nodiscard]] friend constexpr bool operator!=(const stack& lhs, const stack& rhs) noexcept(noexcept(static_cast<const base_stack&>(lhs) !=
+                                                                                                       static_cast<const base_stack&>(rhs))) {
+    return static_cast<const base_stack&>(lhs) != static_cast<const base_stack&>(rhs);
   }
 
-  [[nodiscard]] friend constexpr bool operator<(stack const& lhs, stack const& rhs) noexcept(noexcept(static_cast<base_stack const&>(lhs) <
-                                                                                                      static_cast<base_stack const&>(rhs))) {
-    return static_cast<base_stack const&>(lhs) < static_cast<base_stack const&>(rhs);
+  [[nodiscard]] friend constexpr bool operator<(const stack& lhs, const stack& rhs) noexcept(noexcept(static_cast<const base_stack&>(lhs) <
+                                                                                                      static_cast<const base_stack&>(rhs))) {
+    return static_cast<const base_stack&>(lhs) < static_cast<const base_stack&>(rhs);
   }
 
-  [[nodiscard]] friend constexpr bool operator<=(stack const& lhs, stack const& rhs) noexcept(noexcept(static_cast<base_stack const&>(lhs) <=
-                                                                                                       static_cast<base_stack const&>(rhs))) {
-    return static_cast<base_stack const&>(lhs) <= static_cast<base_stack const&>(rhs);
+  [[nodiscard]] friend constexpr bool operator<=(const stack& lhs, const stack& rhs) noexcept(noexcept(static_cast<const base_stack&>(lhs) <=
+                                                                                                       static_cast<const base_stack&>(rhs))) {
+    return static_cast<const base_stack&>(lhs) <= static_cast<const base_stack&>(rhs);
   }
 
-  [[nodiscard]] friend constexpr bool operator>(stack const& lhs, stack const& rhs) noexcept(noexcept(static_cast<base_stack const&>(lhs) >
-                                                                                                      static_cast<base_stack const&>(rhs))) {
-    return static_cast<base_stack const&>(lhs) > static_cast<base_stack const&>(rhs);
+  [[nodiscard]] friend constexpr bool operator>(const stack& lhs, const stack& rhs) noexcept(noexcept(static_cast<const base_stack&>(lhs) >
+                                                                                                      static_cast<const base_stack&>(rhs))) {
+    return static_cast<const base_stack&>(lhs) > static_cast<const base_stack&>(rhs);
   }
 
-  [[nodiscard]] friend constexpr bool operator>=(stack const& lhs, stack const& rhs) noexcept(noexcept(static_cast<base_stack const&>(lhs) >=
-                                                                                                       static_cast<base_stack const&>(rhs))) {
-    return static_cast<base_stack const&>(lhs) >= static_cast<base_stack const&>(rhs);
+  [[nodiscard]] friend constexpr bool operator>=(const stack& lhs, const stack& rhs) noexcept(noexcept(static_cast<const base_stack&>(lhs) >=
+                                                                                                       static_cast<const base_stack&>(rhs))) {
+    return static_cast<const base_stack&>(lhs) >= static_cast<const base_stack&>(rhs);
   }
 
-  [[nodiscard]] friend constexpr auto operator<=>(stack const& lhs, stack const& rhs) noexcept(noexcept(static_cast<base_stack const&>(lhs) <=>
-                                                                                                        static_cast<base_stack const&>(rhs)))
+  [[nodiscard]] friend constexpr auto operator<=>(const stack& lhs, const stack& rhs) noexcept(noexcept(static_cast<const base_stack&>(lhs) <=>
+                                                                                                        static_cast<const base_stack&>(rhs)))
     requires std::three_way_comparable<Container>
   {
-    return static_cast<base_stack const&>(lhs) <=> static_cast<base_stack const&>(rhs);
+    return static_cast<const base_stack&>(lhs) <=> static_cast<const base_stack&>(rhs);
   }
 };
 
