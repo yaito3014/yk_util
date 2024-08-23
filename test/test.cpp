@@ -6,6 +6,7 @@
 #include "yk/par_for_each.hpp"
 #include "yk/proxy_hash.hpp"
 #include "yk/stack.hpp"
+#include "yk/string_hash.hpp"
 #include "yk/util/forward_like.hpp"
 #include "yk/util/pack_indexing.hpp"
 #include "yk/util/reverse.hpp"
@@ -29,6 +30,7 @@
 #include <memory>
 #include <set>
 #include <string>
+#include <unordered_set>
 #include <utility>
 #include <vector>
 #include <version>
@@ -259,10 +261,27 @@ BOOST_AUTO_TEST_CASE(ProxyHash) {
   struct S {
     int value;
     int get_value() const { return value; }
+    constexpr bool operator==(const S&) const noexcept = default;
   };
   BOOST_TEST((yk::proxy_hash<S, &S::value>{}(S{42}) == std::hash<int>{}(42)));
   BOOST_TEST((yk::proxy_hash<S, &S::get_value>{}(S{42}) == std::hash<int>{}(42)));
   BOOST_TEST((yk::proxy_hash<S, [](const S& s) { return s.value; }>{}(S{42}) == std::hash<int>{}(42)));
+
+  std::unordered_set<S, yk::proxy_hash<S, &S::value>, std::equal_to<>> set;
+  set.insert(S{42});
+  BOOST_TEST(set.contains(S{42}));
+}
+
+BOOST_AUTO_TEST_CASE(StringHash) {
+  using namespace std::literals;
+  BOOST_TEST(yk::string_hash{}("123") == yk::string_hash{}("123"sv));
+  BOOST_TEST(yk::string_hash{}("123") == yk::string_hash{}("123"s));
+
+  std::unordered_set<std::string, yk::string_hash, std::equal_to<>> set;
+  set.insert("foo");
+  BOOST_TEST(set.contains("foo"));
+  BOOST_TEST(set.contains("foo"s));
+  BOOST_TEST(set.contains("foo"sv));
 }
 
 BOOST_AUTO_TEST_SUITE_END()  // yk_util
