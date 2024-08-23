@@ -58,7 +58,7 @@ jobs:
         -S ${{ github.workspace }}
 
     - name: Build
-      run: cmake --build ${{ steps.strings.outputs.build-output-dir }} --config ${{ matrix.build_type }} --target test
+      run: cmake --build ${{ steps.strings.outputs.build-output-dir }} --config ${{ matrix.build_type }} --target yk_util_test
 
     - name: Test
       working-directory: ${{ steps.strings.outputs.build-output-dir }}/test
