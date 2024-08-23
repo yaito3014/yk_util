@@ -60,6 +60,18 @@ constexpr T& operator&=(T& a, T b) noexcept {
 }
 
 template <BitmaskEnabledEnum T>
+[[nodiscard]] constexpr T operator^(T a, T b) noexcept {
+  static_assert(std::is_unsigned_v<std::underlying_type_t<T>>);
+  return static_cast<T>(::yk::to_underlying(a) ^ ::yk::to_underlying(b));
+}
+
+template <BitmaskEnabledEnum T>
+constexpr T& operator^=(T& a, T b) noexcept {
+  static_assert(std::is_unsigned_v<std::underlying_type_t<T>>);
+  return a = a ^ b;
+}
+
+template <BitmaskEnabledEnum T>
 std::ostream& operator<<(std::ostream& os, const T& val) {
   return os << to_string(val);
 }
