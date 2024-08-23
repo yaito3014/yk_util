@@ -83,7 +83,15 @@ enum class SpellType : std::uint8_t {
 namespace yk {
 
 template <>
-struct bitmask_enabled<enum_test::MyBitmask> : std::true_type {};
+struct bitmask_enabled<enum_test::MyBitmask> : std::true_type {
+  static enum_test::MyBitmask parse(std::string_view sv) noexcept {
+    using enum enum_test::MyBitmask;
+    if (sv == "foo") return FOO;
+    if (sv == "bar") return BAR;
+    if (sv == "baz") return BAZ;
+    return {};
+  }
+};
 
 template <>
 struct bitmask_enabled<enum_test::SpellType> : std::true_type {
@@ -354,6 +362,18 @@ BOOST_AUTO_TEST_CASE(Enum) {
   BOOST_TEST(!yk::contains_single_bit(FOO | BAR, BAZ));
 
   // clang-format on
+
+  BOOST_TEST((yk::parse_flag<MyBitmask>("foo") == FOO));
+  BOOST_TEST((yk::parse_flag<MyBitmask>("bar") == BAR));
+  BOOST_TEST((yk::parse_flag<MyBitmask>("baz") == BAZ));
+  BOOST_TEST((yk::parse_flag<MyBitmask>("yay") == MyBitmask{}));
+
+  BOOST_TEST((yk::parse_flags<MyBitmask>("foo", "|") == FOO));
+  BOOST_TEST((yk::parse_flags<MyBitmask>("yay", "|") == MyBitmask{}));
+
+  BOOST_TEST((yk::parse_flags<MyBitmask>("foo|bar", "|") == (FOO | BAR)));
+  BOOST_TEST((yk::parse_flags<MyBitmask>("foo|yay", "|") == MyBitmask{}));
+  BOOST_TEST((yk::parse_flags<MyBitmask>("foo,bar", "|") == MyBitmask{}));
 
   BOOST_TEST(std::ranges::equal(yk::each_bit(SpellType::TYPE_ATTACK | SpellType::ATTR_FIRE | SpellType::ATTR_THUNDER),
                                 std::vector{SpellType::ATTR_FIRE, SpellType::ATTR_THUNDER}));
