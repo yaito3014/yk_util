@@ -4,6 +4,8 @@
 #include <string>
 #include <string_view>
 
+#include <cstddef>
+
 namespace yk {
 
 template <class CharT, class Traits = std::char_traits<CharT>>
