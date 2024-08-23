@@ -69,12 +69,27 @@ enum class MyBitmask : std::uint8_t {
   BAZ = 1 << 2,
 };
 
-}
+enum class SpellType : std::uint8_t {
+  TYPE_ATTACK = 1 << 0,
+  TYPE_DEFENSE = 1 << 1,
+
+  ATTR_FIRE = 1 << 2,
+  ATTR_WATER = 1 << 3,
+  ATTR_THUNDER = 1 << 4,
+};
+
+}  // namespace enum_test
 
 namespace yk {
 
 template <>
 struct bitmask_enabled<enum_test::MyBitmask> : std::true_type {};
+
+template <>
+struct bitmask_enabled<enum_test::SpellType> : std::true_type {
+  static constexpr int min_bit = 2;
+  static constexpr int max_bit = 4;
+};
 
 }  // namespace yk
 
@@ -304,10 +319,44 @@ BOOST_AUTO_TEST_CASE(StringHash) {
 }
 
 BOOST_AUTO_TEST_CASE(Enum) {
-  using enum_test::MyBitmask;
+  using namespace enum_test;
   using namespace yk::bitmask_operators;
 
-  BOOST_TEST(bool((MyBitmask::FOO | MyBitmask::BAR) & MyBitmask::FOO));
+  using enum MyBitmask;
+
+  BOOST_TEST((~FOO == static_cast<MyBitmask>(~yk::to_underlying(FOO))));
+
+  BOOST_TEST(((FOO & BAR) == static_cast<MyBitmask>(yk::to_underlying(FOO) & yk::to_underlying(BAR))));
+  BOOST_TEST(((FOO ^ BAR) == static_cast<MyBitmask>(yk::to_underlying(FOO) ^ yk::to_underlying(BAR))));
+  BOOST_TEST(((FOO | BAR) == static_cast<MyBitmask>(yk::to_underlying(FOO) | yk::to_underlying(BAR))));
+
+  // clang-format off
+
+  BOOST_TEST( yk::contains(FOO, FOO));
+  BOOST_TEST(!yk::contains(FOO, BAR));
+  BOOST_TEST( yk::contains(FOO | BAR, FOO));
+  BOOST_TEST(!yk::contains(FOO | BAR, BAZ));
+  BOOST_TEST(!yk::contains(FOO |       BAZ, FOO | BAR));
+  BOOST_TEST(!yk::contains(      BAR | BAZ, FOO | BAR));
+  BOOST_TEST( yk::contains(FOO | BAR | BAZ, FOO | BAR));
+
+  BOOST_TEST( yk::contains_any_bit(FOO, FOO));
+  BOOST_TEST(!yk::contains_any_bit(FOO, BAR));
+  BOOST_TEST( yk::contains_any_bit(FOO | BAR, FOO));
+  BOOST_TEST(!yk::contains_any_bit(FOO | BAR, BAZ));
+  BOOST_TEST( yk::contains_any_bit(FOO |       BAZ, FOO | BAR));
+  BOOST_TEST( yk::contains_any_bit(      BAR | BAZ, FOO | BAR));
+  BOOST_TEST( yk::contains_any_bit(FOO | BAR | BAZ, FOO | BAR));
+
+  BOOST_TEST( yk::contains_single_bit(FOO, FOO));
+  BOOST_TEST(!yk::contains_single_bit(FOO, BAR));
+  BOOST_TEST( yk::contains_single_bit(FOO | BAR, FOO));
+  BOOST_TEST(!yk::contains_single_bit(FOO | BAR, BAZ));
+
+  // clang-format on
+
+  BOOST_TEST(std::ranges::equal(yk::each_bit(SpellType::TYPE_ATTACK | SpellType::ATTR_FIRE | SpellType::ATTR_THUNDER),
+                                std::vector{SpellType::ATTR_FIRE, SpellType::ATTR_THUNDER}));
 }
 
 BOOST_AUTO_TEST_SUITE_END()  // yk_util
