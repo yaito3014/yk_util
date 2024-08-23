@@ -10,6 +10,7 @@
 #include <cstdint>
 #include <format>
 #include <iosfwd>
+#include <limits>
 #include <ranges>
 #include <string_view>
 #include <type_traits>
@@ -111,13 +112,13 @@ template <BitmaskEnabledEnum T>
 [[nodiscard]] constexpr auto each_bit(T flags) noexcept {
   static_assert(std::is_unsigned_v<std::underlying_type_t<T>>);
   static_assert(detail::has_max_bit<T>);
+  static_assert(bitmask_enabled<T>::max_bit < std::numeric_limits<std::underlying_type_t<T>>::digits);
 
   if constexpr (detail::has_min_bit<T>) {
     static_assert(bitmask_enabled<T>::min_bit <= bitmask_enabled<T>::max_bit);
     return std::views::iota(bitmask_enabled<T>::min_bit, bitmask_enabled<T>::max_bit + 1)                                         //
            | std::views::filter([cat = ::yk::to_underlying(flags)](int i) constexpr noexcept -> bool { return (cat >> i) & 1; })  //
            | std::views::transform([](int i) constexpr noexcept { return static_cast<T>(static_cast<std::underlying_type_t<T>>(1) << i); });
-
   } else {
     return std::views::iota(0, bitmask_enabled<T>::max_bit + 1)                                                                   //
            | std::views::filter([cat = ::yk::to_underlying(flags)](int i) constexpr noexcept -> bool { return (cat >> i) & 1; })  //
