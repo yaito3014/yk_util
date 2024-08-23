@@ -6,6 +6,7 @@
 #include "yk/par_for_each.hpp"
 #include "yk/proxy_hash.hpp"
 #include "yk/stack.hpp"
+#include "yk/string_hash.hpp"
 #include "yk/util/forward_like.hpp"
 #include "yk/util/pack_indexing.hpp"
 #include "yk/util/reverse.hpp"
@@ -263,6 +264,12 @@ BOOST_AUTO_TEST_CASE(ProxyHash) {
   BOOST_TEST((yk::proxy_hash<S, &S::value>{}(S{42}) == std::hash<int>{}(42)));
   BOOST_TEST((yk::proxy_hash<S, &S::get_value>{}(S{42}) == std::hash<int>{}(42)));
   BOOST_TEST((yk::proxy_hash<S, [](const S& s) { return s.value; }>{}(S{42}) == std::hash<int>{}(42)));
+}
+
+BOOST_AUTO_TEST_CASE(StringHash) {
+  using namespace std::literals;
+  BOOST_TEST(yk::string_hash{}("123") == yk::string_hash{}("123"sv));
+  BOOST_TEST(yk::string_hash{}("123") == yk::string_hash{}("123"s));
 }
 
 BOOST_AUTO_TEST_SUITE_END()  // yk_util
