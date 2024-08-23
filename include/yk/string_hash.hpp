@@ -1,6 +1,7 @@
 #ifndef YK_STRING_HASH_HPP
 #define YK_STRING_HASH_HPP
 
+#include <functional>
 #include <string>
 #include <string_view>
 
