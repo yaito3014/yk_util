@@ -357,6 +357,9 @@ BOOST_AUTO_TEST_CASE(Enum) {
 
   BOOST_TEST(std::ranges::equal(yk::each_bit(SpellType::TYPE_ATTACK | SpellType::ATTR_FIRE | SpellType::ATTR_THUNDER),
                                 std::vector{SpellType::ATTR_FIRE, SpellType::ATTR_THUNDER}));
+
+  BOOST_TEST(std::ranges::equal(yk::each_bit(static_cast<SpellType>(static_cast<std::underlying_type_t<SpellType>>(-1))),
+                                std::vector{SpellType::ATTR_FIRE, SpellType::ATTR_WATER, SpellType::ATTR_THUNDER}));
 }
 
 BOOST_AUTO_TEST_SUITE_END()  // yk_util
