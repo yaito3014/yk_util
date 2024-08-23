@@ -1,5 +1,5 @@
 #include "yk/allocator/default_init_allocator.hpp"
-#include "yk/enum.hpp"
+#include "yk/bitmask_enum.hpp"
 #include "yk/hash.hpp"
 #include "yk/hash/boost.hpp"
 #include "yk/hash/hash_combine.hpp"
@@ -74,7 +74,7 @@ enum class MyBitmask : std::uint8_t {
 namespace yk {
 
 template <>
-struct flag_enabled<enum_test::MyBitmask> : std::true_type {};
+struct bitmask_enabled<enum_test::MyBitmask> : std::true_type {};
 
 }  // namespace yk
 
@@ -305,7 +305,7 @@ BOOST_AUTO_TEST_CASE(StringHash) {
 
 BOOST_AUTO_TEST_CASE(Enum) {
   using enum_test::MyBitmask;
-  using namespace yk::enum_operators;
+  using namespace yk::bitmask_operators;
 
   BOOST_TEST(bool((MyBitmask::FOO | MyBitmask::BAR) & MyBitmask::FOO));
 }

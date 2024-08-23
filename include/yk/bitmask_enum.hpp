@@ -1,5 +1,5 @@
-﻿#ifndef YK_ENUM_HPP
-#define YK_ENUM_HPP
+﻿#ifndef YK_BITMASK_ENUM_HPP
+#define YK_BITMASK_ENUM_HPP
 
 #include "yk/util/to_underlying.hpp"
 
@@ -20,66 +20,66 @@
 namespace yk {
 
 template <class T>
-struct flag_enabled : std::false_type {};
+struct bitmask_enabled : std::false_type {};
 
 template <class T>
-constexpr bool flag_enabled_v = flag_enabled<T>::value;
+constexpr bool bitmask_enabled_v = bitmask_enabled<T>::value;
 
 template <class T>
-concept FlagEnabledEnum = std::is_enum_v<T> && flag_enabled_v<T>;
+concept BitmaskEnabledEnum = std::is_enum_v<T> && bitmask_enabled_v<T>;
 
-namespace enum_operators {
+namespace bitmask_operators {
 
-template <FlagEnabledEnum T>
+template <BitmaskEnabledEnum T>
 [[nodiscard]] constexpr T operator~(T a) noexcept {
   return static_cast<T>(~::yk::to_underlying(a));
 }
 
-template <FlagEnabledEnum T>
+template <BitmaskEnabledEnum T>
 [[nodiscard]] constexpr T operator|(T a, T b) noexcept {
   static_assert(std::is_unsigned_v<std::underlying_type_t<T>>);
   return static_cast<T>(::yk::to_underlying(a) | ::yk::to_underlying(b));
 }
 
-template <FlagEnabledEnum T>
+template <BitmaskEnabledEnum T>
 constexpr T& operator|=(T& a, T b) noexcept {
   static_assert(std::is_unsigned_v<std::underlying_type_t<T>>);
   return a = a | b;
 }
 
-template <FlagEnabledEnum T>
+template <BitmaskEnabledEnum T>
 [[nodiscard]] constexpr T operator&(T a, T b) noexcept {
   static_assert(std::is_unsigned_v<std::underlying_type_t<T>>);
   return static_cast<T>(::yk::to_underlying(a) & ::yk::to_underlying(b));
 }
 
-template <FlagEnabledEnum T>
+template <BitmaskEnabledEnum T>
 constexpr T& operator&=(T& a, T b) noexcept {
   static_assert(std::is_unsigned_v<std::underlying_type_t<T>>);
   return a = a & b;
 }
 
-template <FlagEnabledEnum T>
+template <BitmaskEnabledEnum T>
 std::ostream& operator<<(std::ostream& os, const T& val) {
   return os << to_string(val);
 }
 
-}  // namespace enum_operators
+}  // namespace bitmask_operators
 
-template <FlagEnabledEnum T>
+template <BitmaskEnabledEnum T>
 [[nodiscard]] constexpr bool contains(T a, T b) noexcept {
   static_assert(std::is_unsigned_v<std::underlying_type_t<T>>);
   return (::yk::to_underlying(a) & ::yk::to_underlying(b)) == ::yk::to_underlying(b);
 }
 
-template <FlagEnabledEnum T>
+template <BitmaskEnabledEnum T>
 [[nodiscard]] constexpr bool contains_single_bit(T a, T b) noexcept {
   static_assert(std::is_unsigned_v<std::underlying_type_t<T>>);
   assert(std::has_single_bit(::yk::to_underlying(b)));
   return ::yk::to_underlying(a) & ::yk::to_underlying(b);
 }
 
-template <FlagEnabledEnum T>
+template <BitmaskEnabledEnum T>
 [[nodiscard]] constexpr bool contains_any_bit(T a, T b) noexcept {
   static_assert(std::is_unsigned_v<std::underlying_type_t<T>>);
   return ::yk::to_underlying(a) & ::yk::to_underlying(b);
@@ -88,43 +88,43 @@ template <FlagEnabledEnum T>
 namespace detail {
 
 template <class T>
-concept has_min_bit = std::same_as<std::remove_const_t<decltype(flag_enabled<T>::min_bit)>, int>;
+concept has_min_bit = std::same_as<std::remove_const_t<decltype(bitmask_enabled<T>::min_bit)>, int>;
 
 template <class T>
-concept has_max_bit = std::same_as<std::remove_const_t<decltype(flag_enabled<T>::max_bit)>, int>;
+concept has_max_bit = std::same_as<std::remove_const_t<decltype(bitmask_enabled<T>::max_bit)>, int>;
 
 }  // namespace detail
 
-template <FlagEnabledEnum T>
+template <BitmaskEnabledEnum T>
 [[nodiscard]] constexpr auto each_bit(T flags) noexcept {
   static_assert(std::is_unsigned_v<std::underlying_type_t<T>>);
   static_assert(detail::has_max_bit<T>);
 
   if constexpr (detail::has_min_bit<T>) {
-    return std::views::iota(flag_enabled<T>::min_bit, flag_enabled<T>::max_bit + 1)                                               //
+    return std::views::iota(bitmask_enabled<T>::min_bit, bitmask_enabled<T>::max_bit + 1)                                         //
            | std::views::filter([cat = ::yk::to_underlying(flags)](int i) constexpr noexcept -> bool { return (cat >> i) & 1; })  //
            | std::views::transform([](int i) constexpr noexcept { return static_cast<T>(1u << i); });
 
   } else {
-    return std::views::iota(0, flag_enabled<T>::max_bit + 1)                                                                      //
+    return std::views::iota(0, bitmask_enabled<T>::max_bit + 1)                                                                   //
            | std::views::filter([cat = ::yk::to_underlying(flags)](int i) constexpr noexcept -> bool { return (cat >> i) & 1; })  //
            | std::views::transform([](int i) constexpr noexcept { return static_cast<T>(1u << i); });
   }
 }
 
-template <FlagEnabledEnum T, class CharT>
+template <BitmaskEnabledEnum T, class CharT>
 [[nodiscard]] constexpr T parse_flag(std::basic_string_view<CharT> str) noexcept {
-  return flag_enabled<T>::parse(str);
+  return bitmask_enabled<T>::parse(str);
 }
 
-template <FlagEnabledEnum T, class CharT>
+template <BitmaskEnabledEnum T, class CharT>
 [[nodiscard]] constexpr T parse_flag(const std::basic_string<CharT>& str) noexcept {
-  return flag_enabled<T>::parse(str);
+  return bitmask_enabled<T>::parse(str);
 }
 
-template <FlagEnabledEnum T, class CharT>
+template <BitmaskEnabledEnum T, class CharT>
 [[nodiscard]] constexpr T parse_flags(std::basic_string_view<CharT> str, std::basic_string_view<CharT> delim) noexcept {
-  using namespace yk::enum_operators;
+  using namespace yk::bitmask_operators;
 
   T res{};
 
@@ -141,17 +141,17 @@ template <FlagEnabledEnum T, class CharT>
   return res;
 }
 
-template <FlagEnabledEnum T, class CharT>
+template <BitmaskEnabledEnum T, class CharT>
 [[nodiscard]] constexpr T parse_flags(const std::basic_string<CharT>& str, std::basic_string_view<CharT> delim) noexcept {
   return parse_flags<T>(std::basic_string_view<CharT>{str}, delim);
 }
 
-template <FlagEnabledEnum T, class CharT>
+template <BitmaskEnabledEnum T, class CharT>
 [[nodiscard]] constexpr T parse_flags(std::basic_string_view<CharT> str, const std::basic_string<CharT>& delim) noexcept {
   return parse_flags<T>(str, std::basic_string_view<CharT>{delim});
 }
 
-template <FlagEnabledEnum T, class CharT>
+template <BitmaskEnabledEnum T, class CharT>
 [[nodiscard]] constexpr T parse_flags(const std::basic_string<CharT>& str, const std::basic_string<CharT>& delim) noexcept {
   return parse_flags<T>(std::basic_string_view<CharT>{str}, std::basic_string_view<CharT>{delim});
 }
@@ -160,7 +160,7 @@ template <FlagEnabledEnum T, class CharT>
 
 namespace std {
 
-template <yk::FlagEnabledEnum T, class CharT>
+template <yk::BitmaskEnabledEnum T, class CharT>
 struct formatter<T, CharT> : formatter<std::underlying_type_t<T>, CharT> {
   using base_formatter = formatter<std::underlying_type_t<T>, CharT>;
 
@@ -186,4 +186,4 @@ private:
 
 }  // namespace std
 
-#endif  // YK_ENUM_HPP
+#endif  // YK_BITMASK_ENUM_HPP
