@@ -1,4 +1,5 @@
 #include "yk/allocator/default_init_allocator.hpp"
+#include "yk/enum.hpp"
 #include "yk/hash.hpp"
 #include "yk/hash/boost.hpp"
 #include "yk/hash/hash_combine.hpp"
@@ -23,7 +24,6 @@
 
 #include <algorithm>
 #include <atomic>
-#include <cstdint>
 #include <exception>
 #include <execution>
 #include <functional>
@@ -34,6 +34,8 @@
 #include <utility>
 #include <vector>
 #include <version>
+
+#include <cstdint>
 
 #if defined(__cpp_lib_forward_like) && !(defined(__clang__) && defined(__GLIBCXX__))
 #define YK_UTIL_STD_HAS_FORWARD_LIKE 1
@@ -58,6 +60,23 @@ struct MultiS {
 
 YK_ADAPT_HASH_TEMPLATE(hash_test, (S<T, Ts...>), val, { return val.val; }, class T, class... Ts);
 YK_ADAPT_HASH(hash_test, MultiS, val, { return yk::hash_combine(val.a, val.b, val.c); });
+
+namespace enum_test {
+
+enum class MyBitmask : std::uint8_t {
+  FOO = 1 << 0,
+  BAR = 1 << 1,
+  BAZ = 1 << 2,
+};
+
+}
+
+namespace yk {
+
+template <>
+struct flag_enabled<enum_test::MyBitmask> : std::true_type {};
+
+}  // namespace yk
 
 BOOST_AUTO_TEST_SUITE(yk_util)
 
@@ -282,6 +301,13 @@ BOOST_AUTO_TEST_CASE(StringHash) {
   BOOST_TEST(set.contains("foo"));
   BOOST_TEST(set.contains("foo"s));
   BOOST_TEST(set.contains("foo"sv));
+}
+
+BOOST_AUTO_TEST_CASE(Enum) {
+  using enum_test::MyBitmask;
+  using namespace yk::enum_operators;
+
+  BOOST_TEST(bool((MyBitmask::FOO | MyBitmask::BAR) & MyBitmask::FOO));
 }
 
 BOOST_AUTO_TEST_SUITE_END()  // yk_util
