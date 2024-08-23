@@ -4,6 +4,7 @@
 #include "yk/hash/hash_combine.hpp"
 #include "yk/maybe_mutex.hpp"
 #include "yk/par_for_each.hpp"
+#include "yk/proxy_hash.hpp"
 #include "yk/stack.hpp"
 #include "yk/util/forward_like.hpp"
 #include "yk/util/pack_indexing.hpp"
@@ -252,6 +253,16 @@ BOOST_AUTO_TEST_CASE(Hash) {
     boost::hash_combine(seed, yk::hash_value_for(s.c));
     BOOST_TEST(hash_value(s) == seed);
   }
+}
+
+BOOST_AUTO_TEST_CASE(ProxyHash) {
+  struct S {
+    int value;
+    int get_value() const { return value; }
+  };
+  BOOST_TEST((yk::proxy_hash<S, &S::value>{}(S{42}) == std::hash<int>{}(42)));
+  BOOST_TEST((yk::proxy_hash<S, &S::get_value>{}(S{42}) == std::hash<int>{}(42)));
+  BOOST_TEST((yk::proxy_hash<S, [](const S& s) { return s.value; }>{}(S{42}) == std::hash<int>{}(42)));
 }
 
 BOOST_AUTO_TEST_SUITE_END()  // yk_util
