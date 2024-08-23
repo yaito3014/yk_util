@@ -124,24 +124,29 @@ template <BitmaskEnabledEnum T>
   }
 }
 
-template <BitmaskEnabledEnum T, class CharT>
-[[nodiscard]] constexpr T parse_flag(std::basic_string_view<CharT> str) noexcept {
-  return bitmask_enabled<T>::parse(str);
+namespace detail {
+
+template <class T>
+concept StringLike = requires(T x) { std::basic_string_view{x}; };
+
+}  // namespace detail
+
+template <BitmaskEnabledEnum T, detail::StringLike Str>
+[[nodiscard]] constexpr T parse_flag(const Str& str) noexcept {
+  return bitmask_enabled<T>::parse(std::basic_string_view{str});
 }
 
-template <BitmaskEnabledEnum T, class CharT>
-[[nodiscard]] constexpr T parse_flag(const std::basic_string<CharT>& str) noexcept {
-  return bitmask_enabled<T>::parse(str);
-}
-
-template <BitmaskEnabledEnum T, class CharT>
-[[nodiscard]] constexpr T parse_flags(std::basic_string_view<CharT> str, std::basic_string_view<CharT> delim) noexcept {
+template <BitmaskEnabledEnum T, detail::StringLike Str, detail::StringLike Delim>
+[[nodiscard]] constexpr T parse_flags(const Str& str, const Delim& delim) noexcept {
   using namespace yk::bitmask_operators;
+
+  std::basic_string_view str_sv{str};
+  std::basic_string_view delim_sv{delim};
 
   T res{};
 
-  for (const auto& r : str | std::views::split(delim)) {
-    const std::basic_string_view<CharT> part_str{r};
+  for (const auto& r : str_sv | std::views::split(delim_sv)) {
+    const std::basic_string_view part_str{r};
 
     const auto part = parse_flag<T>(part_str);
     if (part == T{}) {
@@ -151,21 +156,6 @@ template <BitmaskEnabledEnum T, class CharT>
   }
 
   return res;
-}
-
-template <BitmaskEnabledEnum T, class CharT>
-[[nodiscard]] constexpr T parse_flags(const std::basic_string<CharT>& str, std::basic_string_view<CharT> delim) noexcept {
-  return parse_flags<T>(std::basic_string_view<CharT>{str}, delim);
-}
-
-template <BitmaskEnabledEnum T, class CharT>
-[[nodiscard]] constexpr T parse_flags(std::basic_string_view<CharT> str, const std::basic_string<CharT>& delim) noexcept {
-  return parse_flags<T>(str, std::basic_string_view<CharT>{delim});
-}
-
-template <BitmaskEnabledEnum T, class CharT>
-[[nodiscard]] constexpr T parse_flags(const std::basic_string<CharT>& str, const std::basic_string<CharT>& delim) noexcept {
-  return parse_flags<T>(std::basic_string_view<CharT>{str}, std::basic_string_view<CharT>{delim});
 }
 
 }  // namespace yk
