@@ -1,7 +1,7 @@
 ﻿#ifndef YK_ENUM_HPP
 #define YK_ENUM_HPP
 
-#include <boost/assert.hpp>
+#include "yk/util/to_underlying.hpp"
 
 #if !defined(NDEBUG)
 #include <bit>
@@ -14,6 +14,8 @@
 #include <string_view>
 #include <type_traits>
 #include <utility>
+
+#include <cassert>
 
 namespace yk {
 
@@ -30,13 +32,13 @@ namespace enum_operators {
 
 template <FlagEnabledEnum T>
 [[nodiscard]] constexpr T operator~(T a) noexcept {
-  return static_cast<T>(~std::to_underlying(a));
+  return static_cast<T>(~::yk::to_underlying(a));
 }
 
 template <FlagEnabledEnum T>
 [[nodiscard]] constexpr T operator|(T a, T b) noexcept {
   static_assert(std::is_unsigned_v<std::underlying_type_t<T>>);
-  return static_cast<T>(std::to_underlying(a) | std::to_underlying(b));
+  return static_cast<T>(::yk::to_underlying(a) | ::yk::to_underlying(b));
 }
 
 template <FlagEnabledEnum T>
@@ -48,7 +50,7 @@ constexpr T& operator|=(T& a, T b) noexcept {
 template <FlagEnabledEnum T>
 [[nodiscard]] constexpr T operator&(T a, T b) noexcept {
   static_assert(std::is_unsigned_v<std::underlying_type_t<T>>);
-  return static_cast<T>(std::to_underlying(a) & std::to_underlying(b));
+  return static_cast<T>(::yk::to_underlying(a) & ::yk::to_underlying(b));
 }
 
 template <FlagEnabledEnum T>
@@ -67,20 +69,20 @@ std::ostream& operator<<(std::ostream& os, T const& val) {
 template <FlagEnabledEnum T>
 [[nodiscard]] constexpr bool contains(T a, T b) noexcept {
   static_assert(std::is_unsigned_v<std::underlying_type_t<T>>);
-  return (std::to_underlying(a) & std::to_underlying(b)) == std::to_underlying(b);
+  return (::yk::to_underlying(a) & ::yk::to_underlying(b)) == ::yk::to_underlying(b);
 }
 
 template <FlagEnabledEnum T>
 [[nodiscard]] constexpr bool contains_single_bit(T a, T b) noexcept {
   static_assert(std::is_unsigned_v<std::underlying_type_t<T>>);
-  BOOST_ASSERT(std::has_single_bit(std::to_underlying(b)));
-  return std::to_underlying(a) & std::to_underlying(b);
+  assert(std::has_single_bit(::yk::to_underlying(b)));
+  return ::yk::to_underlying(a) & ::yk::to_underlying(b);
 }
 
 template <FlagEnabledEnum T>
 [[nodiscard]] constexpr bool contains_any_bit(T a, T b) noexcept {
   static_assert(std::is_unsigned_v<std::underlying_type_t<T>>);
-  return std::to_underlying(a) & std::to_underlying(b);
+  return ::yk::to_underlying(a) & ::yk::to_underlying(b);
 }
 
 namespace detail {
@@ -99,14 +101,14 @@ template <FlagEnabledEnum T>
   static_assert(detail::has_max_bit<T>);
 
   if constexpr (detail::has_min_bit<T>) {
-    return std::views::iota(flag_enabled<T>::min_bit, flag_enabled<T>::max_bit + 1) |
-           std::views::filter([cat = std::to_underlying(flags)](int i) constexpr noexcept -> bool { return (cat >> i) & 1; }) |
-           std::views::transform([](int i) constexpr noexcept { return static_cast<T>(1u << i); });
+    return std::views::iota(flag_enabled<T>::min_bit, flag_enabled<T>::max_bit + 1)                                               //
+           | std::views::filter([cat = ::yk::to_underlying(flags)](int i) constexpr noexcept -> bool { return (cat >> i) & 1; })  //
+           | std::views::transform([](int i) constexpr noexcept { return static_cast<T>(1u << i); });
 
   } else {
-    return std::views::iota(0, flag_enabled<T>::max_bit + 1) |
-           std::views::filter([cat = std::to_underlying(flags)](int i) constexpr noexcept -> bool { return (cat >> i) & 1; }) |
-           std::views::transform([](int i) constexpr noexcept { return static_cast<T>(1u << i); });
+    return std::views::iota(0, flag_enabled<T>::max_bit + 1)                                                                      //
+           | std::views::filter([cat = ::yk::to_underlying(flags)](int i) constexpr noexcept -> bool { return (cat >> i) & 1; })  //
+           | std::views::transform([](int i) constexpr noexcept { return static_cast<T>(1u << i); });
   }
 }
 
@@ -172,8 +174,7 @@ struct formatter<T, CharT> : formatter<std::underlying_type_t<T>, CharT> {
   template <class Context>
   auto format(T const& val, Context& ctx) const {
     if (has_format_spec_) {
-      return base_formatter::format(std::to_underlying(val), ctx);
-
+      return base_formatter::format(::yk::to_underlying(val), ctx);
     } else {
       return format_to(ctx.out(), "{}", to_string(val));
     }
