@@ -115,12 +115,12 @@ template <BitmaskEnabledEnum T>
   if constexpr (detail::has_min_bit<T>) {
     return std::views::iota(bitmask_enabled<T>::min_bit, bitmask_enabled<T>::max_bit + 1)                                         //
            | std::views::filter([cat = ::yk::to_underlying(flags)](int i) constexpr noexcept -> bool { return (cat >> i) & 1; })  //
-           | std::views::transform([](int i) constexpr noexcept { return static_cast<T>(1u << i); });
+           | std::views::transform([](int i) constexpr noexcept { return static_cast<T>(static_cast<std::underlying_type_t<T>>(1) << i); });
 
   } else {
     return std::views::iota(0, bitmask_enabled<T>::max_bit + 1)                                                                   //
            | std::views::filter([cat = ::yk::to_underlying(flags)](int i) constexpr noexcept -> bool { return (cat >> i) & 1; })  //
-           | std::views::transform([](int i) constexpr noexcept { return static_cast<T>(1u << i); });
+           | std::views::transform([](int i) constexpr noexcept { return static_cast<T>(static_cast<std::underlying_type_t<T>>(1) << i); });
   }
 }
 
