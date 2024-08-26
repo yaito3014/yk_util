@@ -8,8 +8,8 @@
 #include <algorithm>
 #include <exception>
 #include <execution>
-#include <mutex>
 #include <ranges>
+#include <shared_mutex>
 #include <type_traits>
 #include <utility>
 
@@ -42,12 +42,12 @@ void for_each(JobPolicy&&, Policy&& policy, ForwardIterator first, ForwardIterat
   static_assert(is_job_policy_v<std::remove_cvref_t<JobPolicy>>);
   static_assert(std::is_execution_policy_v<std::remove_cvref_t<Policy>>);
   static_assert(std::is_copy_constructible_v<Func>, "std::for_each requires func to be CopyConstructible");
-  std::mutex mtx;
+  std::shared_mutex mtx;
   std::exception_ptr exception;
   const auto wrapper = [&, func = std::move(func)]<class T>(T&& arg) noexcept {
     try {
       if constexpr (std::is_same_v<std::remove_cvref_t<JobPolicy>, execution::abort_policy>) {
-        std::lock_guard lock{mtx};
+        std::shared_lock lock{mtx};
         if (exception) return;
       }
       std::invoke(func, std::forward<T>(arg));
