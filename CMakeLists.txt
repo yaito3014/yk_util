@@ -10,6 +10,8 @@ endif()
 
 project(yk_util VERSION 0.1.0 LANGUAGES CXX)
 
+option(YK_YK_UTIL_BUILD_TESTING "build testing" ${PROJECT_IS_TOP_LEVEL})
+
 add_library(yk_util INTERFACE)
 
 add_library(yk::yk_util ALIAS yk_util)
@@ -51,8 +53,10 @@ install(
     DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake
 )
 
-if(${Boost_FOUND})
-    add_subdirectory(test EXCLUDE_FROM_ALL)
-else()
-    message(FATAL_ERROR "Boost.Test is not found, not building tests")
+if(YK_YK_UTIL_BUILD_TESTING)
+    if(${Boost_FOUND})
+        add_subdirectory(test EXCLUDE_FROM_ALL)
+    else()
+        message(FATAL_ERROR "Boost.Test is not found, not building tests")
+    endif()
 endif()
