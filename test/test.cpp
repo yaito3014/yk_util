@@ -8,6 +8,7 @@
 #include "yk/proxy_hash.hpp"
 #include "yk/stack.hpp"
 #include "yk/string_hash.hpp"
+#include "yk/util/array_cat.hpp"
 #include "yk/util/forward_like.hpp"
 #include "yk/util/pack_indexing.hpp"
 #include "yk/util/reverse.hpp"
@@ -380,6 +381,13 @@ BOOST_AUTO_TEST_CASE(Enum) {
 
   BOOST_TEST(std::ranges::equal(yk::each_bit(static_cast<SpellType>(static_cast<std::underlying_type_t<SpellType>>(-1))),
                                 std::vector{SpellType::ATTR_FIRE, SpellType::ATTR_WATER, SpellType::ATTR_THUNDER}));
+}
+
+BOOST_AUTO_TEST_CASE(ArrayCat) {
+  BOOST_TEST((yk::array_cat(std::array<int, 0>{}, std::array<int, 0>{}) == std::array<int, 0>{}));
+  BOOST_TEST((yk::array_cat(std::array<int, 0>{}, std::array{3, 1, 4}) == std::array{3, 1, 4}));
+  BOOST_TEST((yk::array_cat(std::array{3, 1, 4}, std::array<int, 0>{}) == std::array{3, 1, 4}));
+  BOOST_TEST((yk::array_cat(std::array{3, 1, 4}, std::array{1, 5, 9, 2}, std::array{6, 5}) == std::array{3, 1, 4, 1, 5, 9, 2, 6, 5}));
 }
 
 BOOST_AUTO_TEST_SUITE_END()  // yk_util
