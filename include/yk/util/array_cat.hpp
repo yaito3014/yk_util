@@ -1,5 +1,5 @@
-﻿#ifndef YK_ARRAY_HPP
-#define YK_ARRAY_HPP
+﻿#ifndef YK_UTIL_ARRAY_CAT_HPP
+#define YK_UTIL_ARRAY_CAT_HPP
 
 #include <algorithm>
 #include <array>
@@ -21,4 +21,4 @@ template <class T, std::size_t... Sizes>
 
 }  // namespace yk
 
-#endif  // YK_ARRAY_HPP
+#endif  // YK_UTIL_ARRAY_CAT_HPP
