@@ -10,8 +10,7 @@ namespace yk {
 
 template <class T, std::size_t... Sizes>
   requires std::copy_constructible<T>
-[[nodiscard]] constexpr std::array<T, (Sizes + ...)> concat(const std::array<T, Sizes>&... arrs)  //
-    noexcept(std::is_nothrow_copy_constructible_v<T>) {
+[[nodiscard]] constexpr std::array<T, (Sizes + ...)> array_cat(const std::array<T, Sizes>&... arrs) noexcept(std::is_nothrow_copy_constructible_v<T>) {
   std::array<T, (Sizes + ...)> res;
   std::size_t i = 0;
 
