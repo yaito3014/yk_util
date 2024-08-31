@@ -9,6 +9,7 @@
 #include "yk/stack.hpp"
 #include "yk/string_hash.hpp"
 #include "yk/util/array_cat.hpp"
+#include "yk/util/auto_sequence.hpp"
 #include "yk/util/forward_like.hpp"
 #include "yk/util/pack_indexing.hpp"
 #include "yk/util/reverse.hpp"
@@ -388,6 +389,18 @@ BOOST_AUTO_TEST_CASE(ArrayCat) {
   BOOST_TEST((yk::array_cat(std::array<int, 0>{}, std::array{3, 1, 4}) == std::array{3, 1, 4}));
   BOOST_TEST((yk::array_cat(std::array{3, 1, 4}, std::array<int, 0>{}) == std::array{3, 1, 4}));
   BOOST_TEST((yk::array_cat(std::array{3, 1, 4}, std::array{1, 5, 9, 2}, std::array{6, 5}) == std::array{3, 1, 4, 1, 5, 9, 2, 6, 5}));
+}
+
+BOOST_AUTO_TEST_CASE(AutoSeq) {
+  struct S {
+    int a, b;
+  };
+
+  const auto use_member = []<auto Mem>(const S& s) { return s.*Mem; };
+
+  BOOST_TEST([&]<auto... Vals>(const S& s, yk::auto_sequence<Vals...>) {  //
+    return (use_member.template operator()<Vals>(s) + ...);
+  }(S{33, 9}, yk::auto_sequence<&S::a, &S::b>{}) == 42);
 }
 
 BOOST_AUTO_TEST_SUITE_END()  // yk_util
