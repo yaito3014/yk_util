@@ -62,4 +62,4 @@ jobs:
 
     - name: Test
       working-directory: ${{ steps.strings.outputs.build-output-dir }}/test
-      run: ctest --build-config ${{ matrix.build_type }}
+      run: ./yk_util_test --report_level=short
