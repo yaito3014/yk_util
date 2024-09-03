@@ -17,6 +17,7 @@
 #include "yk/util/to_array_of.hpp"
 #include "yk/util/to_subrange.hpp"
 #include "yk/util/to_subrange/boost.hpp"
+#include "yk/util/wrap_as.hpp"
 
 #define BOOST_TEST_MODULE yk_util_test
 #include <boost/test/included/unit_test.hpp>
@@ -521,6 +522,24 @@ BOOST_AUTO_TEST_CASE(AutoSeq) {
   BOOST_TEST([&]<auto... Vals>(const S& s, yk::auto_sequence<Vals...>) {  //
     return (use_member.template operator()<Vals>(s) + ...);
   }(S{33, 9}, yk::auto_sequence<&S::a, &S::b>{}) == 42);
+}
+
+BOOST_AUTO_TEST_CASE(WrapAs) {
+  // clang-format off
+  static_assert(std::is_same_v<yk::wrap_as_t<int,       int  >,       int&&>);
+  static_assert(std::is_same_v<yk::wrap_as_t<int,       int& >,       int& >);
+  static_assert(std::is_same_v<yk::wrap_as_t<int,       int&&>,       int&&>);
+  static_assert(std::is_same_v<yk::wrap_as_t<int, const int  >, const int&&>);
+  static_assert(std::is_same_v<yk::wrap_as_t<int, const int& >, const int&>);
+  static_assert(std::is_same_v<yk::wrap_as_t<int, const int&&>, const int&&>);
+  
+  static_assert(std::is_same_v<yk::wrap_as_t<int,       float  >, int>);
+  static_assert(std::is_same_v<yk::wrap_as_t<int,       float& >, int>);
+  static_assert(std::is_same_v<yk::wrap_as_t<int,       float&&>, int>);
+  static_assert(std::is_same_v<yk::wrap_as_t<int, const float  >, int>);
+  static_assert(std::is_same_v<yk::wrap_as_t<int, const float& >, int>);
+  static_assert(std::is_same_v<yk::wrap_as_t<int, const float&&>, int>);
+  // clang-format on
 }
 
 BOOST_AUTO_TEST_SUITE_END()  // yk_util
