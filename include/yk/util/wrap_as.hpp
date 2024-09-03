@@ -57,7 +57,7 @@ template <class T, class U>
 using wrap_as_t = typename detail::wrap_as_impl<T, U>::type;
 
 template <class T, class U>
-[[nodiscard]] constexpr wrap_as_t<T, U> wrap_as(U&& x) noexcept {
+[[nodiscard]] constexpr wrap_as_t<T, U> wrap_as(U&& x) noexcept(noexcept(static_cast<wrap_as_t<T, U>>(std::forward<U>(x)))) {
   return static_cast<wrap_as_t<T, U>>(std::forward<U>(x));
 }
 
