@@ -579,6 +579,18 @@ BOOST_AUTO_TEST_CASE(WrapAs) {
   using namespace wrap_as_test;
 
   MyData data{42};
+
+  static_assert(std::is_same_v<decltype(yk::wrap_as<MyData>(42)), MyData>);
+
+  static_assert(std::is_same_v<decltype(yk::wrap_as<MyData>(MyData{42})), MyData&&>);
+  static_assert(std::is_same_v<decltype(yk::wrap_as<MyData>(yk::wrap_as<MyData>(42))), MyData&&>);
+
+  static_assert(std::is_same_v<decltype(yk::wrap_as<MyData>(data)), MyData&>);
+  static_assert(std::is_same_v<decltype(yk::wrap_as<MyData>(yk::wrap_as<MyData>(data))), MyData&>);
+
+  static_assert(std::is_same_v<decltype(yk::wrap_as<MyData>(std::as_const(data))), const MyData&>);
+  static_assert(std::is_same_v<decltype(yk::wrap_as<MyData>(yk::wrap_as<MyData>(std::as_const(data)))), const MyData&>);
+
   {
     auto&& val_naive = MyData{42};
     auto&& val_wrap = yk::wrap_as<MyData>(42);
