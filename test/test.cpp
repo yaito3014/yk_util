@@ -163,6 +163,12 @@ BOOST_AUTO_TEST_CASE(ForwardLike) {
   static_assert(std::is_same_v<yk::copy_const_t<const int&&, const float& >, const float& >);
   static_assert(std::is_same_v<yk::copy_const_t<const int&&, const float&&>, const float&&>);
   
+  static_assert(std::is_same_v<yk::override_ref_t<      int  ,       float  >,       float& >);
+  static_assert(std::is_same_v<yk::override_ref_t<      int  ,       float& >,       float& >);
+  static_assert(std::is_same_v<yk::override_ref_t<      int  ,       float&&>,       float& >);
+  static_assert(std::is_same_v<yk::override_ref_t<const int  ,       float  >,       float& >);
+  static_assert(std::is_same_v<yk::override_ref_t<const int  ,       float& >,       float& >);
+  static_assert(std::is_same_v<yk::override_ref_t<const int  ,       float&&>,       float& >);
   static_assert(std::is_same_v<yk::override_ref_t<      int& ,       float  >,       float& >);
   static_assert(std::is_same_v<yk::override_ref_t<      int& ,       float& >,       float& >);
   static_assert(std::is_same_v<yk::override_ref_t<      int& ,       float&&>,       float& >);
@@ -175,6 +181,12 @@ BOOST_AUTO_TEST_CASE(ForwardLike) {
   static_assert(std::is_same_v<yk::override_ref_t<const int&&,       float  >,       float&&>);
   static_assert(std::is_same_v<yk::override_ref_t<const int&&,       float& >,       float&&>);
   static_assert(std::is_same_v<yk::override_ref_t<const int&&,       float&&>,       float&&>);
+  static_assert(std::is_same_v<yk::override_ref_t<      int  , const float  >, const float& >);
+  static_assert(std::is_same_v<yk::override_ref_t<      int  , const float& >, const float& >);
+  static_assert(std::is_same_v<yk::override_ref_t<      int  , const float&&>, const float& >);
+  static_assert(std::is_same_v<yk::override_ref_t<const int  , const float  >, const float& >);
+  static_assert(std::is_same_v<yk::override_ref_t<const int  , const float& >, const float& >);
+  static_assert(std::is_same_v<yk::override_ref_t<const int  , const float&&>, const float& >);
   static_assert(std::is_same_v<yk::override_ref_t<      int& , const float  >, const float& >);
   static_assert(std::is_same_v<yk::override_ref_t<      int& , const float& >, const float& >);
   static_assert(std::is_same_v<yk::override_ref_t<      int& , const float&&>, const float& >);

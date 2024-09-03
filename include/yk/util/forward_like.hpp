@@ -68,10 +68,7 @@ struct copy_const_impl<const From&&, To&&> {
 };
 
 template <class From, class To>
-struct override_ref_impl;  // From must be reference
-
-template <class From, class To>
-struct override_ref_impl<From&, To> {
+struct override_ref_impl {
   using type = To&;
 };
 
