@@ -28,13 +28,43 @@ struct copy_const_impl<const From, To> {
 };
 
 template <class From, class To>
+struct copy_const_impl<const From, To&> {
+  using type = const To&;
+};
+
+template <class From, class To>
+struct copy_const_impl<const From, To&&> {
+  using type = const To&&;
+};
+
+template <class From, class To>
 struct copy_const_impl<const From&, To> {
   using type = const To;
 };
 
 template <class From, class To>
+struct copy_const_impl<const From&, To&> {
+  using type = const To&;
+};
+
+template <class From, class To>
+struct copy_const_impl<const From&, To&&> {
+  using type = const To&&;
+};
+
+template <class From, class To>
 struct copy_const_impl<const From&&, To> {
   using type = const To;
+};
+
+template <class From, class To>
+struct copy_const_impl<const From&&, To&> {
+  using type = const To&;
+};
+
+template <class From, class To>
+struct copy_const_impl<const From&&, To&&> {
+  using type = const To&&;
 };
 
 template <class From, class To>
