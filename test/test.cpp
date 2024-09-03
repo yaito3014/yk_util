@@ -83,6 +83,41 @@ enum class SpellType : std::uint8_t {
 
 }  // namespace enum_test
 
+namespace wrap_as_test {
+
+struct MyData {
+  MyData() : str("DC") {}
+  MyData(const MyData& other) : value(other.value), str(other.str + "CC") {}
+  MyData(MyData&& other) : value(other.value), str(other.str + "MC") {}
+
+  explicit MyData(int value) : value(value), str("IC") {}
+
+  std::string str;
+  int value;
+};
+
+struct ID {
+  explicit ID(const MyData& data) : value("id_" + std::to_string(data.value) + "_" + data.str) {}
+
+  std::string value;
+};
+
+struct MyClassConstruct {
+  template <class T>
+  explicit MyClassConstruct(T&& data) : id{MyData{std::forward<T>(data)}} {}
+
+  ID id;
+};
+
+struct MyClassWrap {
+  template <class T>
+  explicit MyClassWrap(T&& data) : id{yk::wrap_as<MyData>(std::forward<T>(data))} {}
+
+  ID id;
+};
+
+};  // namespace wrap_as_test
+
 namespace yk {
 
 template <>
@@ -540,6 +575,52 @@ BOOST_AUTO_TEST_CASE(WrapAs) {
   static_assert(std::is_same_v<yk::wrap_as_t<int, const float& >, int>);
   static_assert(std::is_same_v<yk::wrap_as_t<int, const float&&>, int>);
   // clang-format on
+
+  using namespace wrap_as_test;
+
+  MyData data{42};
+  {
+    auto&& val_naive = MyData{42};
+    auto&& val_wrap = yk::wrap_as<MyData>(42);
+    BOOST_TEST(val_naive.str == "IC");
+    BOOST_TEST(val_wrap.str == "IC");
+  }
+  {
+    auto&& val_naive = MyData(data);
+    auto&& val_wrap = yk::wrap_as<MyData>(data);
+    BOOST_TEST(val_naive.str == "ICCC");
+    BOOST_TEST(val_wrap.str == "IC");
+  }
+  {
+    auto&& val_naive = MyData{MyData{42}};
+    auto&& val_wrap = yk::wrap_as<MyData>(MyData{42});  // guaranteed move elision
+    BOOST_TEST(val_naive.str == "IC");
+    BOOST_TEST(val_wrap.str == "IC");
+  }
+  {
+    auto&& val = MyClassConstruct(42);
+    BOOST_TEST(val.id.value == "id_42_IC");
+  }
+  {
+    auto&& val = MyClassConstruct(MyData{42});
+    BOOST_TEST(val.id.value == "id_42_ICMC");
+  }
+  {
+    auto&& val = MyClassConstruct(data);
+    BOOST_TEST(val.id.value == "id_42_ICCC");
+  }
+  {
+    auto&& val = MyClassWrap(42);
+    BOOST_TEST(val.id.value == "id_42_IC");
+  }
+  {
+    auto&& val = MyClassWrap(MyData{42});
+    BOOST_TEST(val.id.value == "id_42_IC");
+  }
+  {
+    auto&& val = MyClassWrap(data);
+    BOOST_TEST(val.id.value == "id_42_IC");
+  }
 }
 
 BOOST_AUTO_TEST_SUITE_END()  // yk_util
