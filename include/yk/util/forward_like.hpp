@@ -131,7 +131,7 @@ template <class From, class To>
 using forward_like_t = typename detail::forward_like_impl<From&&, To&>::type;
 
 template <class From, class To>
-[[nodiscard]] constexpr auto forward_like(To&& x) noexcept -> forward_like_t<From, To> {
+[[nodiscard]] constexpr forward_like_t<From, To> forward_like(To&& x) noexcept {
   return static_cast<forward_like_t<From, To>>(x);
 }
 
