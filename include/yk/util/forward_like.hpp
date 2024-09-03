@@ -5,23 +5,130 @@
 
 namespace yk {
 
+namespace detail {
+
 template <class From, class To>
-struct copy_const : std::conditional<std::is_const_v<std::remove_reference_t<From>>, const To, To> {};
+struct copy_const_impl {
+  using type = To;
+};
+
+template <class From, class To>
+struct copy_const_impl<From&, To> {
+  using type = To;
+};
+
+template <class From, class To>
+struct copy_const_impl<From&&, To> {
+  using type = To;
+};
+
+template <class From, class To>
+struct copy_const_impl<const From, To> {
+  using type = const To;
+};
+
+template <class From, class To>
+struct copy_const_impl<const From, To&> {
+  using type = const To&;
+};
+
+template <class From, class To>
+struct copy_const_impl<const From, To&&> {
+  using type = const To&&;
+};
+
+template <class From, class To>
+struct copy_const_impl<const From&, To> {
+  using type = const To;
+};
+
+template <class From, class To>
+struct copy_const_impl<const From&, To&> {
+  using type = const To&;
+};
+
+template <class From, class To>
+struct copy_const_impl<const From&, To&&> {
+  using type = const To&&;
+};
+
+template <class From, class To>
+struct copy_const_impl<const From&&, To> {
+  using type = const To;
+};
+
+template <class From, class To>
+struct copy_const_impl<const From&&, To&> {
+  using type = const To&;
+};
+
+template <class From, class To>
+struct copy_const_impl<const From&&, To&&> {
+  using type = const To&&;
+};
+
+template <class From, class To>
+struct override_ref_impl {
+  using type = To&;
+};
+
+template <class From, class To>
+struct override_ref_impl<From&&, To> {
+  using type = To&&;
+};
+
+template <class From, class To>
+struct override_ref_impl<From&&, To&> {
+  using type = To&&;
+};
+
+template <class From, class To>
+struct override_ref_impl<From&&, To&&> {
+  using type = To&&;
+};
+
+template <class From, class To>
+struct forward_like_impl;  // From must be reference, To must be lvalue reference
+
+template <class From, class To>
+struct forward_like_impl<From&, To&> {
+  using type = To&;
+};
+
+template <class From, class To>
+struct forward_like_impl<From&&, To&> {
+  using type = To&&;
+};
+
+template <class From, class To>
+struct forward_like_impl<const From&, To&> {
+  using type = const To&;
+};
+
+template <class From, class To>
+struct forward_like_impl<const From&&, To&> {
+  using type = const To&&;
+};
+
+}  // namespace detail
+
+template <class From, class To>
+struct copy_const : detail::copy_const_impl<From, To> {};
 
 template <class From, class To>
 using copy_const_t = typename copy_const<From, To>::type;
 
 template <class From, class To>
-struct override_ref : std::enable_if_t<std::is_reference_v<From>, std::conditional<std::is_rvalue_reference_v<From>, std::remove_reference_t<To>&&, To&>> {};
+struct override_ref : detail::override_ref_impl<From, To> {};
 
 template <class From, class To>
 using override_ref_t = typename override_ref<From, To>::type;
 
 template <class From, class To>
-using forward_like_t = override_ref_t<From&&, copy_const_t<From, std::remove_reference_t<To>>>;
+using forward_like_t = typename detail::forward_like_impl<From&&, To&>::type;
 
 template <class From, class To>
-[[nodiscard]] constexpr auto forward_like(To&& x) noexcept -> forward_like_t<From, To> {
+[[nodiscard]] constexpr forward_like_t<From, To> forward_like(To&& x) noexcept {
   return static_cast<forward_like_t<From, To>>(x);
 }
 
