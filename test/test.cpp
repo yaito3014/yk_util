@@ -592,10 +592,12 @@ BOOST_AUTO_TEST_CASE(WrapAs) {
     BOOST_TEST(val_wrap.str == "IC");
   }
   {
-    auto&& val_naive = MyData{MyData{42}};
-    auto&& val_wrap = yk::wrap_as<MyData>(MyData{42});  // guaranteed move elision
+    auto val_naive = MyData{MyData{42}};
+    // auto val_wrap = yk::wrap_as<MyData>(MyData{42});  // dangling reference
+    // auto val_fwd = yk::forward<MyData>(MyData{42});   // dangling reference
     BOOST_TEST(val_naive.str == "IC");
-    BOOST_TEST(val_wrap.str == "IC");
+    // BOOST_TEST(val_wrap.str == "IC"); // UB
+    // BOOST_TEST(val_fwd.str == "IC");  // UB
   }
   {
     auto&& val = MyClassConstruct(42);
