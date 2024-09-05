@@ -1,6 +1,7 @@
 #include "yk/allocator/default_init_allocator.hpp"
 #include "yk/bitmask_enum.hpp"
 #include "yk/hash.hpp"
+#include "yk/hash/adapt.hpp"
 #include "yk/hash/boost.hpp"
 #include "yk/hash/hash_combine.hpp"
 #include "yk/maybe_mutex.hpp"
