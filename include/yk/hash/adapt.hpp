@@ -1,6 +1,8 @@
 #ifndef YK_UTIL_HASH_HASH_HPP
 #define YK_UTIL_HASH_HASH_HPP
 
+#include "yk/hash/std.hpp"
+
 #define YK_PP_REQUIRE_SEMICOLON static_assert(true)
 
 #define YK_ADAPT_HASH(ns, type, param, hash_stmt)                                               \

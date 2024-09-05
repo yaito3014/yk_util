@@ -1,8 +1,6 @@
 #ifndef YK_HASH_STD_HPP
 #define YK_HASH_STD_HPP
 
-#include "yk/hash/hash.hpp"
-
 #include <functional>
 
 namespace yk {
