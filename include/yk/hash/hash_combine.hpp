@@ -1,7 +1,9 @@
 #ifndef YK_UTIL_HASH_HASH_COMBINE_HPP
 #define YK_UTIL_HASH_HASH_COMBINE_HPP
 
-#include <boost/container_hash/hash.hpp>
+#include "yk/hash/std.hpp"
+
+#include <boost/container_hash/hash_fwd.hpp>
 
 #include <cstddef>
 
