@@ -65,7 +65,7 @@ struct MultiS {
 
 }  // namespace hash_test
 
-YK_ADAPT_HASH_TEMPLATE(hash_test, (S<T, Ts...>), val, { return val.val; }, class T, class... Ts);
+YK_ADAPT_HASH_TEMPLATE(hash_test, (S<T, Ts...>), val, { return yk::hash_value_for(val.val); }, class T, class... Ts);
 YK_ADAPT_HASH(hash_test, MultiS, val, { return yk::hash_combine(val.a, val.b, val.c); });
 
 namespace enum_test {
