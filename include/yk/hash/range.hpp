@@ -11,9 +11,6 @@
 
 namespace yk {
 
-template <class T>
-constexpr std::size_t hash_value_for(const T&) noexcept;
-
 template <std::ranges::range R>
 [[nodiscard]] constexpr std::size_t hash_range(R&& r) noexcept {
   assert(!std::ranges::empty(r));
