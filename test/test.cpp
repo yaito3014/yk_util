@@ -455,7 +455,8 @@ BOOST_AUTO_TEST_CASE(Hash) {
 
   {
     hash_test::MultiS s{31415, 9265, 3589};
-    std::size_t seed = yk::hash_value_for(s.a);
+    std::size_t seed = 0;
+    boost::hash_combine(seed, yk::hash_value_for(s.a));
     boost::hash_combine(seed, yk::hash_value_for(s.b));
     boost::hash_combine(seed, yk::hash_value_for(s.c));
     BOOST_TEST(hash_value(s) == seed);
@@ -492,7 +493,7 @@ BOOST_AUTO_TEST_CASE(StringHash) {
 BOOST_AUTO_TEST_CASE(RangeHash) {
   std::vector vec{3, 1, 4, 1, 5};
   BOOST_TEST(yk::hash_range(vec) == yk::hash_combine(3, 1, 4, 1, 5));
-  BOOST_TEST(yk::hash_combine(33, vec, 4) == yk::hash_combine(33, 3, 1, 4, 1, 5, 4));
+  BOOST_TEST(yk::hash_combine(33, vec, 4) == yk::hash_combine(33, yk::hash_combine(3, 1, 4, 1, 5), 4));
 }
 
 BOOST_AUTO_TEST_CASE(Enum) {
