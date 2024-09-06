@@ -1,9 +1,10 @@
 #include "yk/allocator/default_init_allocator.hpp"
 #include "yk/bitmask_enum.hpp"
-#include "yk/hash.hpp"
 #include "yk/hash/adapt.hpp"
-#include "yk/hash/boost.hpp"
 #include "yk/hash/hash_combine.hpp"
+#include "yk/hash/hash_value_for.hpp"
+#include "yk/hash/hash_value_for/boost.hpp"
+#include "yk/hash/range.hpp"
 #include "yk/maybe_mutex.hpp"
 #include "yk/par_for_each.hpp"
 #include "yk/proxy_hash.hpp"
@@ -487,6 +488,11 @@ BOOST_AUTO_TEST_CASE(StringHash) {
   BOOST_TEST(set.contains("foo"));
   BOOST_TEST(set.contains("foo"s));
   BOOST_TEST(set.contains("foo"sv));
+}
+
+BOOST_AUTO_TEST_CASE(RangeHash) {
+  std::vector vec{3, 1, 4, 1, 5};
+  BOOST_TEST(yk::hash_range(vec) == yk::hash_combine(3, 1, 4, 1, 5));
 }
 
 BOOST_AUTO_TEST_CASE(Enum) {

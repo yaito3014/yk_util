@@ -1,7 +1,7 @@
-#ifndef YK_UTIL_HASH_HASH_HPP
-#define YK_UTIL_HASH_HASH_HPP
+#ifndef YK_UTIL_HASH_ADAPT_HPP
+#define YK_UTIL_HASH_ADAPT_HPP
 
-#include "yk/hash/std.hpp"
+#include "yk/hash/hash_value_for.hpp"
 
 #define YK_PP_REQUIRE_SEMICOLON static_assert(true)
 
@@ -43,4 +43,4 @@
   } /* ns */                                                                                                                      \
   YK_PP_REQUIRE_SEMICOLON
 
-#endif  // YK_UTIL_HASH_HASH_HPP
+#endif  // YK_UTIL_HASH_ADAPT_HPP
