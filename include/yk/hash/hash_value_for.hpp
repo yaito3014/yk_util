@@ -1,9 +1,11 @@
 #ifndef YK_HASH_HASH_VALUE_FOR_HPP
 #define YK_HASH_HASH_VALUE_FOR_HPP
 
+#include "yk/hash/range.hpp"
+
 #include <boost/container_hash/hash_fwd.hpp>
 
-#include "yk/hash/range.hpp"
+#include <functional>
 
 namespace yk {
 
