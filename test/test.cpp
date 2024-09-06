@@ -493,6 +493,7 @@ BOOST_AUTO_TEST_CASE(StringHash) {
 BOOST_AUTO_TEST_CASE(RangeHash) {
   std::vector vec{3, 1, 4, 1, 5};
   BOOST_TEST(yk::hash_range(vec) == yk::hash_combine(3, 1, 4, 1, 5));
+  BOOST_TEST(yk::hash_combine(33, vec, 4) == yk::hash_combine(33, 3, 1, 4, 1, 5, 4));
 }
 
 BOOST_AUTO_TEST_CASE(Enum) {
