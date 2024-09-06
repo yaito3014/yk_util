@@ -2,6 +2,7 @@
 #define YK_HASH_RANGE_HPP
 
 #include "yk/hash/hash_combine.hpp"
+#include "yk/hash/hash_value_for/fwd.hpp"
 
 #include <ranges>
 #include <utility>
@@ -13,9 +14,8 @@ namespace yk {
 
 template <std::ranges::range R>
 [[nodiscard]] constexpr std::size_t hash_range(R&& r) noexcept {
-  assert(!std::ranges::empty(r));
-  std::size_t seed = ::yk::hash_value_for(*std::ranges::begin(r));
-  for (auto&& elem : r | std::views::drop(1)) seed = ::yk::hash_combine(seed, elem);
+  std::size_t seed = 0;
+  for (auto&& elem : r) seed = ::yk::hash_combine(seed, elem);
   return seed;
 }
 

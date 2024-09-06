@@ -1,7 +1,7 @@
 #ifndef YK_UTIL_HASH_HASH_COMBINE_HPP
 #define YK_UTIL_HASH_HASH_COMBINE_HPP
 
-#include "yk/hash/hash_value_for_fwd.hpp"
+#include "yk/hash/hash_value_for/fwd.hpp"
 
 #include <boost/container_hash/hash_fwd.hpp>
 
