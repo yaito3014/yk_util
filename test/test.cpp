@@ -455,10 +455,9 @@ BOOST_AUTO_TEST_CASE(Hash) {
 
   {
     hash_test::MultiS s{31415, 9265, 3589};
-    std::size_t seed = 0;
-    boost::hash_combine(seed, s.a);
-    boost::hash_combine(seed, s.b);
-    boost::hash_combine(seed, s.c);
+    std::size_t seed = yk::hash_value_for(s.a);
+    boost::hash_combine(seed, yk::hash_value_for(s.b));
+    boost::hash_combine(seed, yk::hash_value_for(s.c));
     BOOST_TEST(hash_value(s) == seed);
   }
 }
