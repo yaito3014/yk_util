@@ -3,7 +3,6 @@
 #include "yk/hash/adapt.hpp"
 #include "yk/hash/hash_combine.hpp"
 #include "yk/hash/hash_value_for.hpp"
-#include "yk/hash/hash_value_for/boost.hpp"
 #include "yk/hash/range.hpp"
 #include "yk/maybe_mutex.hpp"
 #include "yk/par_for_each.hpp"

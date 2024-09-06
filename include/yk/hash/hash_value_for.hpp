@@ -1,14 +1,21 @@
 #ifndef YK_HASH_HASH_VALUE_FOR_HPP
 #define YK_HASH_HASH_VALUE_FOR_HPP
 
-#include "yk/hash/hash_value_for/std.hpp"
+#include <boost/container_hash/hash_fwd.hpp>
 
-#if YK_UTIL_INCLUDE_BOOST
-#include "yk/hash/hash_value_for/boost.hpp"
 #include "yk/hash/range.hpp"
-#endif
 
 namespace yk {
+
+template <class T>
+[[nodiscard]] constexpr std::size_t std_hash_value_for(const T& x) noexcept {
+  return std::hash<T>{}(x);
+}
+
+template <class T>
+[[nodiscard]] constexpr std::size_t boost_hash_value_for(const T& x) noexcept {
+  return boost::hash<T>{}(x);
+}
 
 template <class T>
 [[nodiscard]] constexpr std::size_t hash_value_for(const T& x) noexcept {
@@ -16,13 +23,9 @@ template <class T>
     return std::hash<T>{}(x);
   } else if constexpr (requires { hash_value(x); }) {
     return hash_value(x);
-  }
-#if YK_UTIL_INCLUDE_BOOST
-  else if constexpr (requires { ::yk::hash_range(x); }) {
+  } else if constexpr (requires { ::yk::hash_range(x); }) {
     return ::yk::hash_range(x);
-  }
-#endif
-  else {
+  } else {
     static_assert(false, "no hasher found");
   }
 }
