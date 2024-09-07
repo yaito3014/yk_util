@@ -1,5 +1,5 @@
-#ifndef YK_UTIL_HASH_HASH_COMBINE_HPP
-#define YK_UTIL_HASH_HASH_COMBINE_HPP
+#ifndef YK_HASH_HASH_COMBINE_HPP
+#define YK_HASH_HASH_COMBINE_HPP
 
 #include "yk/hash/hash_value_for/fwd.hpp"
 
