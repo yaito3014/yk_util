@@ -10,17 +10,17 @@
 namespace yk {
 
 template <class T>
-[[nodiscard]] constexpr std::size_t std_hash_value_for(const T& x) noexcept {
+[[nodiscard]] inline std::size_t std_hash_value_for(const T& x) noexcept {
   return std::hash<T>{}(x);
 }
 
 template <class T>
-[[nodiscard]] constexpr std::size_t boost_hash_value_for(const T& x) noexcept {
+[[nodiscard]] inline std::size_t boost_hash_value_for(const T& x) noexcept {
   return boost::hash<T>{}(x);
 }
 
 template <class T>
-[[nodiscard]] constexpr std::size_t hash_value_for(const T& x) noexcept {
+[[nodiscard]] inline std::size_t hash_value_for(const T& x) noexcept {
   if constexpr (requires(std::hash<T> hasher) { hasher(x); }) {
     return std::hash<T>{}(x);
   } else if constexpr (requires { hash_value(x); }) {
