@@ -58,7 +58,7 @@ jobs:
         id: cache-boost
         with:
           path: ${{ github.workspace }}/boost/dist
-          key: boost-${{ matrix.boost_version }}-${{ matrix.os.name }}-${{ matrix.compiler.executable }}
+          key: boost-${{ matrix.boost_version }}-${{ matrix.os.name }}-${{ matrix.compiler.executable }}-${{ matrix.cpp_version }}
 
       - name: Clone Boost
         if: steps.cache-boost.outputs.cache-hit != 'true'
@@ -77,7 +77,15 @@ jobs:
           git submodule update --depth 1 --init libs/test
           python3 tools/boostdep/depinst/depinst.py -X test -g "--depth 1" test
           cmake -Bbuild -S.
-          cmake --build build -j
+          cmake --build build                                       \
+            -DCMAKE_CXX_COMPILER=${{ matrix.compiler.executable }}  \
+            -DCMAKE_BUILD_TYPE=Debug                                \
+            -DCMAKE_CXX_STANDARD=${{ matrix.cpp_version }}
+          cmake --install build --prefix dist
+          cmake --build build                                       \
+            -DCMAKE_CXX_COMPILER=${{ matrix.compiler.executable }}  \
+            -DCMAKE_BUILD_TYPE=Release                              \
+            -DCMAKE_CXX_STANDARD=${{ matrix.cpp_version }}
           cmake --install build --prefix dist
 
       - name: Configure CMake
