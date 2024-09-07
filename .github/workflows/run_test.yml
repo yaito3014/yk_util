@@ -17,6 +17,8 @@ jobs:
         os:
           - name: ubuntu
             version: 24.04
+          - name: windows
+            version: 2022
         build_type: [Release, Debug]
         cpp_version: [20, 23, 26]
         boost_version: [1.86.0]
@@ -35,19 +37,26 @@ jobs:
             version: 20
             executable: clang++-20
             cxxflags: -stdlib=libc++
+          - vendor: Microsoft
+            version: v142
+            executable: cl
         exclude:
           - compiler:
               vendor: GNU
               version: 13
             cpp_version: 26
-        include:
           - os:
               name: windows
-              version: 2022
-            compiler:
+            compier:
+              vendor: GNU
+          - os:
+              name: windows
+            compier:
+              vendor: Clang
+          - os:
+              name: ubuntu
+            compier:
               vendor: Microsoft
-              version: v142
-              executable: cl
 
     steps:
       - uses: actions/checkout@v4
