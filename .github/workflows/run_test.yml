@@ -16,6 +16,7 @@ jobs:
       matrix:
         os: [ubuntu-24.04]
         build_type: [Release, Debug]
+        cpp_ver: [20, 23, 26]
         compiler:
           - cxx: g++
             ver: 13
@@ -25,6 +26,11 @@ jobs:
             ver: 19
           - cxx: clang++
             ver: 20
+        exclude:
+          - compiler:
+              cxx: g++
+              ver: 13
+            cpp_ver: 26
 
     steps:
       - uses: actions/checkout@v4
@@ -55,6 +61,7 @@ jobs:
           cmake -B ${{ steps.strings.outputs.build-output-dir }}
           -DCMAKE_CXX_COMPILER=${{ steps.strings.outputs.cxx-compiler }}
           -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
+          -DCMAKE_CXX_STANDARD=${{ matrix.cpp_ver }}
           -S ${{ github.workspace }}
 
       - name: Build
