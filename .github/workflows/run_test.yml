@@ -18,7 +18,8 @@ jobs:
           - name: ubuntu
             version: 24.04
         build_type: [Release, Debug]
-        cpp_ver: [20, 23, 26]
+        cpp_version: [20, 23, 26]
+        boost_version: [1.86.0]
         compiler:
           - vendor: GNU
             version: 13
@@ -36,7 +37,7 @@ jobs:
           - compiler:
               vendor: GNU
               version: 13
-            cpp_ver: 26
+            cpp_version: 26
 
     steps:
       - uses: actions/checkout@v4
@@ -52,20 +53,41 @@ jobs:
         if: matrix.compiler.vendor == 'GNU'
         run: sudo apt update && sudo apt install -y g++-${{ matrix.compiler.version }}
 
-      - name: Install Deps
-        if: matrix.os.name == 'ubuntu'
-        run: sudo apt update && sudo apt install libboost-test-dev
+      - name: Cache Boost
+        uses: actions/cache@v4
+        id: cache-boost
+        with:
+          path: ${{ github.workspace }}/boost
+          key: boost-${{ matrix.boost_version }}-${{ matrix.os.name }}-${{ matrix.compiler.executable }}
+
+      - name: Clone Boost
+        if: steps.cache-boost.outputs.cache-hit != 'true'
+        uses: actions/checkout@v4
+        with:
+          repository: boostorg/boost
+          ref: boost-${{ matrix.boost_version }}
+          path: boost
+
+      - name: Setup Boost
+        if: steps.cache-boost.outputs.cache-hit != 'true'
+        working-directory: ${{ github.workspace }}/boost
+        run: |
+          git submodule update --depth 1 -q --init tools/boostdep
+          git submodule update --depth 1 -q --init tools/cmake
+          git submodule update --depth 1 -q --init libs/test
+          python3 tools/boostdep/depinst/depinst.py -X test -g "--depth 1" test
 
       - name: Configure CMake
         run: >
           cmake -B ${{ github.workspace }}/build
           -DCMAKE_CXX_COMPILER=${{ matrix.compiler.executable }}
           -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
-          -DCMAKE_CXX_STANDARD=${{ matrix.cpp_ver }}
+          -DCMAKE_CXX_STANDARD=${{ matrix.cpp_version }}
+          -DCMAKE_MODULE_PATH=${{ github.workspace }}/boost/tools/cmake/config
           -S ${{ github.workspace }}
 
       - name: Build
-        run: cmake --build ${{ github.workspace }}/build --config ${{ matrix.build_type }} --target yk_util_test
+        run: cmake --build ${{ github.workspace }}/build --verbose --config ${{ matrix.build_type }} --target yk_util_test
 
       - name: Test
         working-directory: ${{ github.workspace }}/build/test
