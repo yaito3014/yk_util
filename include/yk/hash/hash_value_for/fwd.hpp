@@ -6,7 +6,7 @@
 namespace yk {
 
 template <class T>
-[[nodiscard]] constexpr std::size_t hash_value_for(const T& x) noexcept;
+[[nodiscard]] std::size_t hash_value_for(const T& x) noexcept;
 
 }
 

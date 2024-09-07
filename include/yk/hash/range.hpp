@@ -14,7 +14,7 @@
 namespace yk {
 
 template <std::ranges::range R>
-[[nodiscard]] constexpr std::size_t hash_range(R&& r) noexcept {
+[[nodiscard]] std::size_t hash_range(R&& r) noexcept {
   std::size_t seed = 0;
   for (auto&& elem : r) boost::hash_combine(seed, ::yk::hash_value_for(elem));
   return seed;
