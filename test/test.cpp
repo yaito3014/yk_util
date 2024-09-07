@@ -21,11 +21,7 @@
 #include "yk/util/wrap_as.hpp"
 
 #define BOOST_TEST_MODULE yk_util_test
-#if YK_BUILD_UNIT_TEST_FRAMEWORK
 #include <boost/test/included/unit_test.hpp>
-#else
-#include <boost/test/unit_test.hpp>
-#endif
 
 #include <boost/container_hash/hash.hpp>
 #include <boost/range/iterator_range.hpp>
