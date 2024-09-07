@@ -1,5 +1,5 @@
-#ifndef YK_UTIL_HASH_ADAPT_HPP
-#define YK_UTIL_HASH_ADAPT_HPP
+#ifndef YK_HASH_ADAPT_HPP
+#define YK_HASH_ADAPT_HPP
 
 #include "yk/hash/hash_value_for.hpp"
 
@@ -43,4 +43,4 @@
   } /* ns */                                                                                                            \
   YK_PP_REQUIRE_SEMICOLON
 
-#endif  // YK_UTIL_HASH_ADAPT_HPP
+#endif  // YK_HASH_ADAPT_HPP
