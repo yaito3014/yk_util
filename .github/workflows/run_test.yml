@@ -47,15 +47,15 @@ jobs:
             cpp_version: 26
           - os:
               name: windows
-            compier:
+            compiler:
               vendor: GNU
           - os:
               name: windows
-            compier:
+            compiler:
               vendor: Clang
           - os:
               name: ubuntu
-            compier:
+            compiler:
               vendor: Microsoft
 
     steps:
