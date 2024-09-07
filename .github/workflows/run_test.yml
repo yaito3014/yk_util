@@ -88,10 +88,11 @@ jobs:
             -DCMAKE_CXX_FLAGS=${{ matrix.compiler.cxxflags }}       \
             -DCMAKE_CXX_STANDARD=${{ matrix.cpp_version }}          \
             -DBUILD_SHARED_LIBS=ON                                  \
+            -DCMAKE_DEBUG_POSTFIX=d                                 \
             -DCMAKE_BUILD_TYPE=Debug
             cmake --build build -j
             cmake --install build --prefix dist
-            cmake -Bbuild -S. \
+          cmake -Bbuild -S. \
             -DCMAKE_CXX_COMPILER=${{ matrix.compiler.executable }}  \
             -DCMAKE_CXX_FLAGS=${{ matrix.compiler.cxxflags }}       \
             -DCMAKE_CXX_STANDARD=${{ matrix.cpp_version }}          \
