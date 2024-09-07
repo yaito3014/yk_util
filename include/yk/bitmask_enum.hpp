@@ -148,7 +148,7 @@ template <BitmaskEnabledEnum T, detail::StringLike Str, detail::StringLike Delim
   T res{};
 
   for (const auto& r : str_sv | std::views::split(delim_sv)) {
-    const std::basic_string_view part_str{r};
+    const std::basic_string_view part_str{r.begin(), r.end()};
 
     const auto part = parse_flag<T>(part_str);
     if (part == T{}) {

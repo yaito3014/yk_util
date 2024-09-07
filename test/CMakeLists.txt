@@ -3,7 +3,8 @@ cmake_minimum_required(VERSION 3.24)
 include(CTest)
 if(BUILD_TESTING)
   add_executable(yk_util_test test.cpp)
-  set_target_properties(yk_util_test PROPERTIES CXX_STANDARD 23 CXX_EXTENSIONS OFF)
+  target_compile_features(yk_util_test PUBLIC cxx_std_20)
+  set_target_properties(yk_util_test PROPERTIES CXX_EXTENSIONS OFF)
 
   set(YK_COMMON_FLAG $<$<CXX_COMPILER_ID:Clang>:-stdlib=libc++>)
   target_compile_definitions(
