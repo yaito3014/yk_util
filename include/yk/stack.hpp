@@ -46,7 +46,7 @@ public:
   }
 
   // our addition
-  constexpr stack(std::initializer_list<T> il) noexcept(noexcept(stack(il.begin(), il.end()))) : stack(il.begin(), il.end()) {}
+  constexpr stack(std::initializer_list<T> il) noexcept(noexcept(stack(Container(il.begin(), il.end())))) : stack(Container(il.begin(), il.end())) {}
 
   [[nodiscard]] constexpr size_type capacity() const noexcept
     requires requires(Container c) { c.capacity(); }
