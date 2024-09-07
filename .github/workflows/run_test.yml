@@ -40,6 +40,14 @@ jobs:
               vendor: GNU
               version: 13
             cpp_version: 26
+        include:
+          - os:
+              name: windows
+              version: 2022
+            compiler:
+              vendor: Microsoft
+              version: v142
+              executable: cl
 
     steps:
       - uses: actions/checkout@v4
@@ -54,7 +62,7 @@ jobs:
       - name: Setup GCC
         if: matrix.compiler.vendor == 'GNU'
         run: sudo apt update && sudo apt install -y g++-${{ matrix.compiler.version }}
-      
+
       - name: Install Dependencies
         if: matrix.os.name == 'ubuntu'
         run: sudo apt update && sudo apt install -y libtbb-dev
