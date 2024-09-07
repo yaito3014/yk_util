@@ -9,7 +9,7 @@
   namespace std {                                                                            \
   template <>                                                                                \
   struct hash<::ns::type> {                                                                  \
-    inline size_t operator()(::ns::type const& param) const noexcept /* strengthened */ \
+    inline size_t operator()(::ns::type const& param) const noexcept /* strengthened */      \
     { hash_stmt };                                                                           \
   };                                                                                         \
   } /* std */                                                                                \
@@ -29,7 +29,7 @@
   namespace std {                                                                                                              \
   template <__VA_ARGS__>                                                                                                       \
   struct hash<::ns::YK_PP_REMOVE_PAREN(parenthesized_type)> {                                                                  \
-    inline size_t operator()(::ns::YK_PP_REMOVE_PAREN(parenthesized_type) const& param) const noexcept /* strengthened */             \
+    inline size_t operator()(::ns::YK_PP_REMOVE_PAREN(parenthesized_type) const& param) const noexcept /* strengthened */      \
     { hash_stmt };                                                                                                             \
   };                                                                                                                           \
   } /* std */                                                                                                                  \
