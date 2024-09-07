@@ -1,4 +1,4 @@
-name: Single-Platform Test
+name: CI
 
 on:
   push:
