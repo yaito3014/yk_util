@@ -72,9 +72,10 @@ jobs:
         if: steps.cache-boost.outputs.cache-hit != 'true'
         working-directory: ${{ github.workspace }}/boost
         run: |
-          git submodule update --depth 1 -q --init tools/boostdep
-          git submodule update --depth 1 -q --init tools/cmake
-          git submodule update --depth 1 -q --init libs/test
+          git submodule update --depth 1 --init tools/boostdep
+          git submodule update --depth 1 --init tools/cmake
+          git submodule update --depth 1 --init libs/headers
+          git submodule update --depth 1 --init libs/test
           python3 tools/boostdep/depinst/depinst.py -X test -g "--depth 1" test
 
       - name: Configure CMake
@@ -83,7 +84,7 @@ jobs:
           -DCMAKE_CXX_COMPILER=${{ matrix.compiler.executable }}
           -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
           -DCMAKE_CXX_STANDARD=${{ matrix.cpp_version }}
-          -DCMAKE_MODULE_PATH=${{ github.workspace }}/boost/tools/cmake/config
+          -DCMAKE_PREFIX_PATH=${{ github.workspace }}/boost/tools/cmake/config
           -S ${{ github.workspace }}
 
       - name: Build
