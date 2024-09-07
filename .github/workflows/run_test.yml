@@ -30,9 +30,11 @@ jobs:
           - vendor: LLVM
             version: 19
             executable: clang++-19
+            cxxflags: -stdlib=libc++
           - vendor: LLVM
             version: 20
             executable: clang++-20
+            cxxflags: -stdlib=libc++
         exclude:
           - compiler:
               vendor: GNU
@@ -83,13 +85,15 @@ jobs:
         run: |
           cmake -Bbuild -S. \
             -DCMAKE_CXX_COMPILER=${{ matrix.compiler.executable }}  \
+            -DCMAKE_CXX_FLAGS=${{ matrix.compiler.cxxflags }}       \
             -DCMAKE_CXX_STANDARD=${{ matrix.cpp_version }}          \
             -DBUILD_SHARED_LIBS=ON                                  \
             -DCMAKE_BUILD_TYPE=Debug
-          cmake --build build -j
-          cmake --install build --prefix dist
-          cmake -Bbuild -S. \
+            cmake --build build -j
+            cmake --install build --prefix dist
+            cmake -Bbuild -S. \
             -DCMAKE_CXX_COMPILER=${{ matrix.compiler.executable }}  \
+            -DCMAKE_CXX_FLAGS=${{ matrix.compiler.cxxflags }}       \
             -DCMAKE_CXX_STANDARD=${{ matrix.cpp_version }}          \
             -DBUILD_SHARED_LIBS=ON                                  \
             -DCMAKE_BUILD_TYPE=Release
