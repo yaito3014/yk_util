@@ -54,6 +54,10 @@ jobs:
       - name: Setup GCC
         if: matrix.compiler.vendor == 'GNU'
         run: sudo apt update && sudo apt install -y g++-${{ matrix.compiler.version }}
+      
+      - name: Install Dependencies
+        if: matrix.os.name == 'ubuntu'
+        run: sudo apt update && sudo apt install -y libtbb-dev
 
       - name: Cache Boost
         uses: actions/cache@v4
