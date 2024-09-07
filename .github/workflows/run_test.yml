@@ -103,7 +103,7 @@ jobs:
       - name: Build Boost
         if: steps.cache-boost.outputs.cache-hit != 'true'
         env:
-          cmake_options: >
+          cmake_options: >-
             -DCMAKE_CXX_COMPILER=${{ matrix.compiler.executable }}
             -DCMAKE_CXX_FLAGS=${{ matrix.compiler.cxxflags }}
             -DCMAKE_CXX_STANDARD=${{ matrix.cpp_version }}
