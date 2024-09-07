@@ -10,7 +10,7 @@
 namespace yk {
 
 template <class... Ts>
-[[nodiscard]] std::size_t hash_combine(const Ts&... xs) noexcept /* strengthened */ {
+[[nodiscard]] inline std::size_t hash_combine(const Ts&... xs) noexcept /* strengthened */ {
   std::size_t seed = 0;
   (boost::hash_combine(seed, ::yk::hash_value_for(xs)), ...);
   return seed;

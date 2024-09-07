@@ -15,7 +15,7 @@
   } /* std */                                                                         \
                                                                                       \
   namespace ns {                                                                      \
-  [[nodiscard]] std::size_t hash_value(type const& value) noexcept /* strengthened */ \
+  [[nodiscard]] inline std::size_t hash_value(type const& value) noexcept /* strengthened */ \
   {                                                                                   \
     return ::yk::hash_value_for(value);                                               \
   }                                                                                   \
@@ -36,7 +36,7 @@
                                                                                                                         \
   namespace ns {                                                                                                        \
   template <__VA_ARGS__>                                                                                                \
-  [[nodiscard]] std::size_t hash_value(YK_PP_REMOVE_PAREN(parenthesized_type) const& value) noexcept /* strengthened */ \
+  [[nodiscard]] inline std::size_t hash_value(YK_PP_REMOVE_PAREN(parenthesized_type) const& value) noexcept /* strengthened */ \
   {                                                                                                                     \
     return ::yk::hash_value_for(value);                                                                                 \
   }                                                                                                                     \
