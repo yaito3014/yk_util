@@ -52,7 +52,7 @@ jobs:
           - os:
               name: windows
             compiler:
-              vendor: Clang
+              vendor: LLVM
           - os:
               name: ubuntu
             compiler:
