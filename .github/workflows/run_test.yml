@@ -68,7 +68,7 @@ jobs:
           ref: boost-${{ matrix.boost_version }}
           path: boost
 
-      - name: Setup Boost
+      - name: Configure Boost
         if: steps.cache-boost.outputs.cache-hit != 'true'
         working-directory: ${{ github.workspace }}/boost
         run: |
@@ -76,16 +76,24 @@ jobs:
           git submodule update --depth 1 --init tools/cmake
           git submodule update --depth 1 --init libs/test
           python3 tools/boostdep/depinst/depinst.py -X test -g "--depth 1" test
-          cmake -Bbuild -S.
-          cmake --build build                                       \
+
+      - name: Build Boost
+        if: steps.cache-boost.outputs.cache-hit != 'true'
+        working-directory: ${{ github.workspace }}/boost
+        run: |
+          cmake -Bbuild -S. \
             -DCMAKE_CXX_COMPILER=${{ matrix.compiler.executable }}  \
-            -DCMAKE_BUILD_TYPE=Debug                                \
-            -DCMAKE_CXX_STANDARD=${{ matrix.cpp_version }}
+            -DCMAKE_CXX_STANDARD=${{ matrix.cpp_version }}          \
+            -DBUILD_SHARED_LIBS=ON                                  \
+            -DCMAKE_BUILD_TYPE=Debug
+          cmake --build build -j
           cmake --install build --prefix dist
-          cmake --build build                                       \
+          cmake -Bbuild -S. \
             -DCMAKE_CXX_COMPILER=${{ matrix.compiler.executable }}  \
-            -DCMAKE_BUILD_TYPE=Release                              \
-            -DCMAKE_CXX_STANDARD=${{ matrix.cpp_version }}
+            -DCMAKE_CXX_STANDARD=${{ matrix.cpp_version }}          \
+            -DBUILD_SHARED_LIBS=ON                                  \
+            -DCMAKE_BUILD_TYPE=Release
+          cmake --build build -j
           cmake --install build --prefix dist
 
       - name: Configure CMake
