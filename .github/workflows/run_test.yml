@@ -128,7 +128,7 @@ jobs:
           -S ${{ github.workspace }}
 
       - name: Build
-        run: cmake --build ${{ github.workspace }}/build --verbose --config ${{ matrix.build_type }} --target yk_util_test
+        run: cmake --build ${{ github.workspace }}/build/test --verbose --config ${{ matrix.build_type }} --target yk_util_test
 
       - name: Test
         working-directory: ${{ github.workspace }}/build/test
