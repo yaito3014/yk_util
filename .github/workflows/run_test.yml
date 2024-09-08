@@ -112,10 +112,10 @@ jobs:
         working-directory: ${{ github.workspace }}/boost
         run: |
           cmake -Bbuild -S. ${{ env.cmake_options }} -DCMAKE_BUILD_TYPE=Debug
-          cmake --build build -j
+          cmake --build build -j --config Debug
           cmake --install build --prefix dist
           cmake -Bbuild -S. ${{ env.cmake_options }} -DCMAKE_BUILD_TYPE=Release
-          cmake --build build -j
+          cmake --build build -j --config Release
           cmake --install build --prefix dist
 
       - name: Configure CMake
