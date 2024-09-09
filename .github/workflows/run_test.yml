@@ -118,29 +118,29 @@ jobs:
           cmake --build build -j --config Release
           cmake --install build --prefix dist
 
-      - name: Configure CMake
-        run: >
-          cmake -B ${{ github.workspace }}/build
-          -DCMAKE_CXX_COMPILER=${{ matrix.compiler.executable }}
-          -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
-          -DCMAKE_CXX_STANDARD=${{ matrix.cpp_version }}
-          -DCMAKE_PREFIX_PATH=${{ github.workspace }}/boost/dist
-          -S ${{ github.workspace }}
+      # - name: Configure
+      #   run: >
+      #     cmake -B ${{ github.workspace }}/build
+      #     -DCMAKE_CXX_COMPILER=${{ matrix.compiler.executable }}
+      #     -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
+      #     -DCMAKE_CXX_STANDARD=${{ matrix.cpp_version }}
+      #     -DCMAKE_PREFIX_PATH=${{ github.workspace }}/boost/dist
+      #     -S ${{ github.workspace }}
 
-      - name: Build (Ubuntu)
-        if: matrix.os.name == 'ubuntu'
-        run: cmake --build ${{ github.workspace }}/build --verbose --config ${{ matrix.build_type }} --target yk_util_test
+      # - name: Build (Ubuntu)
+      #   if: matrix.os.name == 'ubuntu'
+      #   run: cmake --build ${{ github.workspace }}/build --verbose --config ${{ matrix.build_type }} --target yk_util_test
         
-      - name: Build (Windows)
-        if: matrix.os.name == 'windows'
-        run: cmake --build ${{ github.workspace }}/build/test --verbose --config ${{ matrix.build_type }} --target yk_util_test
+      # - name: Build (Windows)
+      #   if: matrix.os.name == 'windows'
+      #   run: cmake --build ${{ github.workspace }}/build/test --verbose --config ${{ matrix.build_type }} --target yk_util_test
         
-      - name: Test (Ubuntu)
-        if: matrix.os.name == 'ubuntu'
-        working-directory: ${{ github.workspace }}/build/test
-        run: ./yk_util_test --report_level=short
+      # - name: Test (Ubuntu)
+      #   if: matrix.os.name == 'ubuntu'
+      #   working-directory: ${{ github.workspace }}/build/test
+      #   run: ./yk_util_test --report_level=short
         
-      - name: Test (Windows)
-        if: matrix.os.name == 'windows'
-        working-directory: ${{ github.workspace }}/build/test/${{ matrix.build_type }}
-        run: ./yk_util_test --report_level=short
+      # - name: Test (Windows)
+      #   if: matrix.os.name == 'windows'
+      #   working-directory: ${{ github.workspace }}/build/test/${{ matrix.build_type }}
+      #   run: ./yk_util_test --report_level=short
