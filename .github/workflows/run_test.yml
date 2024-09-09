@@ -145,4 +145,6 @@ jobs:
         working-directory: ${{ github.workspace }}/build/test/${{ matrix.build_type }}
         run: |
           ls
+          copy ${{ github.workspace }}/boost/dist/bin/* .
+          ls
           ./yk_util_test --report_level=short
