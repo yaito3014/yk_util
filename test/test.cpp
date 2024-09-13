@@ -666,11 +666,23 @@ BOOST_AUTO_TEST_CASE(WrapAs) {
 }
 
 BOOST_AUTO_TEST_CASE(Concat) {
-  // TODO
-  for (auto&& elem : yk::views::concat(std::views::iota(0, 10), "neko")) {
-    std::cout << elem << ", ";
+  using namespace std::literals;
+  {
+    std::ranges::random_access_range auto rng = yk::views::concat("foo"sv, "bar"sv, "baz"sv);
+    std::random_access_iterator auto iter = std::ranges::begin(rng);
+    std::random_access_iterator auto sent = std::ranges::end(rng);
+    BOOST_TEST((iter != sent));
+    BOOST_TEST((sent - iter) == 9);
+    BOOST_TEST(std::ranges::size(rng) == 9);
+    BOOST_TEST(std::ranges::equal(rng, "foobarbaz"sv));
   }
-  std::cout << std::endl;
+  {
+    std::vector vec{3, 1, 4};
+    std::list list{1, 5, 9, 2};
+    std::ranges::bidirectional_range auto rng = yk::views::concat(vec, list);
+    static_assert(!std::ranges::random_access_range<decltype(rng)>);
+    BOOST_TEST(std::ranges::equal(rng, std::vector{3, 1, 4, 1, 5, 9, 2}));
+  }
 }
 
 BOOST_AUTO_TEST_SUITE_END()  // yk_util
