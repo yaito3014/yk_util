@@ -226,6 +226,7 @@ private:
     if constexpr (Idx + 1 < sizeof...(Views)) {
       return invoke_with_runtime_index_impl<Idx + 1>(std::forward<F>(f), index);
     }
+    std::abort();
   }
 
   template <class F>
@@ -387,7 +388,7 @@ public:
               [&]<std::size_t J>() -> difference_type {
                 if constexpr (I > J) {
                   const auto dy = std::ranges::distance(std::get<J>(y.iter_), std::ranges::end(std::get<J>(y.parent_->views_)));
-                  const auto dx = std::ranges::distance(std::ranges::begin(std::get<I>(x.parent_->views)), std::get<I>(y.iter_));
+                  const auto dx = std::ranges::distance(std::ranges::begin(std::get<I>(x.parent_->views_)), std::get<I>(x.iter_));
                   difference_type s = 0;
                   const auto rec = [&]<std::size_t Idx = J + 1>(auto&& self) {
                     if constexpr (Idx < I) {
@@ -400,7 +401,7 @@ public:
                 } else if constexpr (I < J) {
                   return -(y - x);
                 } else {
-                  std::get<I>(x.iter_) - std::get<J>(y.iter_);
+                  return std::get<I>(x.iter_) - std::get<J>(y.iter_);
                 }
               },
               y.iter_.index());
