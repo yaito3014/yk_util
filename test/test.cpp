@@ -673,6 +673,7 @@ BOOST_AUTO_TEST_CASE(Concat) {
     std::random_access_iterator auto sent = std::ranges::end(rng);
     BOOST_TEST((iter != sent));
     BOOST_TEST((sent - iter) == 9);
+    BOOST_TEST(*(iter + 4) == 'a');
     BOOST_TEST(std::ranges::size(rng) == 9);
     BOOST_TEST(std::ranges::equal(rng, "foobarbaz"sv));
   }
@@ -682,6 +683,7 @@ BOOST_AUTO_TEST_CASE(Concat) {
     std::ranges::bidirectional_range auto rng = yk::views::concat(vec, list);
     static_assert(!std::ranges::random_access_range<decltype(rng)>);
     BOOST_TEST(std::ranges::equal(rng, std::vector{3, 1, 4, 1, 5, 9, 2}));
+    BOOST_TEST(std::ranges::equal(rng | std::views::reverse, std::vector{2, 9, 5, 1, 4, 1, 3}));
   }
 }
 
