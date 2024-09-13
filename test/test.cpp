@@ -8,6 +8,7 @@
 #include "yk/hash/string_hash.hpp"
 #include "yk/maybe_mutex.hpp"
 #include "yk/par_for_each.hpp"
+#include "yk/ranges/concat.hpp"
 #include "yk/stack.hpp"
 #include "yk/util/array_cat.hpp"
 #include "yk/util/auto_sequence.hpp"
@@ -662,6 +663,14 @@ BOOST_AUTO_TEST_CASE(WrapAs) {
     auto&& val = MyClassWrap(data);
     BOOST_TEST(val.id.value == "id_42_IC");
   }
+}
+
+BOOST_AUTO_TEST_CASE(Concat) {
+  // TODO
+  for (auto&& elem : yk::views::concat(std::views::iota(0, 10), "neko")) {
+    std::cout << elem << ", ";
+  }
+  std::cout << std::endl;
 }
 
 BOOST_AUTO_TEST_SUITE_END()  // yk_util
