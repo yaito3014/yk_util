@@ -424,6 +424,7 @@ public:
             }
           };
           rec(rec);
+          return -(dx + s);
         },
         x.iter_.index());
   }
