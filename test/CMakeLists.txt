@@ -6,7 +6,9 @@ if(BUILD_TESTING)
   target_compile_features(yk_util_test PUBLIC cxx_std_20)
   set_target_properties(yk_util_test PROPERTIES CXX_EXTENSIONS OFF)
 
-  set(YK_COMMON_FLAG $<$<CXX_COMPILER_ID:Clang>:-stdlib=libc++>)
+  set(YK_COMMON_FLAG $<$<CXX_COMPILER_ID:Clang>:-stdlib=libc++>
+                     $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wall -Wextra>
+  )
   target_compile_definitions(
     yk_util_test PRIVATE $<$<CXX_COMPILER_ID:Clang>:YK_BUILD_UNIT_TEST_FRAMEWORK=1>
   )
