@@ -40,7 +40,9 @@
 #include <atomic>
 #include <exception>
 #include <execution>
+#include <forward_list>
 #include <functional>
+#include <list>
 #include <memory>
 #include <set>
 #include <string>
@@ -684,6 +686,14 @@ BOOST_AUTO_TEST_CASE(Concat) {
     static_assert(!std::ranges::random_access_range<decltype(rng)>);
     BOOST_TEST(std::ranges::equal(rng, std::vector{3, 1, 4, 1, 5, 9, 2}));
     BOOST_TEST(std::ranges::equal(rng | std::views::reverse, std::vector{2, 9, 5, 1, 4, 1, 3}));
+  }
+  {
+    std::vector vec{3, 1, 4};
+    std::forward_list forward_list{1, 5, 9, 2};
+    std::ranges::forward_range auto rng = yk::views::concat(vec, forward_list);
+    static_assert(!std::ranges::random_access_range<decltype(rng)>);
+    static_assert(!std::ranges::bidirectional_range<decltype(rng)>);
+    BOOST_TEST(std::ranges::equal(rng, std::vector{3, 1, 4, 1, 5, 9, 2}));
   }
 }
 
