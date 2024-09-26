@@ -1,4 +1,4 @@
-#include "yk/allocator/default_init_allocator.hpp"
+﻿#include "yk/allocator/default_init_allocator.hpp"
 #include "yk/bitmask_enum.hpp"
 #include "yk/hash/adapt.hpp"
 #include "yk/hash/hash_combine.hpp"
@@ -27,8 +27,13 @@
 #include <boost/test/unit_test.hpp>
 #endif
 
+#include <boost/predef/os.h>
 #include <boost/container_hash/hash.hpp>
 #include <boost/range/iterator_range.hpp>
+
+#if BOOST_OS_WINDOWS
+#include "Windows.h"
+#endif  // BOOST_OS_WINDOWS
 
 #include <algorithm>
 #include <atomic>
@@ -52,6 +57,16 @@
 #endif
 
 namespace utf = boost::unit_test;
+
+struct GlobalFixture {
+  void setup() {
+#if BOOST_OS_WINDOWS
+    SetConsoleOutputCP(65001);
+#endif  // BOOST_OS_WINDOWS
+  }
+};
+
+BOOST_TEST_GLOBAL_FIXTURE(GlobalFixture);
 
 namespace hash_test {
 
@@ -454,12 +469,12 @@ BOOST_AUTO_TEST_CASE(Hash) {
   BOOST_TEST(hash_value(s) == yk::hash_value_for(42));  // call hash_value by ADL
 
   {
-    hash_test::MultiS s{31415, 9265, 3589};
+    hash_test::MultiS ms{31415, 9265, 3589};
     std::size_t seed = 0;
-    boost::hash_combine(seed, s.a);
-    boost::hash_combine(seed, s.b);
-    boost::hash_combine(seed, s.c);
-    BOOST_TEST(hash_value(s) == seed);
+    boost::hash_combine(seed, boost::hash<int>{}(ms.a));
+    boost::hash_combine(seed, boost::hash<int>{}(ms.b));
+    boost::hash_combine(seed, boost::hash<int>{}(ms.c));
+    BOOST_TEST(hash_value(ms) == seed);
   }
 }
 
