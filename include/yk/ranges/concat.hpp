@@ -102,6 +102,43 @@ template <bool Const, std::ranges::input_range... Views>
   requires concat_view_constraints<Views...>
 class concat_view_iterator;
 
+struct concat_view_iterator_difference_helper {
+  template <std::size_t I, std::size_t J, class Iterator>
+  constexpr typename Iterator::difference_type operator()(const Iterator& x, const Iterator& y) {
+    if constexpr (I > J) {
+      const auto dy = std::ranges::distance(std::get<J>(y.iter_), std::ranges::end(std::get<J>(y.parent_->views_)));
+      const auto dx = std::ranges::distance(std::ranges::begin(std::get<I>(x.parent_->views_)), std::get<I>(x.iter_));
+      typename Iterator::difference_type s = 0;
+      const auto rec = [&]<std::size_t Idx = J + 1>(auto&& self) {
+        if constexpr (Idx < I) {
+          s += std::ranges::size(std::get<Idx>(x.parent_->views_));
+          self.template operator()<Idx + 1>(self);
+        }
+      };
+      rec(rec);
+      return dy + s + dx;
+    } else if constexpr (I < J) {
+      return -(y - x);
+    } else {
+      return std::get<I>(x.iter_) - std::get<J>(y.iter_);
+    }
+  }
+
+  template <std::size_t I, std::size_t ViewsCount, class Iterator>
+  constexpr typename Iterator::difference_type operator()(const Iterator& x) {
+    const auto dx = std::ranges::distance(std::get<I>(x.iter_), std::ranges::end(std::get<I>(x.parent_->views_)));
+    typename Iterator::difference_type s = 0;
+    auto rec = [&]<std::size_t Idx = I + 1>(auto&& self) {
+      if constexpr (Idx < ViewsCount) {
+        s += std::ranges::size(std::get<Idx>(x.parent_->views_));
+        self.template operator()<Idx + 1>(self);
+      }
+    };
+    rec(rec);
+    return -(dx + s);
+  }
+};
+
 }  // namespace detail
 
 template <std::ranges::input_range... Views>
@@ -111,6 +148,8 @@ private:
   template <bool Const, std::ranges::input_range... Vs>
     requires detail::concat_view_constraints<Vs...>
   friend class detail::concat_view_iterator;
+
+  friend detail::concat_view_iterator_difference_helper;
 
   template <bool Const>
   using iterator = detail::concat_view_iterator<Const, Views...>;
@@ -237,8 +276,9 @@ private:
     }
     if constexpr (Idx + 1 < sizeof...(Views)) {
       return invoke_with_runtime_index_impl<Idx + 1>(std::forward<F>(f), index);
+    } else {
+      std::abort();
     }
-    std::abort();
   }
 
   template <class F>
@@ -394,29 +434,10 @@ public:
   friend constexpr difference_type operator-(const concat_view_iterator& x, const concat_view_iterator& y)
     requires xo::concat_is_random_access<Const, Views...>
   {
-    return invoke_with_runtime_index(
+    return concat_view_iterator::invoke_with_runtime_index(
         [&]<std::size_t I>() -> difference_type {
-          return invoke_with_runtime_index(
-              [&]<std::size_t J>() -> difference_type {
-                if constexpr (I > J) {
-                  const auto dy = std::ranges::distance(std::get<J>(y.iter_), std::ranges::end(std::get<J>(y.parent_->views_)));
-                  const auto dx = std::ranges::distance(std::ranges::begin(std::get<I>(x.parent_->views_)), std::get<I>(x.iter_));
-                  difference_type s = 0;
-                  const auto rec = [&]<std::size_t Idx = J + 1>(auto&& self) {
-                    if constexpr (Idx < I) {
-                      s += std::ranges::size(std::get<Idx>(x.parent_->views_));
-                      self.template operator()<Idx + 1>(self);
-                    }
-                  };
-                  rec(rec);
-                  return dy + s + dx;
-                } else if constexpr (I < J) {
-                  return -(y - x);
-                } else {
-                  return std::get<I>(x.iter_) - std::get<J>(y.iter_);
-                }
-              },
-              y.iter_.index());
+          return concat_view_iterator::invoke_with_runtime_index(
+              [&]<std::size_t J>() -> difference_type { return concat_view_iterator_difference_helper{}.operator()<I, J>(x, y); }, y.iter_.index());
         },
         x.iter_.index());
   }
@@ -425,20 +446,8 @@ public:
     requires (std::sized_sentinel_for<std::ranges::sentinel_t<xo::maybe_const<Const, Views>>, std::ranges::iterator_t<xo::maybe_const<Const, Views>>> && ...) &&
              detail::all_but_first_is_sized<xo::maybe_const<Const, Views>...>::value
   {
-    return invoke_with_runtime_index(
-        [&]<std::size_t I>() {
-          const auto dx = std::ranges::distance(std::get<I>(x.iter_), std::ranges::end(std::get<I>(x.parent_->views_)));
-          difference_type s = 0;
-          auto rec = [&]<std::size_t Idx = I + 1>(auto&& self) {
-            if constexpr (Idx < sizeof...(Views)) {
-              s += std::ranges::size(std::get<Idx>(x.parent_->views_));
-              self.template operator()<Idx + 1>(self);
-            }
-          };
-          rec(rec);
-          return -(dx + s);
-        },
-        x.iter_.index());
+    return concat_view_iterator::invoke_with_runtime_index(
+        [&]<std::size_t I>() { return concat_view_iterator_difference_helper{}.operator()<I, sizeof...(Views)>(x); }, x.iter_.index());
   }
 
   friend constexpr difference_type operator-(std::default_sentinel_t, const concat_view_iterator& x)
@@ -538,6 +547,8 @@ private:
 
   friend concat_view<Views...>;
   friend concat_view_iterator<!Const, Views...>;
+
+  friend concat_view_iterator_difference_helper;
 
 private:
   xo::maybe_const<Const, concat_view<Views...>>* parent_ = nullptr;
