@@ -26,8 +26,8 @@ if(BUILD_TESTING)
   )
   target_link_options(yk_util_test PRIVATE ${YK_COMMON_FLAG})
 
-  find_package(TBB)
-  if(${TBB_FOUND})
+  if(NOT MSVC)
+    find_package(TBB REQUIRED)
     target_link_libraries(yk_util_test PRIVATE TBB::tbb)
   endif()
 
