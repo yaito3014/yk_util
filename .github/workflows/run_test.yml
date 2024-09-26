@@ -38,7 +38,7 @@ jobs:
             executable: clang++-20
             cxxflags: -stdlib=libc++
           - vendor: Microsoft
-            version: v142
+            version: v143
             executable: cl
         exclude:
           - compiler:
