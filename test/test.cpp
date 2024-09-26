@@ -469,12 +469,12 @@ BOOST_AUTO_TEST_CASE(Hash) {
   BOOST_TEST(hash_value(s) == yk::hash_value_for(42));  // call hash_value by ADL
 
   {
-    hash_test::MultiS s{31415, 9265, 3589};
+    hash_test::MultiS ms{31415, 9265, 3589};
     std::size_t seed = 0;
-    boost::hash_combine(seed, yk::hash_value_for(s.a));
-    boost::hash_combine(seed, yk::hash_value_for(s.b));
-    boost::hash_combine(seed, yk::hash_value_for(s.c));
-    BOOST_TEST(hash_value(s) == seed);
+    boost::hash_combine(seed, yk::hash_value_for(ms.a));
+    boost::hash_combine(seed, yk::hash_value_for(ms.b));
+    boost::hash_combine(seed, yk::hash_value_for(ms.c));
+    BOOST_TEST(hash_value(ms) == seed);
   }
 }
 
