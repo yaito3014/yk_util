@@ -10,9 +10,20 @@ if(BUILD_TESTING)
                      $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wall -Wextra>
   )
   target_compile_definitions(
-    yk_util_test PRIVATE $<$<CXX_COMPILER_ID:Clang>:YK_BUILD_UNIT_TEST_FRAMEWORK=1>
+    yk_util_test
+    PRIVATE $<$<CXX_COMPILER_ID:Clang>:YK_BUILD_UNIT_TEST_FRAMEWORK=1>
+    PRIVATE $<$<CXX_COMPILER_ID:MSVC>:NOMINMAX>
+    PRIVATE $<$<CXX_COMPILER_ID:MSVC>:WIN32_LEAN_AND_MEAN>
+    PRIVATE $<$<CXX_COMPILER_ID:MSVC>:_UNICODE>
+    PRIVATE $<$<CXX_COMPILER_ID:MSVC>:UNICODE>
   )
-  target_compile_options(yk_util_test PRIVATE ${YK_COMMON_FLAG})
+  target_compile_options(
+    yk_util_test
+    PRIVATE ${YK_COMMON_FLAG}
+    PRIVATE $<$<CXX_COMPILER_ID:GNU>:-Wall -Wextra -pedantic-errors>
+    PRIVATE $<$<CXX_COMPILER_ID:Clang>:-Wall -Wextra -pedantic-errors>
+    PRIVATE $<$<CXX_COMPILER_ID:MSVC>:/W4 /permissive- /Zc:__cplusplus /Zc:preprocessor /sdl /utf-8>
+  )
   target_link_options(yk_util_test PRIVATE ${YK_COMMON_FLAG})
 
   find_package(TBB)
