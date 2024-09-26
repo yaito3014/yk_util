@@ -27,8 +27,13 @@
 #include <boost/test/unit_test.hpp>
 #endif
 
+#include <boost/predef/os.h>
 #include <boost/container_hash/hash.hpp>
 #include <boost/range/iterator_range.hpp>
+
+#if BOOST_OS_WINDOWS
+#include "Windows.h"
+#endif  // BOOST_OS_WINDOWS
 
 #include <algorithm>
 #include <atomic>
@@ -52,6 +57,16 @@
 #endif
 
 namespace utf = boost::unit_test;
+
+struct GlobalFixture {
+  void setup() {
+#if BOOST_OS_WINDOWS
+    SetConsoleOutputCP(65001);
+#endif  // BOOST_OS_WINDOWS
+  }
+};
+
+BOOST_TEST_GLOBAL_FIXTURE(GlobalFixture);
 
 namespace hash_test {
 
