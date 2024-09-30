@@ -45,6 +45,7 @@
 #include <list>
 #include <memory>
 #include <set>
+#include <sstream>
 #include <string>
 #include <unordered_set>
 #include <utility>
@@ -697,6 +698,16 @@ BOOST_AUTO_TEST_CASE(Concat) {
     std::ranges::forward_range auto rng = yk::views::concat(vec, forward_list);
     static_assert(!std::ranges::random_access_range<decltype(rng)>);
     static_assert(!std::ranges::bidirectional_range<decltype(rng)>);
+    BOOST_TEST(std::ranges::equal(rng, std::vector{3, 1, 4, 1, 5, 9, 2}));
+  }
+  {
+    std::vector vec{3, 1, 4};
+    std::stringstream ss("1 5 9 2");
+    auto rng = yk::views::concat(vec, std::views::istream<int>(ss));
+    static_assert(!std::ranges::random_access_range<decltype(rng)>);
+    static_assert(!std::ranges::bidirectional_range<decltype(rng)>);
+    static_assert(!std::ranges::forward_range<decltype(rng)>);
+    static_assert(std::ranges::input_range<decltype(rng)>);
     BOOST_TEST(std::ranges::equal(rng, std::vector{3, 1, 4, 1, 5, 9, 2}));
   }
 }
