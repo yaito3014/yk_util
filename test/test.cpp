@@ -675,7 +675,10 @@ BOOST_AUTO_TEST_CASE(Concat) {
     std::random_access_iterator auto sent = std::ranges::end(rng);
     BOOST_TEST((iter != sent));
     BOOST_TEST((sent - iter) == 9);
+    BOOST_TEST((iter == iter));
+    BOOST_TEST((iter - iter) == 0);
     BOOST_TEST((std::default_sentinel - iter) == 9);
+    BOOST_TEST((iter - std::default_sentinel) == -9);
     BOOST_TEST(*(iter + 4) == 'a');
     BOOST_TEST(std::ranges::size(rng) == 9);
     BOOST_TEST(std::ranges::equal(rng, "foobarbaz"sv));
