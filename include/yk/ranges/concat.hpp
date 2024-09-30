@@ -112,7 +112,7 @@ using make_index_range = offset_index_sequence<I, std::make_index_sequence<J - I
 
 struct concat_view_iterator_difference_helper {
   template <std::size_t I, std::size_t J, class Iterator>
-  constexpr typename Iterator::difference_type operator()(const Iterator& x, const Iterator& y) {
+  constexpr typename Iterator::difference_type operator()(const Iterator& x, const Iterator& y) const {
     if constexpr (I > J) {
       const auto dy = std::ranges::distance(std::get<J>(y.iter_), std::ranges::end(std::get<J>(y.parent_->views_)));
       const auto dx = std::ranges::distance(std::ranges::begin(std::get<I>(x.parent_->views_)), std::get<I>(x.iter_));
@@ -128,12 +128,19 @@ struct concat_view_iterator_difference_helper {
   }
 
   template <std::size_t I, std::size_t ViewsCount, class Iterator>
-  constexpr typename Iterator::difference_type operator()(const Iterator& x) {
+  constexpr typename Iterator::difference_type operator()(const Iterator& x) const {
     const auto dx = std::ranges::distance(std::get<I>(x.iter_), std::ranges::end(std::get<I>(x.parent_->views_)));
     typename Iterator::difference_type s = [&]<std::size_t... Indice>(std::index_sequence<Indice...>) {
       return (0 + ... + std::ranges::size(std::get<Indice>(x.parent_->views_)));
     }(make_index_range<I + 1, ViewsCount>{});
     return -(dx + s);
+  }
+};
+
+struct concat_view_iterator_equality_helper {
+  template <std::size_t LastIdx, class Iterator>
+  constexpr bool operator()(const Iterator& it) const {
+    return it.iter_.index() == LastIdx && std::get<LastIdx>(it.iter_) == std::ranges::end(std::get<LastIdx>(it.parent_->views_));
   }
 };
 
@@ -293,8 +300,7 @@ private:
     }
 
     [[nodiscard]] friend constexpr bool operator==(const iterator& it, std::default_sentinel_t) {
-      constexpr auto last_idx = sizeof...(Views) - 1;
-      return it.iter_.index() == last_idx && std::get<last_idx>(it.iter_) == std::ranges::end(std::get<last_idx>(it.parent_->views_));
+      return detail::concat_view_iterator_equality_helper{}.operator()<sizeof...(Views) - 1>(it);
     }
 
     [[nodiscard]] friend constexpr bool operator<(const iterator& x, const iterator& y)
@@ -469,6 +475,7 @@ private:
     friend iterator<!Const>;
 
     friend detail::concat_view_iterator_difference_helper;
+    friend detail::concat_view_iterator_equality_helper;
 
   private:
     xo::maybe_const<Const, concat_view<Views...>>* parent_ = nullptr;
@@ -539,6 +546,7 @@ public:
 
 private:
   friend detail::concat_view_iterator_difference_helper;
+  friend detail::concat_view_iterator_equality_helper;
 
   std::tuple<Views...> views_;
 };
