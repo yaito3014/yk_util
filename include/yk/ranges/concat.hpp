@@ -556,8 +556,6 @@ concat_view(Rs&&...) -> concat_view<std::views::all_t<Rs>...>;
 
 namespace views {
 
-inline namespace concat_cpo {
-
 struct concat_fn {
   template <class... Ts>
   [[nodiscard]] constexpr auto operator()(Ts&&... xs) const {
@@ -569,9 +567,7 @@ struct concat_fn {
   }
 };
 
-}  // namespace concat_cpo
-
-inline constexpr concat_cpo::concat_fn concat;
+inline constexpr concat_fn concat;
 
 }  // namespace views
 
