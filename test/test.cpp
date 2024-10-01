@@ -710,6 +710,70 @@ BOOST_AUTO_TEST_CASE(Concat) {
     static_assert(std::ranges::input_range<decltype(rng)>);
     BOOST_TEST(std::ranges::equal(rng, std::vector{3, 1, 4, 1, 5, 9, 2}));
   }
+  {
+    std::vector vec{3, 1, 4};
+    std::stringstream ss("1 5 9 2");
+    auto rng = yk::views::concat(std::views::istream<int>(ss), vec);
+    static_assert(!std::ranges::random_access_range<decltype(rng)>);
+    static_assert(!std::ranges::bidirectional_range<decltype(rng)>);
+    static_assert(!std::ranges::forward_range<decltype(rng)>);
+    // static_assert(std::ranges::input_range<decltype(rng)>);                 // compile error
+    // BOOST_TEST(std::ranges::equal(rng, std::vector{1, 5, 9, 2, 3, 1, 4}));  // compile error
+  }
+  {
+    std::vector a{3, 1, 4, 1, 5};
+    std::vector b{9, 2, 6, 5};
+    auto view = yk::views::concat(a, b);
+    std::ranges::sort(view);
+    BOOST_TEST(std::ranges::equal(view, std::vector{1, 1, 2, 3, 4, 5, 5, 6, 9}));
+  }
+  {
+    std::vector a{3, 1, 4, 1, 5};
+    std::vector b{9, 2, 6, 5};
+    std::vector c{3, 5, 8, 9, 7, 9};
+    auto view = yk::views::concat(yk::views::concat(a, b), c);
+    BOOST_TEST(std::ranges::equal(view, std::vector{3, 1, 4, 1, 5, 9, 2, 6, 5, 3, 5, 8, 9, 7, 9}));
+  }
+  {
+    auto view = yk::views::concat(std::views::empty<int>, std::views::empty<int>, std::views::empty<int>);
+    BOOST_TEST(std::ranges::empty(view));
+  }
+  {
+    std::vector a{3, 1, 4, 1, 5};
+    auto view = yk::views::concat(std::views::empty<int>, a, std::views::empty<int>);
+    BOOST_TEST(std::ranges::equal(view, std::vector{3, 1, 4, 1, 5}));
+  }
+  {
+    std::vector a{3, 1, 4, 1, 5};
+    std::vector b{9, 2, 6, 5};
+    auto view = yk::views::concat(a, std::views::empty<int>, b);
+    BOOST_TEST(std::ranges::equal(view, std::vector{3, 1, 4, 1, 5, 9, 2, 6, 5}));
+  }
+  {
+    std::vector a{3, 1, 4, 1, 5};
+    auto view = yk::views::concat(a, a);
+    BOOST_TEST(std::ranges::equal(view, std::vector{3, 1, 4, 1, 5, 3, 1, 4, 1, 5}));
+  }
+  {
+    std::vector a{3, 1, 4, 1, 5};
+    auto view = yk::views::concat(a | std::views::take(3), a | std::views::drop(3));
+    BOOST_TEST(std::ranges::equal(view, std::vector{3, 1, 4, 1, 5}));
+  }
+  {
+    std::vector a{3, 1, 4, 1, 5};
+    auto view = yk::views::concat(a | std::views::take(2), a | std::views::drop(1));
+    BOOST_TEST(std::ranges::equal(view, std::vector{3, 1, 1, 4, 1, 5}));
+  }
+  {
+    auto a = yk::views::concat("pen"sv, "pineapple"sv);
+    auto b = yk::views::concat("apple"sv, "pen"sv);
+    BOOST_TEST(std::ranges::equal(yk::views::concat(a, b), "penpineappleapplepen"sv));
+  }
+  {
+    int a[]{2, 7, 1, 8, 2, 8};
+    int b[]{1, 4, 1, 4, 2};
+    BOOST_TEST(std::ranges::equal(yk::views::concat(a, b), std::vector{2, 7, 1, 8, 2, 8, 1, 4, 1, 4, 2}));
+  }
 }
 
 BOOST_AUTO_TEST_SUITE_END()  // yk_util
