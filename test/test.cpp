@@ -691,6 +691,26 @@ BOOST_AUTO_TEST_CASE(Concat) {
     BOOST_TEST(std::ranges::size(rng) == rng.size());
     BOOST_TEST(std::ranges::size(rng) == 9);
     BOOST_TEST(std::ranges::equal(rng, "foobarbaz"sv));
+    {
+      auto i = iter, j = iter;
+      BOOST_TEST((++j == i + 1));
+      BOOST_TEST((--j == i));
+
+      BOOST_TEST((j++ == i));
+      BOOST_TEST((j == i + 1));
+
+      BOOST_TEST((j-- == i + 1));
+      BOOST_TEST((j == i));
+
+      BOOST_TEST(((j += 3) == i + 3));
+      BOOST_TEST(((j -= 2) == i + 1));
+
+      BOOST_TEST((i < j));
+      BOOST_TEST((i <= j));
+      BOOST_TEST((j > i));
+      BOOST_TEST((j >= i));
+      BOOST_TEST(((i <=> j) < 0));
+    }
   }
   {
     std::vector vec{3, 1, 4};
