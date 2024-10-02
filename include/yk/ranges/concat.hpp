@@ -175,7 +175,7 @@ public:
 
 template <std::ranges::input_range... Views>
   requires (std::ranges::view<Views> && ...) && (sizeof...(Views) > 0) && xo::concatable<Views...>
-class concat_view : std::ranges::view_interface<concat_view<Views...>> {
+class concat_view : public std::ranges::view_interface<concat_view<Views...>> {
 private:
   template <bool Const>
     requires (std::ranges::view<Views> && ...) && (sizeof...(Views) > 0) && xo::concatable<Views...>
