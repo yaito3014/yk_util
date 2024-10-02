@@ -681,6 +681,14 @@ BOOST_AUTO_TEST_CASE(Concat) {
     BOOST_TEST((std::default_sentinel - iter) == 9);
     BOOST_TEST((iter - std::default_sentinel) == -9);
     BOOST_TEST(*(iter + 4) == 'a');
+    BOOST_TEST(((iter + 1 + 1 + 1) - 3 == iter));
+    BOOST_TEST(iter[2] == 'o');
+    BOOST_TEST(iter[3] == 'b');
+    BOOST_TEST(iter[4] == 'a');
+    BOOST_TEST(rng[2] == 'o');
+    BOOST_TEST(rng[3] == 'b');
+    BOOST_TEST(rng[4] == 'a');
+    BOOST_TEST(std::ranges::size(rng) == rng.size());
     BOOST_TEST(std::ranges::size(rng) == 9);
     BOOST_TEST(std::ranges::equal(rng, "foobarbaz"sv));
   }
