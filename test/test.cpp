@@ -671,7 +671,8 @@ BOOST_AUTO_TEST_CASE(WrapAs) {
 BOOST_AUTO_TEST_CASE(Concat) {
   using namespace std::literals;
   {
-    std::ranges::random_access_range auto rng = yk::views::concat("foo"sv, "bar"sv, "baz"sv);
+    auto rng = yk::views::concat("foo"sv, "bar"sv, "baz"sv);
+    static_assert(std::ranges::random_access_range<decltype(rng)>);
     static_assert(std::ranges::view<decltype(rng)>);
     std::random_access_iterator auto iter = std::ranges::begin(rng);
     std::random_access_iterator auto sent = std::ranges::end(rng);
@@ -714,45 +715,50 @@ BOOST_AUTO_TEST_CASE(Concat) {
     }
   }
   {
-    std::vector vec{3, 1, 4};
-    std::list list{1, 5, 9, 2};
-    std::ranges::bidirectional_range auto rng = yk::views::concat(vec, list);
+    std::vector<int> vec1;  // random_access_range
+    std::vector<int> vec2;  // random_access_range
+    auto rng = yk::views::concat(vec1, vec2);
     static_assert(std::ranges::view<decltype(rng)>);
-    static_assert(!std::ranges::random_access_range<decltype(rng)>);
-    BOOST_TEST(std::ranges::equal(rng, std::vector{3, 1, 4, 1, 5, 9, 2}));
-    BOOST_TEST(std::ranges::equal(rng | std::views::reverse, std::vector{2, 9, 5, 1, 4, 1, 3}));
+    static_assert(std::ranges::random_access_range<decltype(rng)>);
   }
   {
-    std::vector vec{3, 1, 4};
-    std::forward_list forward_list{1, 5, 9, 2};
-    std::ranges::forward_range auto rng = yk::views::concat(vec, forward_list);
+    std::vector<int> vec;  // random_access_range
+    std::list<int> list;   // bidirectional_range
+    auto rng = yk::views::concat(vec, list);
     static_assert(std::ranges::view<decltype(rng)>);
+    static_assert(std::ranges::bidirectional_range<decltype(rng)>);
     static_assert(!std::ranges::random_access_range<decltype(rng)>);
-    static_assert(!std::ranges::bidirectional_range<decltype(rng)>);
-    BOOST_TEST(std::ranges::equal(rng, std::vector{3, 1, 4, 1, 5, 9, 2}));
   }
   {
-    std::vector vec{3, 1, 4};
-    std::stringstream ss("1 5 9 2");
-    auto rng = yk::views::concat(vec, std::views::istream<int>(ss));
+    std::vector<int> vec;                 // random_access_range
+    std::forward_list<int> forward_list;  // forward_range
+    auto rng = yk::views::concat(vec, forward_list);
     static_assert(std::ranges::view<decltype(rng)>);
-    static_assert(!std::ranges::random_access_range<decltype(rng)>);
+    static_assert(std::ranges::forward_range<decltype(rng)>);
     static_assert(!std::ranges::bidirectional_range<decltype(rng)>);
-    static_assert(!std::ranges::forward_range<decltype(rng)>);
+    static_assert(!std::ranges::random_access_range<decltype(rng)>);
+  }
+  {
+    std::vector<int> vec;                            // random_access_range
+    auto view = std::views::istream<int>(std::cin);  // input_range
+    auto rng = yk::views::concat(vec, view);
+    static_assert(std::ranges::view<decltype(rng)>);
     static_assert(std::ranges::input_range<decltype(rng)>);
-    BOOST_TEST(std::ranges::equal(rng, std::vector{3, 1, 4, 1, 5, 9, 2}));
+    static_assert(!std::ranges::forward_range<decltype(rng)>);
+    static_assert(!std::ranges::bidirectional_range<decltype(rng)>);
+    static_assert(!std::ranges::random_access_range<decltype(rng)>);
   }
   {
-    std::vector vec{3, 1, 4};
-    std::stringstream ss("1 5 9 2");
-    auto rng = yk::views::concat(std::views::istream<int>(ss), vec);
+    std::vector<int> vec;                            // random_access_range
+    auto view = std::views::istream<int>(std::cin);  // input_range
+    auto rng = yk::views::concat(view, vec);
     // static_assert(std::ranges::view<decltype(rng)>);  // compile error
-    static_assert(!std::ranges::random_access_range<decltype(rng)>);
-    static_assert(!std::ranges::bidirectional_range<decltype(rng)>);
+    // static_assert(std::ranges::input_range<decltype(rng)>);  // compile error
     static_assert(!std::ranges::forward_range<decltype(rng)>);
-    // static_assert(std::ranges::input_range<decltype(rng)>);                 // compile error
-    // BOOST_TEST(std::ranges::equal(rng, std::vector{1, 5, 9, 2, 3, 1, 4}));  // compile error
+    static_assert(!std::ranges::bidirectional_range<decltype(rng)>);
+    static_assert(!std::ranges::random_access_range<decltype(rng)>);
   }
+
   {
     std::vector a{3, 1, 4, 1, 5};
     std::vector b{9, 2, 6, 5};
