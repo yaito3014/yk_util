@@ -752,8 +752,8 @@ BOOST_AUTO_TEST_CASE(Concat) {
     std::vector<int> vec;                            // random_access_range
     auto view = std::views::istream<int>(std::cin);  // input_range
     auto rng = yk::views::concat(view, vec);
-    // static_assert(std::ranges::view<decltype(rng)>);  // compile error
-    // static_assert(std::ranges::input_range<decltype(rng)>);  // compile error
+    static_assert(std::ranges::view<decltype(rng)>);
+    static_assert(std::ranges::input_range<decltype(rng)>);
     static_assert(!std::ranges::forward_range<decltype(rng)>);
     static_assert(!std::ranges::bidirectional_range<decltype(rng)>);
     static_assert(!std::ranges::random_access_range<decltype(rng)>);
