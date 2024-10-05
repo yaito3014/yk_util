@@ -672,6 +672,7 @@ BOOST_AUTO_TEST_CASE(Concat) {
   using namespace std::literals;
   {
     std::ranges::random_access_range auto rng = yk::views::concat("foo"sv, "bar"sv, "baz"sv);
+    static_assert(std::ranges::view<decltype(rng)>);
     std::random_access_iterator auto iter = std::ranges::begin(rng);
     std::random_access_iterator auto sent = std::ranges::end(rng);
     BOOST_TEST((iter != sent));
@@ -716,6 +717,7 @@ BOOST_AUTO_TEST_CASE(Concat) {
     std::vector vec{3, 1, 4};
     std::list list{1, 5, 9, 2};
     std::ranges::bidirectional_range auto rng = yk::views::concat(vec, list);
+    static_assert(std::ranges::view<decltype(rng)>);
     static_assert(!std::ranges::random_access_range<decltype(rng)>);
     BOOST_TEST(std::ranges::equal(rng, std::vector{3, 1, 4, 1, 5, 9, 2}));
     BOOST_TEST(std::ranges::equal(rng | std::views::reverse, std::vector{2, 9, 5, 1, 4, 1, 3}));
@@ -724,6 +726,7 @@ BOOST_AUTO_TEST_CASE(Concat) {
     std::vector vec{3, 1, 4};
     std::forward_list forward_list{1, 5, 9, 2};
     std::ranges::forward_range auto rng = yk::views::concat(vec, forward_list);
+    static_assert(std::ranges::view<decltype(rng)>);
     static_assert(!std::ranges::random_access_range<decltype(rng)>);
     static_assert(!std::ranges::bidirectional_range<decltype(rng)>);
     BOOST_TEST(std::ranges::equal(rng, std::vector{3, 1, 4, 1, 5, 9, 2}));
@@ -732,6 +735,7 @@ BOOST_AUTO_TEST_CASE(Concat) {
     std::vector vec{3, 1, 4};
     std::stringstream ss("1 5 9 2");
     auto rng = yk::views::concat(vec, std::views::istream<int>(ss));
+    static_assert(std::ranges::view<decltype(rng)>);
     static_assert(!std::ranges::random_access_range<decltype(rng)>);
     static_assert(!std::ranges::bidirectional_range<decltype(rng)>);
     static_assert(!std::ranges::forward_range<decltype(rng)>);
@@ -742,6 +746,7 @@ BOOST_AUTO_TEST_CASE(Concat) {
     std::vector vec{3, 1, 4};
     std::stringstream ss("1 5 9 2");
     auto rng = yk::views::concat(std::views::istream<int>(ss), vec);
+    // static_assert(std::ranges::view<decltype(rng)>);  // compile error
     static_assert(!std::ranges::random_access_range<decltype(rng)>);
     static_assert(!std::ranges::bidirectional_range<decltype(rng)>);
     static_assert(!std::ranges::forward_range<decltype(rng)>);
