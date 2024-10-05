@@ -766,6 +766,20 @@ BOOST_AUTO_TEST_CASE(Concat) {
   }
 #endif
   {
+    auto not_common = std::views::iota(0);  // arbitrary range
+    auto common = std::views::iota(0, 1);   // common_range
+    auto rng = yk::views::concat(not_common, common);
+    static_assert(std::ranges::view<decltype(rng)>);
+    static_assert(std::ranges::common_range<decltype(rng)>);
+  }
+  {
+    auto view = std::views::istream<int>(std::cin);  // non-common_range with non-copyable iterator
+    std::vector<int> vec;                            // common_range with copyable iterator
+    auto rng = yk::views::concat(view, vec);
+    static_assert(std::ranges::range<decltype(rng)>);  // ill-formed as of P2542R8, but well-formed in our implementation
+    // static_assert(std::ranges::common_range<decltype(rng)>);  // in theory, this should be true if above is well-formed, but ill-formed in our implementation
+  }
+  {
     std::vector<int> vec;  // random_access_range
     std::list<int> list;   // bidirectional_range
     auto rng = yk::views::concat(vec, list);
@@ -783,13 +797,6 @@ BOOST_AUTO_TEST_CASE(Concat) {
     std::vector<int> vec;                            // random_access_range
     auto view = std::views::istream<int>(std::cin);  // input_range
     auto rng = yk::views::concat(vec, view);
-    static_assert(std::ranges::view<decltype(rng)>);
-    static_assert(std::ranges::input_range<decltype(rng)>);
-  }
-  {
-    std::vector<int> vec;                            // random_access_range
-    auto view = std::views::istream<int>(std::cin);  // input_range
-    auto rng = yk::views::concat(view, vec);
     static_assert(std::ranges::view<decltype(rng)>);
     static_assert(std::ranges::input_range<decltype(rng)>);
   }
