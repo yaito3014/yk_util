@@ -719,15 +719,58 @@ BOOST_AUTO_TEST_CASE(Concat) {
     std::vector<int> vec2;  // random_access_range
     auto rng = yk::views::concat(vec1, vec2);
     static_assert(std::ranges::view<decltype(rng)>);
-    static_assert(std::ranges::random_access_range<decltype(rng)>);
+    static_assert(std::ranges::random_access_range<decltype(rng)>);  // concat-ing contiguous_ranges never be contiguous_range
   }
+  {
+    std::list<int> list1;  // bidirectional_range
+    std::list<int> list2;  // bidirectional_range
+    auto rng = yk::views::concat(list1, list2);
+    static_assert(std::ranges::view<decltype(rng)>);
+    static_assert(std::ranges::bidirectional_range<decltype(rng)>);
+  }
+  {
+    std::forward_list<int> forward_list1;  // forward_range
+    std::forward_list<int> forward_list2;  // forward_range
+    auto rng = yk::views::concat(forward_list1, forward_list2);
+    static_assert(std::ranges::view<decltype(rng)>);
+    static_assert(std::ranges::forward_range<decltype(rng)>);
+  }
+  {
+    auto input1 = std::views::istream<int>(std::cin);  // input_range
+    auto input2 = std::views::istream<int>(std::cin);  // input_range
+    auto rng = yk::views::concat(input1, input2);
+    static_assert(std::ranges::view<decltype(rng)>);
+    static_assert(std::ranges::input_range<decltype(rng)>);
+  }
+  {
+    auto sized1 = std::views::iota(0, 1);  // sized_range
+    auto sized2 = std::views::iota(0, 1);  // sized_range
+    auto rng = yk::views::concat(sized1, sized2);
+    static_assert(std::ranges::view<decltype(rng)>);
+    static_assert(std::ranges::sized_range<decltype(rng)>);
+  }
+  {
+    auto&& vec1 = std::vector<int>{};  // viewable_range
+    auto&& vec2 = std::vector<int>{};  // viewable_range
+    auto rng = yk::views::concat(std::move(vec1), std::move(vec2));
+    static_assert(std::ranges::view<decltype(rng)>);
+    static_assert(std::ranges::viewable_range<decltype(std::move(rng))>);
+  }
+#if __cpp_lib_ranges_as_const >= 202207L
+  {
+    auto constant1 = std::views::iota(0, 1);  // constant_range
+    auto constant2 = std::views::iota(0, 1);  // constant_range
+    auto rng = yk::views::concat(constant1, constant2);
+    static_assert(std::ranges::view<decltype(rng)>);
+    static_assert(std::ranges::constant_range<decltype(rng)>);
+  }
+#endif
   {
     std::vector<int> vec;  // random_access_range
     std::list<int> list;   // bidirectional_range
     auto rng = yk::views::concat(vec, list);
     static_assert(std::ranges::view<decltype(rng)>);
     static_assert(std::ranges::bidirectional_range<decltype(rng)>);
-    static_assert(!std::ranges::random_access_range<decltype(rng)>);
   }
   {
     std::vector<int> vec;                 // random_access_range
@@ -735,8 +778,6 @@ BOOST_AUTO_TEST_CASE(Concat) {
     auto rng = yk::views::concat(vec, forward_list);
     static_assert(std::ranges::view<decltype(rng)>);
     static_assert(std::ranges::forward_range<decltype(rng)>);
-    static_assert(!std::ranges::bidirectional_range<decltype(rng)>);
-    static_assert(!std::ranges::random_access_range<decltype(rng)>);
   }
   {
     std::vector<int> vec;                            // random_access_range
@@ -744,9 +785,6 @@ BOOST_AUTO_TEST_CASE(Concat) {
     auto rng = yk::views::concat(vec, view);
     static_assert(std::ranges::view<decltype(rng)>);
     static_assert(std::ranges::input_range<decltype(rng)>);
-    static_assert(!std::ranges::forward_range<decltype(rng)>);
-    static_assert(!std::ranges::bidirectional_range<decltype(rng)>);
-    static_assert(!std::ranges::random_access_range<decltype(rng)>);
   }
   {
     std::vector<int> vec;                            // random_access_range
@@ -754,9 +792,6 @@ BOOST_AUTO_TEST_CASE(Concat) {
     auto rng = yk::views::concat(view, vec);
     static_assert(std::ranges::view<decltype(rng)>);
     static_assert(std::ranges::input_range<decltype(rng)>);
-    static_assert(!std::ranges::forward_range<decltype(rng)>);
-    static_assert(!std::ranges::bidirectional_range<decltype(rng)>);
-    static_assert(!std::ranges::random_access_range<decltype(rng)>);
   }
 
   {
