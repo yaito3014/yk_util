@@ -8,6 +8,7 @@
 #include "yk/hash/string_hash.hpp"
 #include "yk/maybe_mutex.hpp"
 #include "yk/par_for_each.hpp"
+#include "yk/ranges/concat.hpp"
 #include "yk/stack.hpp"
 #include "yk/util/array_cat.hpp"
 #include "yk/util/auto_sequence.hpp"
@@ -39,9 +40,12 @@
 #include <atomic>
 #include <exception>
 #include <execution>
+#include <forward_list>
 #include <functional>
+#include <list>
 #include <memory>
 #include <set>
+#include <sstream>
 #include <string>
 #include <unordered_set>
 #include <utility>
@@ -661,6 +665,195 @@ BOOST_AUTO_TEST_CASE(WrapAs) {
   {
     auto&& val = MyClassWrap(data);
     BOOST_TEST(val.id.value == "id_42_IC");
+  }
+}
+
+BOOST_AUTO_TEST_CASE(Concat) {
+  using namespace std::literals;
+  {
+    auto rng = yk::views::concat("foo"sv, "bar"sv, "baz"sv);
+    static_assert(std::ranges::random_access_range<decltype(rng)>);
+    static_assert(std::ranges::view<decltype(rng)>);
+    std::random_access_iterator auto iter = std::ranges::begin(rng);
+    std::random_access_iterator auto sent = std::ranges::end(rng);
+    BOOST_TEST((iter != sent));
+    BOOST_TEST((sent - iter) == 9);
+    BOOST_TEST((iter == iter));
+    BOOST_TEST((iter - iter) == 0);
+    BOOST_TEST((std::default_sentinel - iter) == 9);
+    BOOST_TEST((iter - std::default_sentinel) == -9);
+    BOOST_TEST(*(iter + 4) == 'a');
+    BOOST_TEST(((iter + 1 + 1 + 1) - 3 == iter));
+    BOOST_TEST(iter[2] == 'o');
+    BOOST_TEST(iter[3] == 'b');
+    BOOST_TEST(iter[4] == 'a');
+    BOOST_TEST(rng[2] == 'o');
+    BOOST_TEST(rng[3] == 'b');
+    BOOST_TEST(rng[4] == 'a');
+    BOOST_TEST(std::ranges::size(rng) == rng.size());
+    BOOST_TEST(std::ranges::size(rng) == 9);
+    BOOST_TEST(std::ranges::equal(rng, "foobarbaz"sv));
+    {
+      auto i = iter, j = iter;
+      BOOST_TEST((++j == i + 1));
+      BOOST_TEST((--j == i));
+
+      BOOST_TEST((j++ == i));
+      BOOST_TEST((j == i + 1));
+
+      BOOST_TEST((j-- == i + 1));
+      BOOST_TEST((j == i));
+
+      BOOST_TEST(((j += 3) == i + 3));
+      BOOST_TEST(((j -= 2) == i + 1));
+
+      BOOST_TEST((i < j));
+      BOOST_TEST((i <= j));
+      BOOST_TEST((j > i));
+      BOOST_TEST((j >= i));
+      BOOST_TEST(((i <=> j) < 0));
+    }
+  }
+  {
+    std::vector<int> vec1;  // random_access_range
+    std::vector<int> vec2;  // random_access_range
+    auto rng = yk::views::concat(vec1, vec2);
+    static_assert(std::ranges::view<decltype(rng)>);
+    static_assert(std::ranges::random_access_range<decltype(rng)>);  // concat-ing contiguous_ranges never be contiguous_range
+  }
+  {
+    std::list<int> list1;  // bidirectional_range
+    std::list<int> list2;  // bidirectional_range
+    auto rng = yk::views::concat(list1, list2);
+    static_assert(std::ranges::view<decltype(rng)>);
+    static_assert(std::ranges::bidirectional_range<decltype(rng)>);
+  }
+  {
+    std::forward_list<int> forward_list1;  // forward_range
+    std::forward_list<int> forward_list2;  // forward_range
+    auto rng = yk::views::concat(forward_list1, forward_list2);
+    static_assert(std::ranges::view<decltype(rng)>);
+    static_assert(std::ranges::forward_range<decltype(rng)>);
+  }
+  {
+    auto input1 = std::views::istream<int>(std::cin);  // input_range
+    auto input2 = std::views::istream<int>(std::cin);  // input_range
+    auto rng = yk::views::concat(input1, input2);
+    static_assert(std::ranges::view<decltype(rng)>);
+    static_assert(std::ranges::input_range<decltype(rng)>);
+  }
+  {
+    auto sized1 = std::views::iota(0, 1);  // sized_range
+    auto sized2 = std::views::iota(0, 1);  // sized_range
+    auto rng = yk::views::concat(sized1, sized2);
+    static_assert(std::ranges::view<decltype(rng)>);
+    static_assert(std::ranges::sized_range<decltype(rng)>);
+  }
+  {
+    auto&& vec1 = std::vector<int>{};  // viewable_range
+    auto&& vec2 = std::vector<int>{};  // viewable_range
+    auto rng = yk::views::concat(std::move(vec1), std::move(vec2));
+    static_assert(std::ranges::view<decltype(rng)>);
+    static_assert(std::ranges::viewable_range<decltype(std::move(rng))>);
+  }
+#if __cpp_lib_ranges_as_const >= 202207L
+  {
+    auto constant1 = std::views::iota(0, 1);  // constant_range
+    auto constant2 = std::views::iota(0, 1);  // constant_range
+    auto rng = yk::views::concat(constant1, constant2);
+    static_assert(std::ranges::view<decltype(rng)>);
+    static_assert(std::ranges::constant_range<decltype(rng)>);
+  }
+#endif
+  {
+    auto not_common = std::views::iota(0);  // arbitrary range
+    auto common = std::views::iota(0, 1);   // common_range
+    auto rng = yk::views::concat(not_common, common);
+    static_assert(std::ranges::view<decltype(rng)>);
+    static_assert(std::ranges::common_range<decltype(rng)>);
+  }
+  {
+    auto view = std::views::istream<int>(std::cin);  // non-common_range with non-copyable iterator
+    std::vector<int> vec;                            // common_range with copyable iterator
+    auto rng = yk::views::concat(view, vec);
+    static_assert(std::ranges::range<decltype(rng)>);  // ill-formed as of P2542R8, but well-formed in our implementation
+    // static_assert(std::ranges::common_range<decltype(rng)>);  // in theory, this should be true if above is well-formed, but ill-formed in our implementation
+  }
+  {
+    std::vector<int> vec;  // random_access_range
+    std::list<int> list;   // bidirectional_range
+    auto rng = yk::views::concat(vec, list);
+    static_assert(std::ranges::view<decltype(rng)>);
+    static_assert(std::ranges::bidirectional_range<decltype(rng)>);
+  }
+  {
+    std::vector<int> vec;                 // random_access_range
+    std::forward_list<int> forward_list;  // forward_range
+    auto rng = yk::views::concat(vec, forward_list);
+    static_assert(std::ranges::view<decltype(rng)>);
+    static_assert(std::ranges::forward_range<decltype(rng)>);
+  }
+  {
+    std::vector<int> vec;                            // random_access_range
+    auto view = std::views::istream<int>(std::cin);  // input_range
+    auto rng = yk::views::concat(vec, view);
+    static_assert(std::ranges::view<decltype(rng)>);
+    static_assert(std::ranges::input_range<decltype(rng)>);
+  }
+
+  {
+    std::vector a{3, 1, 4, 1, 5};
+    std::vector b{9, 2, 6, 5};
+    auto view = yk::views::concat(a, b);
+    std::ranges::sort(view);
+    BOOST_TEST(std::ranges::equal(view, std::vector{1, 1, 2, 3, 4, 5, 5, 6, 9}));
+  }
+  {
+    std::vector a{3, 1, 4, 1, 5};
+    std::vector b{9, 2, 6, 5};
+    std::vector c{3, 5, 8, 9, 7, 9};
+    auto view = yk::views::concat(yk::views::concat(a, b), c);
+    BOOST_TEST(std::ranges::equal(view, std::vector{3, 1, 4, 1, 5, 9, 2, 6, 5, 3, 5, 8, 9, 7, 9}));
+  }
+  {
+    auto view = yk::views::concat(std::views::empty<int>, std::views::empty<int>, std::views::empty<int>);
+    BOOST_TEST(std::ranges::empty(view));
+  }
+  {
+    std::vector a{3, 1, 4, 1, 5};
+    auto view = yk::views::concat(std::views::empty<int>, a, std::views::empty<int>);
+    BOOST_TEST(std::ranges::equal(view, std::vector{3, 1, 4, 1, 5}));
+  }
+  {
+    std::vector a{3, 1, 4, 1, 5};
+    std::vector b{9, 2, 6, 5};
+    auto view = yk::views::concat(a, std::views::empty<int>, b);
+    BOOST_TEST(std::ranges::equal(view, std::vector{3, 1, 4, 1, 5, 9, 2, 6, 5}));
+  }
+  {
+    std::vector a{3, 1, 4, 1, 5};
+    auto view = yk::views::concat(a, a);
+    BOOST_TEST(std::ranges::equal(view, std::vector{3, 1, 4, 1, 5, 3, 1, 4, 1, 5}));
+  }
+  {
+    std::vector a{3, 1, 4, 1, 5};
+    auto view = yk::views::concat(a | std::views::take(3), a | std::views::drop(3));
+    BOOST_TEST(std::ranges::equal(view, std::vector{3, 1, 4, 1, 5}));
+  }
+  {
+    std::vector a{3, 1, 4, 1, 5};
+    auto view = yk::views::concat(a | std::views::take(2), a | std::views::drop(1));
+    BOOST_TEST(std::ranges::equal(view, std::vector{3, 1, 1, 4, 1, 5}));
+  }
+  {
+    auto a = yk::views::concat("pen"sv, "pineapple"sv);
+    auto b = yk::views::concat("apple"sv, "pen"sv);
+    BOOST_TEST(std::ranges::equal(yk::views::concat(a, b), "penpineappleapplepen"sv));
+  }
+  {
+    int a[]{2, 7, 1, 8, 2, 8};
+    int b[]{1, 4, 1, 4, 2};
+    BOOST_TEST(std::ranges::equal(yk::views::concat(a, b), std::vector{2, 7, 1, 8, 2, 8, 1, 4, 1, 4, 2}));
   }
 }
 
