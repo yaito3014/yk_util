@@ -518,7 +518,7 @@ public:
   {
     constexpr auto N = sizeof...(Views);
     // added semiregular constraint to correctly propagate common_range concept
-    if constexpr ((std::semiregular<std::ranges::iterator_t<Views>> && ...) && std::ranges::common_range<const pack_indexing_t<N - 1, Views...>>) {
+    if constexpr ((std::semiregular<std::ranges::iterator_t<const Views>> && ...) && std::ranges::common_range<const pack_indexing_t<N - 1, Views...>>) {
       return iterator<true>(this, std::in_place_index<N - 1>, std::ranges::end(std::get<N - 1>(views_)));
     } else {
       return std::default_sentinel;
