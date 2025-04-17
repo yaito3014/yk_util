@@ -242,7 +242,7 @@ public:
 
   template <class U>
   bool push_wait(U&& value, std::stop_token stop_token)
-    requires !traits_type::has_stop_token_support
+    requires (!traits_type::has_stop_token_support)
   = delete;
 
   template <class U>
@@ -276,7 +276,7 @@ public:
   }
 
   bool pop_wait(T& value, std::stop_token stop_token)
-    requires !traits_type::has_stop_token_support
+    requires (!traits_type::has_stop_token_support)
   = delete;
 
   bool pop_wait(T& value, std::stop_token stop_token)
