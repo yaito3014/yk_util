@@ -1,4 +1,6 @@
 ﻿#include "yk/allocator/default_init_allocator.hpp"
+#include "yk/concurrent_deque.hpp"
+#include "yk/concurrent_vector.hpp"
 #include "yk/enum_bitops.hpp"
 #include "yk/enum_bitops_algorithm.hpp"
 #include "yk/enum_bitops_io.hpp"
@@ -856,6 +858,137 @@ BOOST_AUTO_TEST_CASE(Concat) {
     int a[]{2, 7, 1, 8, 2, 8};
     int b[]{1, 4, 1, 4, 2};
     BOOST_TEST(std::ranges::equal(yk::views::concat(a, b), std::vector{2, 7, 1, 8, 2, 8, 1, 4, 1, 4, 2}));
+  }
+}
+BOOST_AUTO_TEST_CASE(ConcurrentVector) {
+  // Single Producer Single Consumer
+  // {
+  //   using CV = yk::concurrent_spsc_vector<int>;
+  //   const auto producer = [](CV& vec) {
+  //     for (int i = 0; i < 10; ++i) {
+  //       vec.push_wait(i);
+  //     }
+  //   };
+
+  //   std::vector<int> result;
+  //   const auto consumer = [&](CV& vec) {
+  //     for (int i = 0; i < 10; ++i) {
+  //       int value = -1;
+  //       vec.pop_wait(value);
+  //       result.push_back(value);
+  //     }
+  //     return result;
+  //   };
+
+  //   CV vec;
+  //   {
+  //     std::jthread producer_thread(producer, std::ref(vec));
+  //     std::jthread consumer_thread(consumer, std::ref(vec));
+  //   }
+  //   std::ranges::sort(result);
+  //   BOOST_TEST(std::ranges::equal(result, std::vector<int>{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}));
+  // }
+  // Multi Producer Single Consumer
+  {
+    using CV = yk::concurrent_mpsc_vector<int>;
+    const auto producer = [](CV& vec, int id) {
+      for (int i = 0; i < 10; ++i) {
+        vec.push_wait(id * 100 + i);
+      }
+    };
+
+    std::vector<int> result;
+    const auto consumer = [&](CV& vec) {
+      for (int i = 0; i < 10 * 4; ++i) {
+        int value = -1;
+        vec.pop_wait(value);
+        result.push_back(value);
+      }
+      return result;
+    };
+
+    CV vec;
+    {
+      std::jthread producer_thread1(producer, std::ref(vec), 0);
+      std::jthread producer_thread2(producer, std::ref(vec), 1);
+      std::jthread producer_thread3(producer, std::ref(vec), 2);
+      std::jthread producer_thread4(producer, std::ref(vec), 3);
+      std::jthread consumer_thread(consumer, std::ref(vec));
+    }
+    std::ranges::sort(result);
+    BOOST_TEST(std::ranges::equal(result, std::vector<int>{
+                                              0,   1,   2,   3,   4,   5,   6,   7,   8,   9,   100, 101, 102, 103, 104, 105, 106, 107, 108, 109,
+                                              200, 201, 202, 203, 204, 205, 206, 207, 208, 209, 300, 301, 302, 303, 304, 305, 306, 307, 308, 309,
+                                          }));
+  }
+  // Single Producer Multi Consumer
+  {
+    using CV = yk::concurrent_vector<int, yk::concurrent_pool_flag::spmc>;
+    const auto producer = [](CV& vec) {
+      for (int i = 0; i < 40; ++i) {
+        vec.push_wait(i);
+      }
+    };
+    std::mutex mtx;
+    std::vector<int> result;
+    const auto consumer = [&](CV& vec) {
+      for (int i = 0; i < 10; ++i) {
+        int value = -1;
+        vec.pop_wait(value);
+        std::lock_guard lock(mtx);
+        result.push_back(value);
+      }
+      return result;
+    };
+    CV vec;
+    {
+      std::jthread producer_thread(producer, std::ref(vec));
+      std::jthread consumer_thread1(consumer, std::ref(vec));
+      std::jthread consumer_thread2(consumer, std::ref(vec));
+      std::jthread consumer_thread3(consumer, std::ref(vec));
+      std::jthread consumer_thread4(consumer, std::ref(vec));
+    }
+    std::ranges::sort(result);
+    BOOST_TEST(std::ranges::equal(result, std::vector<int>{
+                                              0,  1,  2,  3,  4,  5,  6,  7,  8,  9,  10, 11, 12, 13, 14, 15, 16, 17, 18, 19,
+                                              20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39,
+                                          }));
+  }
+  // Multi Producer Multi Consumer
+  {
+    using CV = yk::concurrent_mpmc_vector<int>;
+    auto producer = [](CV& vec, int id) {
+      for (int i = 0; i < 10; ++i) {
+        vec.push_wait(id * 100 + i);
+      }
+    };
+    std::mutex mtx;
+    std::vector<int> result;
+    const auto consumer = [&](CV& vec) {
+      for (int i = 0; i < 10; ++i) {
+        int value = -1;
+        vec.pop_wait(value);
+        std::lock_guard lock(mtx);
+        result.push_back(value);
+      }
+      return result;
+    };
+    CV vec;
+    {
+      std::jthread producer_thread1(producer, std::ref(vec), 0);
+      std::jthread producer_thread2(producer, std::ref(vec), 1);
+      std::jthread producer_thread3(producer, std::ref(vec), 2);
+      std::jthread producer_thread4(producer, std::ref(vec), 3);
+      std::jthread consumer_thread1(consumer, std::ref(vec));
+      std::jthread consumer_thread2(consumer, std::ref(vec));
+      std::jthread consumer_thread3(consumer, std::ref(vec));
+      std::jthread consumer_thread4(consumer, std::ref(vec));
+    }
+    std::ranges::sort(result);
+    BOOST_TEST(std::ranges::equal(result, std::vector<int>{
+                                              0,   1,   2,   3,   4,   5,   6,   7,   8,   9,   100, 101, 102, 103, 104, 105, 106, 107, 108, 109,
+                                              200, 201, 202, 203, 204, 205, 206, 207, 208, 209, 300, 301, 302, 303, 304, 305, 306, 307, 308, 309,
+                                          }));
   }
 }
 
