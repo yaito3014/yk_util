@@ -202,10 +202,11 @@ public:
   // clang-format off
   static constexpr concurrent_pool_flag flags = Flags;
   using value_type                            = T;
-  using size_type                             = detail::concurrent_pool_size_type;
   using pool_type                             = PoolT;
   using traits_type                           = detail::concurrent_pool_traits<T, PoolT, Flags>;
   using condition_variable_type               = typename traits_type::condition_variable_type;
+
+  using size_type                             = detail::concurrent_pool_size_type;
   // clang-format on
 
   // -------------------------------------------
@@ -238,7 +239,7 @@ public:
   [[nodiscard]]
   concurrent_pool_size_info size_info() const {
     std::unique_lock lock{mtx_};
-    return {.size = static_cast<long long>(pool_.size()), .capacity = capacity_};
+    return {.size = static_cast<size_type>(pool_.size()), .capacity = capacity_};
   }
 
   // -------------------------------------------
