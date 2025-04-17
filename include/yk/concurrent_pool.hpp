@@ -12,6 +12,8 @@
 #include <stop_token>
 #include <type_traits>
 
+#include <cstddef>
+
 namespace yk {
 
 enum struct concurrent_pool_flag : unsigned {
