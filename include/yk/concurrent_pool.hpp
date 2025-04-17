@@ -41,9 +41,13 @@ namespace detail {
 
 using concurrent_pool_size_type = std::make_signed_t<std::size_t>;
 
-template <class T, class PoolT, concurrent_pool_flag Flags>
+template <class T, class BufT, concurrent_pool_flag Flags>
 struct concurrent_pool_traits {
   // clang-format off
+  using value_type = T;
+  using buf_type = BufT;
+  using size_type = concurrent_pool_size_type;
+
   static constexpr concurrent_pool_flag flags   = Flags;
   static constexpr bool is_multi_producer       = static_cast<bool>(flags & concurrent_pool_flag::multi_producer);
   static constexpr bool is_single_producer      = !is_multi_producer;
@@ -63,32 +67,32 @@ struct concurrent_pool_traits {
   >;
   // clang-format on
 
-  static constexpr bool has_reserve = requires(PoolT pool) {
-    { pool.reserve(std::size_t{}) };
+  static constexpr bool has_reserve = requires(BufT buf) {
+    { buf.reserve(std::size_t{}) };
   };
 
-  static constexpr bool has_back_access = requires(T&& val, PoolT pool) {
-    { pool.emplace_back(std::move(val)) };
-    { pool.back() } -> std::convertible_to<T&>;
-    { pool.pop_back() };
+  static constexpr bool has_back_access = requires(T&& val, BufT buf) {
+    { buf.emplace_back(std::move(val)) };
+    { buf.back() } -> std::convertible_to<T&>;
+    { buf.pop_back() };
   };
-  static constexpr bool has_front_access = requires(T&& val, PoolT pool) {
-    { pool.emplace_front(std::move(val)) };
-    { pool.front() } -> std::convertible_to<T&>;
-    { pool.pop_front() };
+  static constexpr bool has_front_access = requires(T&& val, BufT buf) {
+    { buf.emplace_front(std::move(val)) };
+    { buf.front() } -> std::convertible_to<T&>;
+    { buf.pop_front() };
   };
   static constexpr bool has_both_access = has_back_access && has_front_access;
 
-  static constexpr bool has_plain_queue_access = requires(T&& val, PoolT pool) {
-    { pool.front() } -> std::convertible_to<T&>;
-    { pool.back() } -> std::convertible_to<T&>;
-    { pool.emplace(std::move(val)) };
-    { pool.pop() };
+  static constexpr bool has_plain_queue_access = requires(T&& val, BufT buf) {
+    { buf.front() } -> std::convertible_to<T&>;
+    { buf.back() } -> std::convertible_to<T&>;
+    { buf.emplace(std::move(val)) };
+    { buf.pop() };
   };
-  static constexpr bool has_plain_stack_access = requires(T&& val, PoolT pool) {
-    { pool.top() } -> std::convertible_to<T&>;
-    { pool.emplace(std::move(val)) };
-    { pool.pop() };
+  static constexpr bool has_plain_stack_access = requires(T&& val, BufT buf) {
+    { buf.top() } -> std::convertible_to<T&>;
+    { buf.emplace(std::move(val)) };
+    { buf.pop() };
   };
 
   static_assert(is_queue_based_push_pop ? (has_both_access || has_plain_queue_access) : true,
@@ -99,11 +103,11 @@ struct concurrent_pool_traits {
   static constexpr bool default_access_strategy_is_stack = !is_queue_based_push_pop;
 
   template <class U>
-  static void push(PoolT& pool, U&& value, condition_variable_type& cv_not_empty)
+  static void push(BufT& buf, U&& value, condition_variable_type& cv_not_empty)
     requires is_single_producer && is_single_consumer
   {
-    const bool was_empty = pool.empty();
-    do_push(pool, std::forward<U>(value));
+    const bool was_empty = buf.empty();
+    do_push(buf, std::forward<U>(value));
 
     if (was_empty) {
       cv_not_empty.notify_one();
@@ -111,10 +115,10 @@ struct concurrent_pool_traits {
   }
 
   template <class U>
-  static void push(PoolT& pool, U&& value, condition_variable_type& cv_not_empty)
+  static void push(BufT& buf, U&& value, condition_variable_type& cv_not_empty)
     requires (!(is_single_producer && is_single_consumer))
   {
-    do_push(pool, std::forward<U>(value));
+    do_push(buf, std::forward<U>(value));
 
     if constexpr (is_single_consumer) {
       cv_not_empty.notify_one();
@@ -123,21 +127,21 @@ struct concurrent_pool_traits {
     }
   }
 
-  static void pop(PoolT& pool, T& value, condition_variable_type& cv_not_full, concurrent_pool_size_type pool_capacity)
+  static void pop(BufT& buf, T& value, condition_variable_type& cv_not_full, size_type capacity)
     requires is_single_producer && is_single_consumer
   {
-    const bool was_full = static_cast<concurrent_pool_size_type>(pool.size()) >= pool_capacity;
-    do_pop(pool, value);
+    const bool was_full = static_cast<size_type>(buf.size()) >= capacity;
+    do_pop(buf, value);
 
     if (was_full) {
       cv_not_full.notify_one();
     }
   }
 
-  static void pop(PoolT& pool, T& value, condition_variable_type& cv_not_full)
+  static void pop(BufT& buf, T& value, condition_variable_type& cv_not_full)
     requires (!(is_single_producer && is_single_consumer))
   {
-    do_pop(pool, value);
+    do_pop(buf, value);
 
     if constexpr (is_single_producer) {
       cv_not_full.notify_one();
@@ -148,34 +152,34 @@ struct concurrent_pool_traits {
 
 private:
   template <class U>
-  static void do_push(PoolT& pool, U&& value) {
+  static void do_push(BufT& buf, U&& value) {
     if constexpr (has_back_access) {
-      pool.emplace_back(std::forward<U>(value));
+      buf.emplace_back(std::forward<U>(value));
 
     } else {
-      pool.emplace(std::forward<U>(value));
+      buf.emplace(std::forward<U>(value));
     }
   }
 
-  static void do_pop(PoolT& pool, T& value) {
+  static void do_pop(BufT& buf, T& value) {
     if constexpr (default_access_strategy_is_stack) {
       if constexpr (has_back_access) {
-        value = std::move(pool.back());
-        pool.pop_back();
+        value = std::move(buf.back());
+        buf.pop_back();
 
       } else {
-        value = std::move(pool.top());
-        pool.pop();
+        value = std::move(buf.top());
+        buf.pop();
       }
 
     } else {  // queue-like access
       if constexpr (has_front_access) {
-        value = std::move(pool.front());
-        pool.pop_front();
+        value = std::move(buf.front());
+        buf.pop_front();
 
       } else {
-        value = std::move(pool.front());
-        pool.pop();
+        value = std::move(buf.front());
+        buf.pop();
       }
     }
   }
@@ -197,17 +201,16 @@ using concurrent_pool_allocator_t = std::conditional_t<
 >;
 // clang-format on
 
-template <class T, class PoolT, concurrent_pool_flag Flags = concurrent_pool_flag::mpmc>
+template <class T, class BufT, concurrent_pool_flag Flags = concurrent_pool_flag::mpmc>
 class concurrent_pool {
 public:
   // clang-format off
   static constexpr concurrent_pool_flag flags = Flags;
   using value_type                            = T;
-  using pool_type                             = PoolT;
-  using traits_type                           = detail::concurrent_pool_traits<T, PoolT, Flags>;
+  using buf_type                              = BufT;
+  using traits_type                           = detail::concurrent_pool_traits<T, BufT, Flags>;
   using condition_variable_type               = typename traits_type::condition_variable_type;
-
-  using size_type                             = detail::concurrent_pool_size_type;
+  using size_type                             = typename traits_type::size_type;
   // clang-format on
 
   // -------------------------------------------
@@ -234,7 +237,7 @@ public:
     }
     std::unique_lock lock{mtx_};
     capacity_ = new_capacity;
-    pool_.reserve(static_cast<std::size_t>(capacity_));
+    buf_.reserve(static_cast<std::size_t>(capacity_));
   }
 
   // Note: this holds only the current state.
@@ -242,7 +245,7 @@ public:
   [[nodiscard]]
   size_type size() const {
     std::unique_lock lock{mtx_};
-    return static_cast<size_type>(pool_.size());
+    return static_cast<size_type>(buf_.size());
   }
 
   // use `size() == 0` instead.
@@ -262,7 +265,7 @@ public:
   [[nodiscard]]
   detail::concurrent_pool_size_info size_info() const {
     std::unique_lock lock{mtx_};
-    return {.size = static_cast<size_type>(pool_.size()), .capacity = capacity_};
+    return {.size = static_cast<size_type>(buf_.size()), .capacity = capacity_};
   }
 
   // -------------------------------------------
@@ -275,7 +278,7 @@ public:
       return false;
     }
 
-    traits_type::push(pool_, std::forward<U>(value), cv_not_empty_);
+    traits_type::push(buf_, std::forward<U>(value), cv_not_empty_);
     return true;
   }
 
@@ -298,7 +301,7 @@ public:
       return false;
     }
 
-    traits_type::push(pool_, std::forward<U>(value), cv_not_empty_);
+    traits_type::push(buf_, std::forward<U>(value), cv_not_empty_);
     return true;
   }
 #endif
@@ -313,9 +316,9 @@ public:
     }
 
     if constexpr (traits_type::is_single_producer && traits_type::is_single_consumer) {
-      traits_type::pop(pool_, value, cv_not_full_, capacity_);
+      traits_type::pop(buf_, value, cv_not_full_, capacity_);
     } else {
-      traits_type::pop(pool_, value, cv_not_full_);
+      traits_type::pop(buf_, value, cv_not_full_);
     }
     return true;
   }
@@ -338,9 +341,9 @@ public:
     }
 
     if constexpr (traits_type::is_single_producer && traits_type::is_single_consumer) {
-      traits_type::pop(pool_, value, cv_not_full_, capacity_);
+      traits_type::pop(buf_, value, cv_not_full_, capacity_);
     } else {
-      traits_type::pop(pool_, value, cv_not_full_);
+      traits_type::pop(buf_, value, cv_not_full_);
     }
     return true;
   }
@@ -364,24 +367,24 @@ public:
 
   void clear() {
     std::unique_lock lock{mtx_};
-    pool_.clear();
+    buf_.clear();
     cv_not_full_.notify_all();
     // cv_not_empty_.notify_all();
   }
 
 private:
   auto push_wait_cond() const {
-    return [this] { return static_cast<size_type>(pool_.size()) < capacity_ || closed_; };
+    return [this] { return static_cast<size_type>(buf_.size()) < capacity_ || closed_; };
   }
   bool push_wait_cond_error() const { return closed_; }
 
   auto pop_wait_cond() const {
-    return [this] { return !pool_.empty() || closed_; };
+    return [this] { return !buf_.empty() || closed_; };
   }
   bool pop_wait_cond_error() const { return closed_; }
 
   mutable std::mutex mtx_;
-  pool_type pool_;
+  buf_type buf_;
   size_type capacity_ = 1024;
 
   condition_variable_type cv_not_full_, cv_not_empty_;
