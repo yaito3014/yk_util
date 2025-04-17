@@ -50,6 +50,7 @@
 #include <memory>
 #include <set>
 #include <sstream>
+#include <stop_token>
 #include <string>
 #include <unordered_set>
 #include <utility>
