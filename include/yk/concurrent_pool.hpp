@@ -181,11 +181,12 @@ private:
   }
 };
 
-}  // namespace detail
-
+// implementation-defined
 struct concurrent_pool_size_info {
-  detail::concurrent_pool_size_type size = 0, capacity = 0;
+  concurrent_pool_size_type size = 0, capacity = 0;
 };
+
+}  // namespace detail
 
 // clang-format off
 template <class T>
@@ -236,8 +237,30 @@ public:
     pool_.reserve(static_cast<std::size_t>(capacity_));
   }
 
+  // Note: this holds only the current state.
+  // If you need a consistent value, close() the pool first.
   [[nodiscard]]
-  concurrent_pool_size_info size_info() const {
+  size_type size() const {
+    std::unique_lock lock{mtx_};
+    return static_cast<size_type>(pool_.size());
+  }
+
+  // use `size() == 0` instead.
+  //
+  // This is deleted to prevent mistakes like below:
+  //
+  // if (cp.empty()) {
+  //   do_something(cp.size()); // may be `0`
+  // }
+  bool empty() const = delete;
+
+  // Atomically fetches both size() and capacity().
+  // Intended for use in dynamic size adjustments.
+  //
+  // Note: this holds only the current state.
+  // If you need a consistent value, close() the pool first.
+  [[nodiscard]]
+  detail::concurrent_pool_size_info size_info() const {
     std::unique_lock lock{mtx_};
     return {.size = static_cast<size_type>(pool_.size()), .capacity = capacity_};
   }
