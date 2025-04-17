@@ -1035,13 +1035,14 @@ BOOST_AUTO_TEST_CASE(ConcurrentVector) {
       std::vector<int> result;
       const auto consumer = [&](CV& vec, std::stop_token stoken) {
         while (true) {
-          if (stoken.stop_requested()) {
-            std::printf("stop requested\n");
+          if (stoken.stop_requested()) break;
+          int value = -1;
+          try {
+            vec.pop_wait(value, stoken);
+          } catch (yk::interrupt_exception&) {
+            std::printf("interrupted\n");
             break;
           }
-          std::printf("stop not requested, continue...\n");
-          int value = -1;
-          vec.pop_wait(value, stoken);
           result.push_back(value);
         }
         return result;
@@ -1232,7 +1233,12 @@ BOOST_AUTO_TEST_CASE(ConcurrentDeque) {
           }
           std::printf("stop not requested, continue...\n");
           int value = -1;
-          vec.pop_wait(value, stoken);
+          try {
+            vec.pop_wait(value, stoken);
+          } catch (yk::interrupt_exception&) {
+            std::printf("interrupted\n");
+            break;
+          }
           result.push_back(value);
         }
         return result;
@@ -1416,7 +1422,12 @@ BOOST_AUTO_TEST_CASE(ConcurrentDeque) {
         while (true) {
           if (stoken.stop_requested()) break;
           int value = -1;
-          vec.pop_wait(value, stoken);
+          try {
+            vec.pop_wait(value, stoken);
+          } catch (yk::interrupt_exception&) {
+            std::printf("interrupted\n");
+            break;
+          }
           result.push_back(value);
         }
         return result;
