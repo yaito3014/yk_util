@@ -303,7 +303,11 @@ public:
       return false;
     }
 
-    traits_type::pop(pool_, value, cv_not_full_);
+    if constexpr (traits_type::is_single_producer && traits_type::is_single_consumer) {
+      traits_type::pop(pool_, value, cv_not_full_, capacity_);
+    } else {
+      traits_type::pop(pool_, value, cv_not_full_);
+    }
     return true;
   }
 #endif
