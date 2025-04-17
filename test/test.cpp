@@ -1040,7 +1040,6 @@ BOOST_AUTO_TEST_CASE(ConcurrentVector) {
           try {
             vec.pop_wait(value, stoken);
           } catch (yk::interrupt_exception&) {
-            std::printf("interrupted\n");
             break;
           }
           result.push_back(value);
@@ -1215,7 +1214,6 @@ BOOST_AUTO_TEST_CASE(ConcurrentDeque) {
                                             }));
     }
 #if __cpp_lib_jthread >= 201911L
-    std::printf("%d\n", __LINE__);
     // stop_token
     {
       using CV = yk::concurrent_spsc_deque<int, yk::concurrent_pool_flag::stop_token_support>;
@@ -1228,15 +1226,12 @@ BOOST_AUTO_TEST_CASE(ConcurrentDeque) {
       const auto consumer = [&](CV& vec, std::stop_token stoken) {
         while (true) {
           if (stoken.stop_requested()) {
-            std::printf("stop requested\n");
             break;
           }
-          std::printf("stop not requested, continue...\n");
           int value = -1;
           try {
             vec.pop_wait(value, stoken);
           } catch (yk::interrupt_exception&) {
-            std::printf("interrupted\n");
             break;
           }
           result.push_back(value);
@@ -1425,7 +1420,6 @@ BOOST_AUTO_TEST_CASE(ConcurrentDeque) {
           try {
             vec.pop_wait(value, stoken);
           } catch (yk::interrupt_exception&) {
-            std::printf("interrupted\n");
             break;
           }
           result.push_back(value);
