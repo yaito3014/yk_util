@@ -12,6 +12,7 @@
 #include <concepts>
 #include <condition_variable>
 #include <mutex>
+#include <stop_token>
 #include <type_traits>
 
 namespace yk {
@@ -45,7 +46,7 @@ struct concurrent_pool_traits {
   static constexpr bool is_single_producer      = !is_multi_producer;
   static constexpr bool is_multi_consumer       = static_cast<bool>(flags & concurrent_pool_flag::multi_consumer);
   static constexpr bool is_single_consumer      = !is_multi_consumer;
-  static constexpr bool has_stop_token_support  = static_cast<bool>(flags & concurrent_pool_flag::stop_token_support);
+  static constexpr bool has_stop_token_support  = __cpp_lib_jthread >= 201911L && static_cast<bool>(flags & concurrent_pool_flag::stop_token_support);
   static constexpr bool is_queue_based_push_pop = static_cast<bool>(flags & concurrent_pool_flag::queue_based_push_pop);
 
   using condition_variable_type = std::conditional_t<
@@ -243,6 +244,7 @@ public:
     return true;
   }
 
+#if __cpp_lib_jthread >= 201911L
   template <class U>
   bool push_wait(U&& value, std::stop_token stop_token)
     requires (!traits_type::has_stop_token_support)
@@ -260,6 +262,7 @@ public:
     if (push_wait_cond_error()) {
       return false;
     }
+#endif
 
     traits_type::push(pool_, std::forward<U>(value), cv_not_empty_);
     return true;
@@ -278,6 +281,7 @@ public:
     return true;
   }
 
+#if __cpp_lib_jthread >= 201911L
   bool pop_wait(T& value, std::stop_token stop_token)
     requires (!traits_type::has_stop_token_support)
   = delete;
@@ -297,6 +301,7 @@ public:
     traits_type::pop(pool_, value, cv_not_full_);
     return true;
   }
+#endif
 
   // -------------------------------------------
 

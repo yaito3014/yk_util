@@ -50,8 +50,8 @@
 #include <memory>
 #include <set>
 #include <sstream>
-#include <stop_token>
 #include <string>
+#include <thread>
 #include <unordered_set>
 #include <utility>
 #include <vector>
@@ -882,10 +882,10 @@ BOOST_AUTO_TEST_CASE(ConcurrentVector) {
     };
 
     CV vec;
-    {
-      std::jthread producer_thread(producer, std::ref(vec));
-      std::jthread consumer_thread(consumer, std::ref(vec));
-    }
+    std::thread producer_thread(producer, std::ref(vec));
+    std::thread consumer_thread(consumer, std::ref(vec));
+    producer_thread.join();
+    consumer_thread.join();
     std::ranges::sort(result);
     BOOST_TEST(std::ranges::equal(result, std::vector<int>{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}));
   }
@@ -909,13 +909,16 @@ BOOST_AUTO_TEST_CASE(ConcurrentVector) {
     };
 
     CV vec;
-    {
-      std::jthread producer_thread1(producer, std::ref(vec), 0);
-      std::jthread producer_thread2(producer, std::ref(vec), 1);
-      std::jthread producer_thread3(producer, std::ref(vec), 2);
-      std::jthread producer_thread4(producer, std::ref(vec), 3);
-      std::jthread consumer_thread(consumer, std::ref(vec));
-    }
+    std::thread producer_thread1(producer, std::ref(vec), 0);
+    std::thread producer_thread2(producer, std::ref(vec), 1);
+    std::thread producer_thread3(producer, std::ref(vec), 2);
+    std::thread producer_thread4(producer, std::ref(vec), 3);
+    std::thread consumer_thread(consumer, std::ref(vec));
+    producer_thread1.join();
+    producer_thread2.join();
+    producer_thread3.join();
+    producer_thread4.join();
+    consumer_thread.join();
     std::ranges::sort(result);
     BOOST_TEST(std::ranges::equal(result, std::vector<int>{
                                               0,   1,   2,   3,   4,   5,   6,   7,   8,   9,   100, 101, 102, 103, 104, 105, 106, 107, 108, 109,
@@ -942,13 +945,16 @@ BOOST_AUTO_TEST_CASE(ConcurrentVector) {
       return result;
     };
     CV vec;
-    {
-      std::jthread producer_thread(producer, std::ref(vec));
-      std::jthread consumer_thread1(consumer, std::ref(vec));
-      std::jthread consumer_thread2(consumer, std::ref(vec));
-      std::jthread consumer_thread3(consumer, std::ref(vec));
-      std::jthread consumer_thread4(consumer, std::ref(vec));
-    }
+    std::thread producer_thread(producer, std::ref(vec));
+    std::thread consumer_thread1(consumer, std::ref(vec));
+    std::thread consumer_thread2(consumer, std::ref(vec));
+    std::thread consumer_thread3(consumer, std::ref(vec));
+    std::thread consumer_thread4(consumer, std::ref(vec));
+    producer_thread.join();
+    consumer_thread1.join();
+    consumer_thread2.join();
+    consumer_thread3.join();
+    consumer_thread4.join();
     std::ranges::sort(result);
     BOOST_TEST(std::ranges::equal(result, std::vector<int>{
                                               0,  1,  2,  3,  4,  5,  6,  7,  8,  9,  10, 11, 12, 13, 14, 15, 16, 17, 18, 19,
@@ -975,16 +981,22 @@ BOOST_AUTO_TEST_CASE(ConcurrentVector) {
       return result;
     };
     CV vec;
-    {
-      std::jthread producer_thread1(producer, std::ref(vec), 0);
-      std::jthread producer_thread2(producer, std::ref(vec), 1);
-      std::jthread producer_thread3(producer, std::ref(vec), 2);
-      std::jthread producer_thread4(producer, std::ref(vec), 3);
-      std::jthread consumer_thread1(consumer, std::ref(vec));
-      std::jthread consumer_thread2(consumer, std::ref(vec));
-      std::jthread consumer_thread3(consumer, std::ref(vec));
-      std::jthread consumer_thread4(consumer, std::ref(vec));
-    }
+    std::thread producer_thread1(producer, std::ref(vec), 0);
+    std::thread producer_thread2(producer, std::ref(vec), 1);
+    std::thread producer_thread3(producer, std::ref(vec), 2);
+    std::thread producer_thread4(producer, std::ref(vec), 3);
+    std::thread consumer_thread1(consumer, std::ref(vec));
+    std::thread consumer_thread2(consumer, std::ref(vec));
+    std::thread consumer_thread3(consumer, std::ref(vec));
+    std::thread consumer_thread4(consumer, std::ref(vec));
+    producer_thread1.join();
+    producer_thread2.join();
+    producer_thread3.join();
+    producer_thread4.join();
+    consumer_thread1.join();
+    consumer_thread2.join();
+    consumer_thread3.join();
+    consumer_thread4.join();
     std::ranges::sort(result);
     BOOST_TEST(std::ranges::equal(result, std::vector<int>{
                                               0,   1,   2,   3,   4,   5,   6,   7,   8,   9,   100, 101, 102, 103, 104, 105, 106, 107, 108, 109,
