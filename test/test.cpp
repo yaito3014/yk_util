@@ -862,32 +862,32 @@ BOOST_AUTO_TEST_CASE(Concat) {
 }
 BOOST_AUTO_TEST_CASE(ConcurrentVector) {
   // Single Producer Single Consumer
-  // {
-  //   using CV = yk::concurrent_spsc_vector<int>;
-  //   const auto producer = [](CV& vec) {
-  //     for (int i = 0; i < 10; ++i) {
-  //       vec.push_wait(i);
-  //     }
-  //   };
+  {
+    using CV = yk::concurrent_spsc_vector<int>;
+    const auto producer = [](CV& vec) {
+      for (int i = 0; i < 10; ++i) {
+        vec.push_wait(i);
+      }
+    };
 
-  //   std::vector<int> result;
-  //   const auto consumer = [&](CV& vec) {
-  //     for (int i = 0; i < 10; ++i) {
-  //       int value = -1;
-  //       vec.pop_wait(value);
-  //       result.push_back(value);
-  //     }
-  //     return result;
-  //   };
+    std::vector<int> result;
+    const auto consumer = [&](CV& vec) {
+      for (int i = 0; i < 10; ++i) {
+        int value = -1;
+        vec.pop_wait(value);
+        result.push_back(value);
+      }
+      return result;
+    };
 
-  //   CV vec;
-  //   {
-  //     std::jthread producer_thread(producer, std::ref(vec));
-  //     std::jthread consumer_thread(consumer, std::ref(vec));
-  //   }
-  //   std::ranges::sort(result);
-  //   BOOST_TEST(std::ranges::equal(result, std::vector<int>{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}));
-  // }
+    CV vec;
+    {
+      std::jthread producer_thread(producer, std::ref(vec));
+      std::jthread consumer_thread(consumer, std::ref(vec));
+    }
+    std::ranges::sort(result);
+    BOOST_TEST(std::ranges::equal(result, std::vector<int>{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}));
+  }
   // Multi Producer Single Consumer
   {
     using CV = yk::concurrent_mpsc_vector<int>;

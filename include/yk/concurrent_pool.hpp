@@ -126,15 +126,18 @@ struct concurrent_pool_traits {
     }
   }
 
-  static void pop(PoolT& pool, T& value, condition_variable_type& cv_not_full)
+  static void pop(PoolT& pool, T& value, condition_variable_type& cv_not_full, long long pool_capacity)
     requires (!(is_single_producer && is_single_consumer))
   {
+    const bool was_full = static_cast<long long>(pool.size()) >= pool_capacity;
     do_pop(pool, value);
 
-    if constexpr (is_single_producer) {
-      cv_not_full.notify_one();
-    } else {
-      cv_not_full.notify_all();
+    if (was_full) {
+      if constexpr (is_single_producer) {
+        cv_not_full.notify_one();
+      } else {
+        cv_not_full.notify_all();
+      }
     }
   }
 
@@ -271,7 +274,7 @@ public:
       return false;
     }
 
-    traits_type::pop(pool_, value, cv_not_full_);
+    traits_type::pop(pool_, value, cv_not_full_, capacity_);
     return true;
   }
 
