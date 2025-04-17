@@ -18,7 +18,8 @@ namespace yk {
 
 inline namespace bitops_operators {
 
-std::ostream& operator<<(std::ostream& os, BitopsEnabledEnum const auto& val) {
+template <BitopsEnabledEnum T>
+std::ostream& operator<<(std::ostream& os, const T& val) {
   if constexpr (requires {
     { to_string(val) } -> std::convertible_to<const std::string&>;
   }) {
