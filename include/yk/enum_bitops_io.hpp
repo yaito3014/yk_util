@@ -8,7 +8,6 @@
 #include <string>
 #include <string_view>
 
-
 namespace yk {
 
 // Fallback stream outputter for arbitrary BitopsEnabledEnum.
