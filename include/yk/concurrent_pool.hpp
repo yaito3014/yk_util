@@ -9,6 +9,7 @@
 #include <concepts>
 #include <condition_variable>
 #include <mutex>
+#include <stdexcept>
 #include <stop_token>
 #include <type_traits>
 #include <utility>
@@ -216,6 +217,9 @@ public:
   }
 
   void set_capacity(size_type new_capacity) {
+    if (new_capacity < 0) {
+      throw std::length_error("new_capacity must be non-negative");
+    }
     std::unique_lock lock{mtx_};
     capacity_ = new_capacity == 0 ? 1 : new_capacity;
   }
@@ -223,6 +227,9 @@ public:
   void reserve(size_type new_capacity)
     requires traits_type::has_reserve
   {
+    if (new_capacity < 0) {
+      throw std::length_error("new_capacity must be non-negative");
+    }
     std::unique_lock lock{mtx_};
     capacity_ = new_capacity == 0 ? 1 : new_capacity;
     pool_.reserve(static_cast<std::size_t>(capacity_));

@@ -873,6 +873,10 @@ BOOST_AUTO_TEST_CASE(ConcurrentVector) {
   // stack-like pool
   {
     {
+      yk::concurrent_vector<int> pool;
+      BOOST_REQUIRE_THROW(pool.reserve(-1), std::length_error);
+    }
+    {
       yk::concurrent_vector<int> stack_like_pool;
       stack_like_pool.push_wait(1);
       stack_like_pool.push_wait(2);
