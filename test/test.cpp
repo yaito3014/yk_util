@@ -782,6 +782,19 @@ BOOST_AUTO_TEST_CASE(Concat) {
     // static_assert(std::ranges::common_range<decltype(rng)>);  // in theory, this should be true if above is well-formed, but ill-formed in our implementation
   }
   {
+    struct InputIterator {
+      using value_type = int;
+      using difference_type = int;
+      int operator*() const { return 0; }
+      InputIterator& operator++() { return *this; }
+      InputIterator operator++(int) { return *this; }
+    };
+    auto input_range = std::ranges::subrange(InputIterator{}, std::unreachable_sentinel);
+    static_assert(std::ranges::input_range<decltype(input_range)>);
+    auto concat = yk::views::concat(input_range, std::views::iota(0, 1));
+    static_assert(std::ranges::range<decltype(concat)>);
+  }
+  {
     std::vector<int> vec;  // random_access_range
     std::list<int> list;   // bidirectional_range
     auto rng = yk::views::concat(vec, list);
