@@ -1035,9 +1035,13 @@ BOOST_AUTO_TEST_CASE(ConcurrentVector) {
       std::vector<int> result;
       const auto consumer = [&](CV& vec, std::stop_token stoken) {
         while (true) {
-          if (stoken.stop_requested()) break;
+          if (stoken.stop_requested()) {
+            std::printf("stop requested\n");
+            break;
+          }
+          std::printf("stop not requested, continue...\n");
           int value = -1;
-          vec.pop_wait(value);
+          vec.pop_wait(value, stoken);
           result.push_back(value);
         }
         return result;
@@ -1210,28 +1214,32 @@ BOOST_AUTO_TEST_CASE(ConcurrentDeque) {
                                             }));
     }
 #if __cpp_lib_jthread >= 201911L
+    std::printf("%d\n", __LINE__);
     // stop_token
     {
       using CV = yk::concurrent_spsc_deque<int, yk::concurrent_pool_flag::stop_token_support>;
-      const auto producer = [](CV& vec, std::stop_token stoken) {
+      const auto producer = [](CV& vec) {
         for (int i = 0; i < 10; ++i) {
-          if (stoken.stop_requested()) break;
           vec.push_wait(i);
         }
       };
       std::vector<int> result;
       const auto consumer = [&](CV& vec, std::stop_token stoken) {
         while (true) {
-          if (stoken.stop_requested()) break;
+          if (stoken.stop_requested()) {
+            std::printf("stop requested\n");
+            break;
+          }
+          std::printf("stop not requested, continue...\n");
           int value = -1;
-          vec.pop_wait(value);
+          vec.pop_wait(value, stoken);
           result.push_back(value);
         }
         return result;
       };
       CV vec;
       std::stop_source ssource;
-      std::thread producer_thread(producer, std::ref(vec), ssource.get_token());
+      std::thread producer_thread(producer, std::ref(vec));
       std::thread consumer_thread(consumer, std::ref(vec), ssource.get_token());
       producer_thread.join();
       ssource.request_stop();
@@ -1408,7 +1416,7 @@ BOOST_AUTO_TEST_CASE(ConcurrentDeque) {
         while (true) {
           if (stoken.stop_requested()) break;
           int value = -1;
-          vec.pop_wait(value);
+          vec.pop_wait(value, stoken);
           result.push_back(value);
         }
         return result;
