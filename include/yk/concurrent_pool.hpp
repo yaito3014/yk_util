@@ -266,11 +266,11 @@ public:
     if (push_wait_cond_error()) {
       return false;
     }
-#endif
 
     traits_type::push(pool_, std::forward<U>(value), cv_not_empty_);
     return true;
   }
+#endif
 
   // -------------------------------------------
 
