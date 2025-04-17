@@ -46,7 +46,11 @@ struct concurrent_pool_traits {
   static constexpr bool is_single_producer      = !is_multi_producer;
   static constexpr bool is_multi_consumer       = static_cast<bool>(flags & concurrent_pool_flag::multi_consumer);
   static constexpr bool is_single_consumer      = !is_multi_consumer;
-  static constexpr bool has_stop_token_support  = __cpp_lib_jthread >= 201911L && static_cast<bool>(flags & concurrent_pool_flag::stop_token_support);
+#if __cpp_lib_jthread >= 201911L
+  static constexpr bool has_stop_token_support  = static_cast<bool>(flags & concurrent_pool_flag::stop_token_support);
+#else
+  static constexpr bool has_stop_token_support  = false;
+#endif
   static constexpr bool is_queue_based_push_pop = static_cast<bool>(flags & concurrent_pool_flag::queue_based_push_pop);
 
   using condition_variable_type = std::conditional_t<
