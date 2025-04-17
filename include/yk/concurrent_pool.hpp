@@ -219,20 +219,20 @@ public:
 
   void set_capacity(size_type new_capacity) {
     if (new_capacity < 0) {
-      throw std::length_error("new_capacity must be non-negative");
+      throw std::length_error("new capacity must be non-negative");
     }
     std::unique_lock lock{mtx_};
-    capacity_ = new_capacity == 0 ? 1 : new_capacity;
+    capacity_ = new_capacity;
   }
 
   void reserve(size_type new_capacity)
     requires traits_type::has_reserve
   {
     if (new_capacity < 0) {
-      throw std::length_error("new_capacity must be non-negative");
+      throw std::length_error("new capacity must be non-negative");
     }
     std::unique_lock lock{mtx_};
-    capacity_ = new_capacity == 0 ? 1 : new_capacity;
+    capacity_ = new_capacity;
     pool_.reserve(static_cast<std::size_t>(capacity_));
   }
 
