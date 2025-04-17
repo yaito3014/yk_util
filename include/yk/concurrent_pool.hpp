@@ -38,6 +38,8 @@ struct bitops_enabled<concurrent_pool_flag> : std::true_type {};
 
 namespace detail {
 
+using concurrent_pool_size_type = std::make_signed_t<std::size_t>;
+
 template <class T, class PoolT, concurrent_pool_flag Flags>
 struct concurrent_pool_traits {
   // clang-format off
@@ -120,10 +122,10 @@ struct concurrent_pool_traits {
     }
   }
 
-  static void pop(PoolT& pool, T& value, condition_variable_type& cv_not_full, long long pool_capacity)
+  static void pop(PoolT& pool, T& value, condition_variable_type& cv_not_full, size_type pool_capacity)
     requires is_single_producer && is_single_consumer
   {
-    const bool was_full = static_cast<long long>(pool.size()) >= pool_capacity;
+    const bool was_full = static_cast<size_type>(pool.size()) >= pool_capacity;
     do_pop(pool, value);
 
     if (was_full) {
@@ -181,7 +183,7 @@ private:
 }  // namespace detail
 
 struct concurrent_pool_size_info {
-  long long size = 0, capacity = 0;
+  detail::concurrent_pool_size_type size = 0, capacity = 0;
 };
 
 // clang-format off
@@ -199,6 +201,7 @@ public:
   // clang-format off
   static constexpr concurrent_pool_flag flags = Flags;
   using value_type                            = T;
+  using size_type                             = detail::concurrent_pool_size_type;
   using pool_type                             = PoolT;
   using traits_type                           = detail::concurrent_pool_traits<T, PoolT, Flags>;
   using condition_variable_type               = typename traits_type::condition_variable_type;
@@ -207,17 +210,17 @@ public:
   // -------------------------------------------
 
   [[nodiscard]]
-  long long capacity() const {
+  size_type capacity() const {
     std::unique_lock lock{mtx_};
     return capacity_;
   }
 
-  void set_capacity(long long new_capacity) {
+  void set_capacity(size_type new_capacity) {
     std::unique_lock lock{mtx_};
     capacity_ = new_capacity == 0 ? 1 : new_capacity;
   }
 
-  void reserve(long long new_capacity)
+  void reserve(size_type new_capacity)
     requires traits_type::has_reserve
   {
     std::unique_lock lock{mtx_};
@@ -337,7 +340,7 @@ public:
 
 private:
   auto push_wait_cond() const {
-    return [this] { return static_cast<long long>(pool_.size()) < capacity_ || closed_; };
+    return [this] { return static_cast<size_type>(pool_.size()) < capacity_ || closed_; };
   }
   bool push_wait_cond_error() const { return closed_; }
 
@@ -348,7 +351,7 @@ private:
 
   mutable std::mutex mtx_;
   pool_type pool_;
-  long long capacity_ = 1024;
+  size_type capacity_ = 1024;
 
   condition_variable_type cv_not_full_, cv_not_empty_;
 
