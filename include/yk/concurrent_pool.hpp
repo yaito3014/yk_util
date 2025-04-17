@@ -122,10 +122,10 @@ struct concurrent_pool_traits {
     }
   }
 
-  static void pop(PoolT& pool, T& value, condition_variable_type& cv_not_full, size_type pool_capacity)
+  static void pop(PoolT& pool, T& value, condition_variable_type& cv_not_full, concurrent_pool_size_type pool_capacity)
     requires is_single_producer && is_single_consumer
   {
-    const bool was_full = static_cast<size_type>(pool.size()) >= pool_capacity;
+    const bool was_full = static_cast<concurrent_pool_size_type>(pool.size()) >= pool_capacity;
     do_pop(pool, value);
 
     if (was_full) {
