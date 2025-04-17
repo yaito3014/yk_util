@@ -1,7 +1,6 @@
 #ifndef YK_CONCURRENT_DEQUE_HPP
 #define YK_CONCURRENT_DEQUE_HPP
 
-#include "yk/allocator/default_init_allocator.hpp"
 #include "yk/concurrent_pool.hpp"
 
 #include <deque>
