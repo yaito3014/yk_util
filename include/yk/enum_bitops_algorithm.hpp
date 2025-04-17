@@ -1,7 +1,7 @@
 #ifndef YK_ENUM_BITOPS_ALGORITHM_HPP
 #define YK_ENUM_BITOPS_ALGORITHM_HPP
 
-#include "yk/util/underlying_type.hpp"
+#include "yk/util/to_underlying.hpp"
 #include "yk/enum_bitops.hpp"
 
 #include <ranges>
