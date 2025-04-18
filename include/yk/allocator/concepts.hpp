@@ -2,7 +2,6 @@
 #define YK_ALLOCATOR_CONCEPTS_HPP
 
 #include <concepts>
-
 #include <cstddef>
 
 namespace yk {
