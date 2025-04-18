@@ -10,11 +10,17 @@ SpaceBeforeParens: Custom
 SpaceBeforeParensOptions:
   AfterRequiresInClause: true
 IncludeCategories:
-  - Regex: "^([^/]+/){4,}.+"
+  - Regex: '^"([^/]+/){4,}.+'
     Priority: 1
-  - Regex: "^([^/]+/){3}.+"
+  - Regex: '^"([^/]+/){3}.+'
     Priority: 2
-  - Regex: "^([^/]+/){2}.+"
+  - Regex: '^"([^/]+/){2}.+'
     Priority: 3
-  - Regex: "^([^/]+/){1}.+"
+  - Regex: '^"([^/]+/){1}.+'
     Priority: 4
+  - Regex: "^<(cstdlib|cfloat|climits|csetjmp|csignal|cstdarg|cstddef|cstdint|cassert|cerrno|cstring|cctype|clocale|cuchar|cwchar|cwctype|cfenv|cmath|ctime|cinttypes|cstdio|ccomplex|ctgmath|ciso646|cstdalign|cstdbool)>$"
+    Priority: 2
+  - Regex: "<.+>"
+    Priority: 1
+  - Regex: ".*"
+    Priority: 0
