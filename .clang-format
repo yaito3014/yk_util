@@ -9,3 +9,12 @@ ReferenceAlignment: Left
 SpaceBeforeParens: Custom
 SpaceBeforeParensOptions:
   AfterRequiresInClause: true
+IncludeCategories:
+  - Regex: "^([^/]+/){4,}.+"
+    Priority: 1
+  - Regex: "^([^/]+/){3}.+"
+    Priority: 2
+  - Regex: "^([^/]+/){2}.+"
+    Priority: 3
+  - Regex: "^([^/]+/){1}.+"
+    Priority: 4
