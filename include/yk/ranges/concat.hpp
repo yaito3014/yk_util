@@ -7,7 +7,6 @@
 #include <ranges>
 #include <tuple>
 #include <utility>
-#include <functional>
 #include <variant>
 
 namespace yk {
