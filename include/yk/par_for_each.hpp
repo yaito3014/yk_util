@@ -8,6 +8,7 @@
 #include <algorithm>
 #include <exception>
 #include <execution>
+#include <functional>
 #include <ranges>
 #include <shared_mutex>
 #include <type_traits>
