@@ -38,8 +38,8 @@ struct producer_gate : protected detail::concurrent_pool_gate_store<PoolT, kind>
       : detail::concurrent_pool_gate_store<PoolT, kind>{pool, 0ll} {}
 
   producer_gate() = delete;
-  producer_gate(const producer_gate&) noexcept = default;
-  producer_gate(producer_gate&&) noexcept = default;
+  producer_gate(const producer_gate&) noexcept = delete;
+  producer_gate(producer_gate&&) noexcept = delete;
 
   producer_gate& operator=(const producer_gate&) noexcept = delete;
   producer_gate& operator=(producer_gate&&) noexcept = delete;
@@ -81,8 +81,8 @@ struct consumer_gate : protected detail::concurrent_pool_gate_store<PoolT, kind>
       : detail::concurrent_pool_gate_store<PoolT, kind>{pool, 0ll} {}
 
   consumer_gate() = delete;
-  consumer_gate(const consumer_gate&) noexcept = default;
-  consumer_gate(consumer_gate&&) noexcept = default;
+  consumer_gate(const consumer_gate&) noexcept = delete;
+  consumer_gate(consumer_gate&&) noexcept = delete;
 
   consumer_gate& operator=(const consumer_gate&) noexcept = delete;
   consumer_gate& operator=(consumer_gate&&) noexcept = delete;
