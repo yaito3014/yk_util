@@ -2,9 +2,9 @@
 #define YK_CONCURRENT_POOL_HPP
 
 #include "yk/allocator/default_init_allocator.hpp"
+#include "yk/util/to_underlying.hpp"
 #include "yk/enum_bitops.hpp"
 #include "yk/interrupt_exception.hpp"
-#include "yk/util/to_underlying.hpp"
 
 #include <concepts>
 #include <condition_variable>
