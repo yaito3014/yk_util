@@ -69,7 +69,6 @@ public:
 
   static constexpr std::size_t default_queue_size = 10000;
   static constexpr long long default_producer_chunk_size_max = 100000;
-  static constexpr long long default_producer_chunk_size = default_producer_chunk_size_max;
 
   // not thread-safe
   explicit scheduler(const std::shared_ptr<worker_pool>& worker_pool)  //
@@ -95,11 +94,6 @@ public:
     producer_inputs_ = std::forward<R>(producer_inputs);
     last_producer_input_it_ = producer_inputs_.begin();
     producer_input_total_ = static_cast<long long>(producer_inputs_.size());
-
-    producer_chunk_size_ = std::clamp(                             //
-        producer_input_total_ / worker_pool_->get_worker_limit(),  //
-        1ll,                                                       //
-        default_producer_chunk_size_max);
   }
 
   // thread-safe while processing the same input
@@ -175,6 +169,12 @@ public:
 
   // not thread-safe
   void start() {
+    if (producer_chunk_size_ <= 0) {
+      producer_chunk_size_ =                                                    //
+          std::clamp(producer_input_total_ / worker_pool_->get_worker_limit(),  //
+                     1ll, default_producer_chunk_size_max);
+    }
+
     worker_pool_->halt_and_clear();
 
     worker_pool_->launch([this](const worker_id_t worker_id, std::stop_token stop_token) {  //
@@ -234,7 +234,7 @@ private:
         it_last = producer_inputs_.end();
 
       } else {
-        it_last = std::next(it_first, producer_chunk_size_);
+        it_last = std::ranges::next(it_first, producer_chunk_size_);
       }
 
       last_producer_input_it_ = it_last;
@@ -373,7 +373,7 @@ private:
 
   ProducerInputRange producer_inputs_;
   long long producer_input_total_ = 0;
-  long long producer_chunk_size_ = default_producer_chunk_size;
+  long long producer_chunk_size_ = 0;
 
   std::mutex producer_input_mtx_;
   producer_input_iterator_t last_producer_input_it_ = producer_inputs_.end();
