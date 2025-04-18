@@ -271,6 +271,7 @@ public:
   // -------------------------------------------
 
   template <class U>
+  [[nodiscard]]
   bool push_wait(U&& value) {
     std::unique_lock lock{mtx_};
     cv_not_full_.wait(lock, push_wait_cond());
@@ -289,6 +290,7 @@ public:
   = delete;
 
   template <class U>
+  [[nodiscard]]
   bool push_wait(U&& value, std::stop_token stop_token)
     requires traits_type::has_stop_token_support
   {
@@ -308,6 +310,7 @@ public:
 
   // -------------------------------------------
 
+  [[nodiscard]]
   bool pop_wait(T& value) {
     std::unique_lock lock{mtx_};
     cv_not_empty_.wait(lock, pop_wait_cond());
@@ -328,6 +331,7 @@ public:
     requires (!traits_type::has_stop_token_support)
   = delete;
 
+  [[nodiscard]]
   bool pop_wait(T& value, std::stop_token stop_token)
     requires traits_type::has_stop_token_support
   {
@@ -373,15 +377,25 @@ public:
   }
 
 private:
+  [[nodiscard]]
   auto push_wait_cond() const {
     return [this] { return static_cast<size_type>(buf_.size()) < capacity_ || closed_; };
   }
-  bool push_wait_cond_error() const { return closed_; }
 
+  [[nodiscard]]
+  bool push_wait_cond_error() const {
+    return closed_;
+  }
+
+  [[nodiscard]]
   auto pop_wait_cond() const {
     return [this] { return !buf_.empty() || closed_; };
   }
-  bool pop_wait_cond_error() const { return closed_; }
+
+  [[nodiscard]]
+  bool pop_wait_cond_error() const {
+    return closed_;
+  }
 
   mutable std::mutex mtx_;
   buf_type buf_;
