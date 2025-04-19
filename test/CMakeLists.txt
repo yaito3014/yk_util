@@ -4,6 +4,7 @@ include(CTest)
 if(BUILD_TESTING)
   add_executable(yk_util_test
     enum_bitops.cpp
+    hash.cpp
     meta.cpp
     util.cpp
     main.cpp
