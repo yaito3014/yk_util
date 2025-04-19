@@ -1,0 +1,24 @@
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+
+jobs:
+  format:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: enable globstar
+        run: shopt -s globstar
+
+      - name: Setup Clang
+        run: |
+          wget https://apt.llvm.org/llvm.sh
+          chmod +x ./llvm.sh
+          sudo ./llvm.sh 21 all
+
+      - name: Run clang-format
+        run: clang-format --dry-run -Werror include/**/*.hpp test/**/*.cpp
