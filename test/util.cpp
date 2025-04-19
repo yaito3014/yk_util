@@ -34,7 +34,7 @@ BOOST_AUTO_TEST_CASE(AutoSeq) {
 
   const auto use_member = []<auto Mem>(const S& s) { return s.*Mem; };
 
-  BOOST_TEST([&]<auto... Vals>(const S& s, yk::auto_sequence<Vals...>) {  //
+  BOOST_TEST([&]<auto... Vals>(const S& s, yk::auto_sequence<Vals...>) {
     return (use_member.template operator()<Vals>(s) + ...);
   }(S{33, 9}, yk::auto_sequence<&S::a, &S::b>{}) == 42);
 }
