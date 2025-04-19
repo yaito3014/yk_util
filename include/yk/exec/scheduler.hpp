@@ -20,12 +20,12 @@
 #include "yk/concurrent_vector.hpp"
 
 #include <algorithm>
+#include <concepts>
 #include <condition_variable>
-#include <functional>
 #include <memory>
 #include <mutex>
-#include <print>
 #include <ranges>
+#include <stdexcept>
 #include <stop_token>
 #include <thread>
 #include <type_traits>
@@ -197,7 +197,7 @@ public:
       if (worker_pool_->stop_requested()) {
         lock.unlock();
         queue_.close();
-        std::println("interrupted! remaining items: {}", queue_.size());
+        //std::println("interrupted! remaining items: {}", queue_.size());
         return;
       }
 
