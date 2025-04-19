@@ -1,6 +1,8 @@
 #ifndef YK_CONCURRENT_POOL_GATE_HPP
 #define YK_CONCURRENT_POOL_GATE_HPP
 
+#include <version>
+
 #if __cpp_lib_jthread >= 201911L
 #include <stop_token>
 #endif
