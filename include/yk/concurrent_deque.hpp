@@ -7,8 +7,6 @@
 
 namespace yk {
 
-// clang-format off
-
 template <class T, concurrent_pool_flag Flags = concurrent_pool_flag::mpmc>
 using concurrent_deque = concurrent_pool<
   T,
@@ -39,8 +37,6 @@ using concurrent_mpsc_deque = concurrent_deque<
   T,
   (Flags & ~concurrent_pool_flag::producer_consumer_mask) | concurrent_pool_flag::mpsc
 >;
-
-// clang-format on
 
 }  // namespace yk
 

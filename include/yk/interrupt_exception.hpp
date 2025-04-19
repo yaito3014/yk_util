@@ -10,7 +10,9 @@ class interrupt_exception : public std::runtime_error {
 public:
   using std::runtime_error::runtime_error;
 
-  interrupt_exception() : std::runtime_error("interrupt") {}
+  interrupt_exception()
+    : std::runtime_error("interrupt")
+  {}
 };
 
 }  // namespace yk
