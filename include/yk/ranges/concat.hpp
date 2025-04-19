@@ -10,6 +10,8 @@
 #include <utility>
 #include <variant>
 
+#include <cstdlib>
+
 namespace yk {
 
 namespace ranges {
