@@ -2,7 +2,14 @@ cmake_minimum_required(VERSION 3.24)
 
 include(CTest)
 if(BUILD_TESTING)
-  add_executable(yk_util_test test.cpp)
+  add_executable(yk_util_test
+    concurrent.cpp
+    enum_bitops.cpp
+    hash.cpp
+    meta.cpp
+    util.cpp
+    main.cpp
+  )
   target_compile_features(yk_util_test PUBLIC cxx_std_20)
   set_target_properties(yk_util_test PROPERTIES CXX_EXTENSIONS OFF)
 
