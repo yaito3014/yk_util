@@ -5,10 +5,11 @@
 #include <boost/test/unit_test.hpp>
 
 #include <algorithm>
-#include <cstdint>
 #include <ranges>
 #include <string_view>
 #include <vector>
+
+#include <cstdint>
 
 enum class MyFlags : std::uint8_t {
   FOO = 1 << 0,
