@@ -28,6 +28,7 @@
 #include <ranges>
 #include <stop_token>
 #include <thread>
+#include <type_traits>
 
 namespace yk::exec {
 
@@ -48,46 +49,45 @@ struct scheduler_traits {
 
   using producer_input_value_type = ProducerInputValueT;
   using producer_gate_type = yk::counted_producer_gate<queue_type>;
-  using producer_func = std::move_only_function<void(worker_id_t, const producer_input_value_type&, producer_gate_type&)>;
-
   using consumer_gate_type = yk::consumer_gate<queue_type>;
-  using consumer_func = std::move_only_function<void(worker_id_t, T)>;
 };
 
-template <std::ranges::forward_range ProducerInputRange, class T>
+template <std::ranges::forward_range ProducerInputRange, class T, class ProducerF, class ConsumerF>
 class scheduler {
 public:
   // clang-format off
-  using producer_input_value_t    = std::ranges::range_value_t<ProducerInputRange>;
+  using producer_input_value_type = std::ranges::range_value_t<ProducerInputRange>;
   using producer_input_iterator_t = std::ranges::iterator_t<ProducerInputRange>;
 
-  using traits_type        = scheduler_traits<T, producer_input_value_t>;
+  using traits_type        = scheduler_traits<T, producer_input_value_type>;
   using queue_type         = typename traits_type::queue_type;
   using producer_gate_type = typename traits_type::producer_gate_type;
-  using producer_func      = typename traits_type::producer_func;
   using consumer_gate_type = typename traits_type::consumer_gate_type;
-  using consumer_func      = typename traits_type::consumer_func;
   // clang-format on
+
+  static_assert(Producer<ProducerF, T, producer_input_value_type, producer_gate_type>);
+  static_assert(Consumer<ConsumerF, T>);
 
   static constexpr std::size_t default_queue_size = 10000;
   static constexpr long long default_producer_chunk_size_max = 100000;
 
-  // not thread-safe
-  explicit scheduler(const std::shared_ptr<worker_pool>& worker_pool)  //
-      : worker_pool_(worker_pool) {
+  // clang-format off
+  template<class ProducerF_, class ConsumerF_>
+  scheduler(
+      const std::shared_ptr<worker_pool>& worker_pool,
+      ProducerF_&& producer_func,
+      ConsumerF_&& consumer_func
+  )
+    : worker_pool_(worker_pool)
+    , producer_func_(std::forward<ProducerF_>(producer_func))
+    , consumer_func_(std::forward<ConsumerF_>(consumer_func))
+  {
     queue_.reserve(default_queue_size);
   }
+  // clang-format on
 
-  // not thread-safe
   ~scheduler() {  //
     this->abort();
-  }
-
-  // not thread-safe
-  template <class F>
-  void set_producer(F&& f) {
-    static_assert(Producer<F, T, producer_input_value_t, producer_gate_type>);
-    producer_func_ = std::forward<F>(f);
   }
 
   // not thread-safe
@@ -116,13 +116,6 @@ public:
       throw std::length_error{"producer_chunk_size must be greater than 0"};
     }
     producer_chunk_size_ = chunk_size;
-  }
-
-  // not thread-safe
-  template <class F>
-  void set_consumer(F&& f) {
-    static_assert(Consumer<F, T>);
-    consumer_func_ = std::forward<F>(f);
   }
 
   // not thread-safe
@@ -368,8 +361,8 @@ private:
 
   // -----------------------------
 
-  producer_func producer_func_;
-  consumer_func consumer_func_;
+  ProducerF producer_func_;
+  ConsumerF consumer_func_;
 
   // -----------------------------
 
@@ -390,6 +383,22 @@ private:
   std::jthread stats_tracker_thread_;
   std::condition_variable_any stats_tracker_cv_;
 };
+
+// clang-format off
+template <std::ranges::forward_range ProducerInputRange, class T, class ProducerF_, class ConsumerF_>
+[[nodiscard]]
+auto make_scheduler(
+    const std::shared_ptr<yk::exec::worker_pool>& worker_pool,
+    ProducerF_&& producer_func,
+    ConsumerF_&& consumer_func
+) {
+  return scheduler<ProducerInputRange, T, std::decay_t<ProducerF_>, std::decay_t<ConsumerF_>>{
+      worker_pool,
+      std::forward<ProducerF_>(producer_func),
+      std::forward<ConsumerF_>(consumer_func)
+  };
+}
+// clang-format on
 
 }  // namespace yk::exec
 
