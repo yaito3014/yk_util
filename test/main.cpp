@@ -32,13 +32,8 @@
 #include <boost/test/unit_test.hpp>
 #endif
 
-#include <boost/predef/os.h>
 #include <boost/container_hash/hash.hpp>
 #include <boost/range/iterator_range.hpp>
-
-#if BOOST_OS_WINDOWS
-#include "Windows.h"
-#endif  // BOOST_OS_WINDOWS
 
 #include <algorithm>
 #include <array>
@@ -75,16 +70,6 @@
 
 namespace utf = boost::unit_test;
 
-struct GlobalFixture {
-  void setup() {
-#if BOOST_OS_WINDOWS
-    SetConsoleOutputCP(65001);
-#endif  // BOOST_OS_WINDOWS
-  }
-};
-
-BOOST_TEST_GLOBAL_FIXTURE(GlobalFixture);
-
 namespace hash_test {
 
 template <class T, class... Ts>
@@ -100,25 +85,6 @@ struct MultiS {
 
 YK_ADAPT_HASH_TEMPLATE(hash_test, (S<T, Ts...>), val, { return yk::hash_value_for(val.val); }, class T, class... Ts);
 YK_ADAPT_HASH(hash_test, MultiS, val, { return yk::hash_combine(val.a, val.b, val.c); });
-
-namespace enum_test {
-
-enum class MyFlags : std::uint8_t {
-  FOO = 1 << 0,
-  BAR = 1 << 1,
-  BAZ = 1 << 2,
-};
-
-enum class SpellType : std::uint8_t {
-  TYPE_ATTACK = 1 << 0,
-  TYPE_DEFENSE = 1 << 1,
-
-  ATTR_FIRE = 1 << 2,
-  ATTR_WATER = 1 << 3,
-  ATTR_THUNDER = 1 << 4,
-};
-
-}  // namespace enum_test
 
 namespace wrap_as_test {
 
@@ -154,27 +120,6 @@ struct MyClassWrap {
 };
 
 };  // namespace wrap_as_test
-
-namespace yk {
-
-template <>
-struct bitops_enabled<enum_test::MyFlags> : std::true_type {
-  static enum_test::MyFlags parse(std::string_view sv) noexcept {
-    using enum enum_test::MyFlags;
-    if (sv == "foo") return FOO;
-    if (sv == "bar") return BAR;
-    if (sv == "baz") return BAZ;
-    return {};
-  }
-};
-
-template <>
-struct bitops_enabled<enum_test::SpellType> : std::true_type {
-  static constexpr int min_bit = 2;
-  static constexpr int max_bit = 4;
-};
-
-}  // namespace yk
 
 BOOST_AUTO_TEST_SUITE(yk_util)
 
@@ -526,62 +471,6 @@ BOOST_AUTO_TEST_CASE(RangeHash) {
   std::vector vec{3, 1, 4, 1, 5};
   BOOST_TEST(yk::hash_range(vec) == yk::hash_combine(3, 1, 4, 1, 5));
   BOOST_TEST(yk::hash_combine(33, vec, 4) == yk::hash_combine(33, yk::hash_combine(3, 1, 4, 1, 5), 4));
-}
-
-BOOST_AUTO_TEST_CASE(Enum) {
-  using namespace enum_test;
-  using namespace yk::bitops_operators;
-
-  using enum MyFlags;
-
-  BOOST_TEST((~FOO == static_cast<MyFlags>(~yk::to_underlying(FOO))));
-
-  BOOST_TEST(((FOO & BAR) == static_cast<MyFlags>(yk::to_underlying(FOO) & yk::to_underlying(BAR))));
-  BOOST_TEST(((FOO ^ BAR) == static_cast<MyFlags>(yk::to_underlying(FOO) ^ yk::to_underlying(BAR))));
-  BOOST_TEST(((FOO | BAR) == static_cast<MyFlags>(yk::to_underlying(FOO) | yk::to_underlying(BAR))));
-
-  // clang-format off
-
-  BOOST_TEST( yk::contains(FOO, FOO));
-  BOOST_TEST(!yk::contains(FOO, BAR));
-  BOOST_TEST( yk::contains(FOO | BAR, FOO));
-  BOOST_TEST(!yk::contains(FOO | BAR, BAZ));
-  BOOST_TEST(!yk::contains(FOO |       BAZ, FOO | BAR));
-  BOOST_TEST(!yk::contains(      BAR | BAZ, FOO | BAR));
-  BOOST_TEST( yk::contains(FOO | BAR | BAZ, FOO | BAR));
-
-  BOOST_TEST( yk::contains_any_bit(FOO, FOO));
-  BOOST_TEST(!yk::contains_any_bit(FOO, BAR));
-  BOOST_TEST( yk::contains_any_bit(FOO | BAR, FOO));
-  BOOST_TEST(!yk::contains_any_bit(FOO | BAR, BAZ));
-  BOOST_TEST( yk::contains_any_bit(FOO |       BAZ, FOO | BAR));
-  BOOST_TEST( yk::contains_any_bit(      BAR | BAZ, FOO | BAR));
-  BOOST_TEST( yk::contains_any_bit(FOO | BAR | BAZ, FOO | BAR));
-
-  BOOST_TEST( yk::contains_single_bit(FOO, FOO));
-  BOOST_TEST(!yk::contains_single_bit(FOO, BAR));
-  BOOST_TEST( yk::contains_single_bit(FOO | BAR, FOO));
-  BOOST_TEST(!yk::contains_single_bit(FOO | BAR, BAZ));
-
-  // clang-format on
-
-  BOOST_TEST((yk::parse_flag<MyFlags>("foo") == FOO));
-  BOOST_TEST((yk::parse_flag<MyFlags>("bar") == BAR));
-  BOOST_TEST((yk::parse_flag<MyFlags>("baz") == BAZ));
-  BOOST_TEST((yk::parse_flag<MyFlags>("yay") == MyFlags{}));
-
-  BOOST_TEST((yk::parse_flags<MyFlags>("foo", "|") == FOO));
-  BOOST_TEST((yk::parse_flags<MyFlags>("yay", "|") == MyFlags{}));
-
-  BOOST_TEST((yk::parse_flags<MyFlags>("foo|bar", "|") == (FOO | BAR)));
-  BOOST_TEST((yk::parse_flags<MyFlags>("foo|yay", "|") == MyFlags{}));
-  BOOST_TEST((yk::parse_flags<MyFlags>("foo,bar", "|") == MyFlags{}));
-
-  BOOST_TEST(std::ranges::equal(yk::each_bit(SpellType::TYPE_ATTACK | SpellType::ATTR_FIRE | SpellType::ATTR_THUNDER),
-                                std::vector{SpellType::ATTR_FIRE, SpellType::ATTR_THUNDER}));
-
-  BOOST_TEST(std::ranges::equal(yk::each_bit(static_cast<SpellType>(static_cast<std::underlying_type_t<SpellType>>(-1))),
-                                std::vector{SpellType::ATTR_FIRE, SpellType::ATTR_WATER, SpellType::ATTR_THUNDER}));
 }
 
 BOOST_AUTO_TEST_CASE(ArrayCat) {
