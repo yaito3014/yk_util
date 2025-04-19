@@ -52,10 +52,14 @@ struct scheduler_traits {
   using consumer_gate_type = yk::consumer_gate<queue_type>;
 };
 
-template <std::ranges::forward_range ProducerInputRange, class T, class ProducerF, class ConsumerF>
+template <
+  std::ranges::forward_range ProducerInputRange,
+  class T,
+  class ProducerF,
+  class ConsumerF
+>
 class scheduler {
 public:
-  // clang-format off
   using producer_input_value_type = std::ranges::range_value_t<ProducerInputRange>;
   using producer_input_iterator_t = std::ranges::iterator_t<ProducerInputRange>;
 
@@ -63,7 +67,6 @@ public:
   using queue_type         = typename traits_type::queue_type;
   using producer_gate_type = typename traits_type::producer_gate_type;
   using consumer_gate_type = typename traits_type::consumer_gate_type;
-  // clang-format on
 
   static_assert(Producer<ProducerF, T, producer_input_value_type, producer_gate_type>);
   static_assert(Consumer<ConsumerF, T>);
@@ -71,7 +74,6 @@ public:
   static constexpr std::size_t default_queue_size = 10000;
   static constexpr long long default_producer_chunk_size_max = 100000;
 
-  // clang-format off
   template<class ProducerF_, class ConsumerF_>
   scheduler(
       const std::shared_ptr<worker_pool>& worker_pool,
@@ -84,15 +86,16 @@ public:
   {
     queue_.reserve(default_queue_size);
   }
-  // clang-format on
 
-  ~scheduler() {  //
+  ~scheduler()
+  {
     this->abort();
   }
 
   // not thread-safe
   template <std::ranges::forward_range R>
-  void set_producer_inputs(R&& producer_inputs) {
+  void set_producer_inputs(R&& producer_inputs)
+  {
     producer_inputs_ = std::forward<R>(producer_inputs);
     last_producer_input_it_ = producer_inputs_.begin();
     producer_input_total_ = static_cast<long long>(producer_inputs_.size());
@@ -100,18 +103,15 @@ public:
 
   // thread-safe while processing the same input
   [[nodiscard]]
-  long long get_producer_input_total() const noexcept {
-    return producer_input_total_;
-  }
+  long long get_producer_input_total() const noexcept { return producer_input_total_; }
 
   // not thread-safe
   [[nodiscard]]
-  long long get_producer_chunk_size() const noexcept {
-    return producer_chunk_size_;
-  }
+  long long get_producer_chunk_size() const noexcept { return producer_chunk_size_; }
 
   // not thread-safe
-  void set_producer_chunk_size(long long chunk_size) {
+  void set_producer_chunk_size(long long chunk_size)
+  {
     if (chunk_size <= 0) {
       throw std::length_error{"producer_chunk_size must be greater than 0"};
     }
@@ -120,12 +120,14 @@ public:
 
   // not thread-safe
   [[nodiscard]]
-  const std::shared_ptr<scheduler_stats_tracker>& get_stats_tracker() const noexcept {
+  const std::shared_ptr<scheduler_stats_tracker>& get_stats_tracker() const noexcept
+  {
     return stats_tracker_;
   }
 
   // not thread-safe
-  void set_stats_tracker(const std::shared_ptr<scheduler_stats_tracker>& tracker) {
+  void set_stats_tracker(const std::shared_ptr<scheduler_stats_tracker>& tracker)
+  {
     halt_stats_tracker();
 
     stats_tracker_ = tracker;
@@ -134,9 +136,12 @@ public:
       while (!worker_pool_->stop_requested()) {
         std::unique_lock lock{pool_stats_mtx_};
 
-        const bool cv_ok = stats_tracker_cv_.wait_for(         //
-            lock, stop_token, stats_tracker_->get_interval(),  //
-            [this] { return stats_tracker_->interval_elapsed(); });
+        const bool cv_ok = stats_tracker_cv_.wait_for(
+            lock, stop_token, stats_tracker_->get_interval(),
+            [this] {
+              return stats_tracker_->interval_elapsed();
+            }
+        );
 
         const auto stats = stats_;
         lock.unlock();
@@ -152,7 +157,8 @@ public:
   }
 
   // thread-safe
-  void halt_stats_tracker() {
+  void halt_stats_tracker()
+  {
     if (!stats_tracker_) return;
 
     stats_tracker_thread_.request_stop();
@@ -163,36 +169,44 @@ public:
   }
 
   // not thread-safe
-  void start() {
+  void start()
+  {
     if (producer_chunk_size_ <= 0) {
-      producer_chunk_size_ =                                                    //
-          std::clamp(producer_input_total_ / worker_pool_->get_worker_limit(),  //
-                     1ll, default_producer_chunk_size_max);
+      producer_chunk_size_ = std::clamp(
+          producer_input_total_ / worker_pool_->get_worker_limit(),
+          1ll,
+          default_producer_chunk_size_max
+      );
     }
 
     worker_pool_->halt_and_clear();
 
-    worker_pool_->launch([this](const worker_id_t worker_id, std::stop_token stop_token) {  //
+    worker_pool_->launch([this](const worker_id_t worker_id, std::stop_token stop_token) {
       fixed_consumer(worker_id, std::move(stop_token));
     });
 
-    worker_pool_->launch([this](const worker_id_t worker_id, std::stop_token stop_token) {  //
+    worker_pool_->launch([this](const worker_id_t worker_id, std::stop_token stop_token) {
       fixed_producer(worker_id, std::move(stop_token));
     });
 
-    worker_pool_->launch_rest([this](const worker_id_t worker_id, std::stop_token stop_token) {  //
+    worker_pool_->launch_rest([this](const worker_id_t worker_id, std::stop_token stop_token) {
       worker(worker_id, std::move(stop_token), worker_mode_t::producer);
     });
   }
 
   // thread-safe
-  void wait_for_all_tasks() {
+  void wait_for_all_tasks()
+  {
     {
       std::unique_lock lock{pool_stats_mtx_};
-      task_done_cv_.wait(lock, worker_pool_->stop_token(), [this] {
-        return stats_.producer_input_processed >= producer_input_total_ &&  //
-               stats_.consumer_input_processed >= stats_.producer_output;
-      });
+      task_done_cv_.wait(
+        lock, worker_pool_->stop_token(),
+        [this] {
+          return
+            stats_.producer_input_processed >= producer_input_total_ &&
+            stats_.consumer_input_processed >= stats_.producer_output;
+        }
+      );
 
       if (worker_pool_->stop_requested()) {
         lock.unlock();
@@ -208,14 +222,16 @@ public:
   }
 
   // thread-safe
-  void abort() {
+  void abort()
+  {
     halt_stats_tracker();
     queue_.close();
   }
 
 private:
   [[nodiscard]]
-  bool do_worker_producer(const worker_id_t worker_id) {
+  bool do_worker_producer(const worker_id_t worker_id)
+  {
     long long count = producer_chunk_size_;
 
     producer_input_iterator_t it_first, it_last;
@@ -223,8 +239,9 @@ private:
       std::unique_lock lock{producer_input_mtx_};
       it_first = last_producer_input_it_;
 
-      if (const auto len = static_cast<long long>(std::ranges::distance(it_first, producer_inputs_.end()));  //
-          len < producer_chunk_size_) {
+      if (const auto len = static_cast<long long>(std::ranges::distance(it_first, producer_inputs_.end()));
+          len < producer_chunk_size_
+      ) {
         count = len;
         it_last = producer_inputs_.end();
 
@@ -269,7 +286,8 @@ private:
   }
 
   [[nodiscard]]
-  bool do_worker_consumer(const worker_id_t worker_id) {
+  bool do_worker_consumer(const worker_id_t worker_id)
+  {
     T value;
     const bool got_value = queue_.pop_wait(value);
     if (!got_value) {
@@ -289,8 +307,10 @@ private:
       std::unique_lock lock{pool_stats_mtx_};
       ++stats_.consumer_input_processed;
 
-      if (stats_.producer_input_processed >= producer_input_total_ &&  //
-          stats_.consumer_input_processed >= stats_.producer_output) {
+      if (
+        stats_.producer_input_processed >= producer_input_total_ &&
+        stats_.consumer_input_processed >= stats_.producer_output
+      ) {
         task_done_cv_.notify_all();
         return false;
       }
@@ -299,7 +319,8 @@ private:
     return true;
   }
 
-  void fixed_producer(const worker_id_t worker_id, std::stop_token stop_token) {
+  void fixed_producer(const worker_id_t worker_id, std::stop_token stop_token)
+  {
     while (!stop_token.stop_requested()) {
       if (!do_worker_producer(worker_id)) {
         break;
@@ -316,7 +337,8 @@ private:
     }
   }
 
-  void fixed_consumer(const worker_id_t worker_id, std::stop_token stop_token) {
+  void fixed_consumer(const worker_id_t worker_id, std::stop_token stop_token)
+  {
     while (!stop_token.stop_requested()) {
       if (!do_worker_consumer(worker_id)) {
         break;
@@ -324,7 +346,8 @@ private:
     }
   }
 
-  void worker(const worker_id_t worker_id, std::stop_token stop_token, worker_mode_t worker_mode) {
+  void worker(const worker_id_t worker_id, std::stop_token stop_token, worker_mode_t worker_mode)
+  {
     while (!stop_token.stop_requested()) {
       if (worker_mode == worker_mode_t::producer) {
         if (!do_worker_producer(worker_id)) {
@@ -384,7 +407,6 @@ private:
   std::condition_variable_any stats_tracker_cv_;
 };
 
-// clang-format off
 template <std::ranges::forward_range ProducerInputRange, class T, class ProducerF_, class ConsumerF_>
 [[nodiscard]]
 auto make_scheduler(
@@ -393,12 +415,11 @@ auto make_scheduler(
     ConsumerF_&& consumer_func
 ) {
   return scheduler<ProducerInputRange, T, std::decay_t<ProducerF_>, std::decay_t<ConsumerF_>>{
-      worker_pool,
-      std::forward<ProducerF_>(producer_func),
-      std::forward<ConsumerF_>(consumer_func)
+    worker_pool,
+    std::forward<ProducerF_>(producer_func),
+    std::forward<ConsumerF_>(consumer_func)
   };
 }
-// clang-format on
 
 }  // namespace yk::exec
 

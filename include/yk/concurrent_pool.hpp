@@ -43,7 +43,6 @@ using concurrent_pool_size_type = std::make_signed_t<std::size_t>;
 
 template <class T, class BufT, concurrent_pool_flag Flags>
 struct concurrent_pool_traits {
-  // clang-format off
   using value_type = T;
   using buf_type = BufT;
   using size_type = concurrent_pool_size_type;
@@ -65,7 +64,6 @@ struct concurrent_pool_traits {
     std::condition_variable_any, // has stop_token overload
     std::condition_variable
   >;
-  // clang-format on
 
   static constexpr bool has_reserve = requires(BufT buf) {
     { buf.reserve(std::size_t{}) };
@@ -95,10 +93,15 @@ struct concurrent_pool_traits {
     { buf.pop() };
   };
 
-  static_assert(is_queue_based_push_pop ? (has_both_access || has_plain_queue_access) : true,
-                "when queue_based_push_pop is set, the underlying container must support queue-like operations");
+  static_assert(
+    is_queue_based_push_pop ? (has_both_access || has_plain_queue_access) : true,
+    "when queue_based_push_pop is set, the underlying container must support queue-like operations"
+  );
 
-  static_assert(has_back_access || has_plain_stack_access, "the underlying container must support at least stack-like operations");
+  static_assert(
+    has_back_access || has_plain_stack_access,
+    "the underlying container must support at least stack-like operations"
+  );
 
   static constexpr bool default_access_strategy_is_stack = !is_queue_based_push_pop;
 
@@ -152,7 +155,8 @@ struct concurrent_pool_traits {
 
 private:
   template <class U>
-  static void do_push(BufT& buf, U&& value) {
+  static void do_push(BufT& buf, U&& value)
+  {
     if constexpr (has_back_access) {
       buf.emplace_back(std::forward<U>(value));
 
@@ -161,7 +165,8 @@ private:
     }
   }
 
-  static void do_pop(BufT& buf, T& value) {
+  static void do_pop(BufT& buf, T& value)
+  {
     if constexpr (default_access_strategy_is_stack) {
       if constexpr (has_back_access) {
         value = std::move(buf.back());
@@ -192,36 +197,34 @@ struct concurrent_pool_size_info {
 
 }  // namespace detail
 
-// clang-format off
 template <class T>
 using concurrent_pool_allocator_t = std::conditional_t<
     std::is_trivially_copyable_v<T>,
     yk::default_init_allocator<T>,
     std::allocator<T>
 >;
-// clang-format on
 
 template <class T, class BufT, concurrent_pool_flag Flags = concurrent_pool_flag::mpmc>
 class concurrent_pool {
 public:
-  // clang-format off
   static constexpr concurrent_pool_flag flags = Flags;
   using value_type                            = T;
   using buf_type                              = BufT;
   using traits_type                           = detail::concurrent_pool_traits<T, BufT, Flags>;
   using condition_variable_type               = typename traits_type::condition_variable_type;
   using size_type                             = typename traits_type::size_type;
-  // clang-format on
 
   // -------------------------------------------
 
   [[nodiscard]]
-  size_type capacity() const {
+  size_type capacity() const
+  {
     std::unique_lock lock{mtx_};
     return capacity_;
   }
 
-  void set_capacity(size_type new_capacity) {
+  void set_capacity(size_type new_capacity)
+  {
     if (new_capacity < 0) {
       throw std::length_error("new capacity must be non-negative");
     }
@@ -243,7 +246,8 @@ public:
   // Note: this holds only the current state.
   // If you need a consistent value, close() the pool first.
   [[nodiscard]]
-  size_type size() const {
+  size_type size() const
+  {
     std::unique_lock lock{mtx_};
     return static_cast<size_type>(buf_.size());
   }
@@ -263,7 +267,8 @@ public:
   // Note: this holds only the current state.
   // If you need a consistent value, close() the pool first.
   [[nodiscard]]
-  detail::concurrent_pool_size_info size_info() const {
+  detail::concurrent_pool_size_info size_info() const
+  {
     std::unique_lock lock{mtx_};
     return {.size = static_cast<size_type>(buf_.size()), .capacity = capacity_};
   }
@@ -272,7 +277,8 @@ public:
 
   template <class U>
   [[nodiscard]]
-  bool push_wait(U&& value) {
+  bool push_wait(U&& value)
+  {
     std::unique_lock lock{mtx_};
     cv_not_full_.wait(lock, push_wait_cond());
     if (push_wait_cond_error()) {
@@ -311,7 +317,8 @@ public:
   // -------------------------------------------
 
   [[nodiscard]]
-  bool pop_wait(T& value) {
+  bool pop_wait(T& value)
+  {
     std::unique_lock lock{mtx_};
     cv_not_empty_.wait(lock, pop_wait_cond());
     if (pop_wait_cond_error()) {
@@ -320,6 +327,7 @@ public:
 
     if constexpr (traits_type::is_single_producer && traits_type::is_single_consumer) {
       traits_type::pop(buf_, value, cv_not_full_, capacity_);
+
     } else {
       traits_type::pop(buf_, value, cv_not_full_);
     }
@@ -346,6 +354,7 @@ public:
 
     if constexpr (traits_type::is_single_producer && traits_type::is_single_consumer) {
       traits_type::pop(buf_, value, cv_not_full_, capacity_);
+
     } else {
       traits_type::pop(buf_, value, cv_not_full_);
     }
@@ -355,21 +364,24 @@ public:
 
   // -------------------------------------------
 
-  void close() {
+  void close()
+  {
     std::unique_lock lock{mtx_};
     closed_ = true;
     cv_not_full_.notify_all();
     cv_not_empty_.notify_all();
   }
 
-  void open() {
+  void open()
+  {
     std::unique_lock lock{mtx_};
     closed_ = false;
     cv_not_full_.notify_all();
     cv_not_empty_.notify_all();
   }
 
-  void clear() {
+  void clear()
+  {
     std::unique_lock lock{mtx_};
     buf_.clear();
     cv_not_full_.notify_all();
@@ -378,22 +390,30 @@ public:
 
 private:
   [[nodiscard]]
-  auto push_wait_cond() const {
-    return [this] { return static_cast<size_type>(buf_.size()) < capacity_ || closed_; };
+  auto push_wait_cond() const
+  {
+    return [this] {
+      return static_cast<size_type>(buf_.size()) < capacity_ || closed_;
+    };
   }
 
   [[nodiscard]]
-  bool push_wait_cond_error() const {
+  bool push_wait_cond_error() const
+  {
     return closed_;
   }
 
   [[nodiscard]]
-  auto pop_wait_cond() const {
-    return [this] { return !buf_.empty() || closed_; };
+  auto pop_wait_cond() const
+  {
+    return [this] {
+      return !buf_.empty() || closed_;
+    };
   }
 
   [[nodiscard]]
-  bool pop_wait_cond_error() const {
+  bool pop_wait_cond_error() const
+  {
     return closed_;
   }
 

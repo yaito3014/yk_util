@@ -14,22 +14,21 @@ namespace yk::exec {
 struct scheduler_stats {
   using count_type = long long;
 
-  count_type
 #if YK_EXEC_DEBUG
-      producer_input_consumed = 0,
+  count_type producer_input_consumed = 0;
 #endif
 
-      producer_input_processed = 0,
+  count_type producer_input_processed = 0;
 
-      // different domain ---------------------
+  // different domain ---------------------
 
-      producer_output = 0,
+  count_type producer_output = 0;
 
 #if YK_EXEC_DEBUG
-      consumer_input_consumed = 0,
+  count_type consumer_input_consumed = 0;
 #endif
 
-      consumer_input_processed = 0;
+  count_type consumer_input_processed = 0;
 
   [[nodiscard]]
   constexpr bool operator==(const scheduler_stats&) const noexcept = default;
@@ -37,7 +36,8 @@ struct scheduler_stats {
   [[nodiscard]]
   constexpr std::strong_ordering operator<=>(const scheduler_stats&) const noexcept = default;
 
-  void validate_counter_consistency(const count_type producer_input_total) const {
+  void validate_counter_consistency(const count_type producer_input_total) const
+  {
 #if YK_EXEC_DEBUG
     if (producer_input_consumed > producer_input_total) {
       throw std::logic_error{std::format("producer overconsumption (input total: {}, consumed: {})", producer_input_total, producer_input_consumed)};
@@ -74,66 +74,58 @@ public:
 
   scheduler_stats_tracker() noexcept = default;
 
-  explicit scheduler_stats_tracker(const std::chrono::milliseconds& interval) noexcept  //
-      : interval_(interval) {}
+  explicit scheduler_stats_tracker(const std::chrono::milliseconds& interval) noexcept
+    : interval_(interval)
+  {}
 
   template <std::invocable<const scheduler_stats_tracker&> F>
-  scheduler_stats_tracker(const std::chrono::milliseconds& interval, F&& f)  //
-      : interval_(interval), callback_(std::forward<F>(f)) {}
+  scheduler_stats_tracker(const std::chrono::milliseconds& interval, F&& f)
+    : interval_(interval)
+    , callback_(std::forward<F>(f))
+  {}
 
   template <std::invocable<const scheduler_stats_tracker&> F>
-  scheduler_stats_tracker(F&& f)  //
-      : callback_(std::forward<F>(f)) {}
+  scheduler_stats_tracker(F&& f)
+    : callback_(std::forward<F>(f))
+  {}
 
   [[nodiscard]]
-  std::chrono::milliseconds get_interval() const noexcept {
-    return interval_;
-  }
-
-  void set_interval(std::chrono::milliseconds interval) noexcept {  //
-    interval_ = interval;
-  }
+  std::chrono::milliseconds get_interval() const noexcept { return interval_; }
+  void set_interval(std::chrono::milliseconds interval) noexcept { interval_ = interval; }
 
   template <std::invocable<const scheduler_stats_tracker&> F>
-  void set_callback(F&& f) {
+  void set_callback(F&& f)
+  {
     callback_ = std::forward<F>(f);
   }
 
   [[nodiscard]]
-  const callback_type& get_callback() const noexcept {
-    return callback_;
-  }
+  const callback_type& get_callback() const noexcept { return callback_; }
 
   // ------------------------------------------------------
 
   [[nodiscard]]
-  clock_type::time_point tick() const noexcept {
-    return tick_;
-  }
+  clock_type::time_point tick() const noexcept { return tick_; }
 
   [[nodiscard]]
-  clock_type::time_point last_tick() const noexcept {
-    return last_tick_;
-  }
+  clock_type::time_point last_tick() const noexcept { return last_tick_; }
 
   [[nodiscard]]
-  const scheduler_stats& stats() const noexcept {
-    return stats_;
-  }
+  const scheduler_stats& stats() const noexcept { return stats_; }
 
   [[nodiscard]]
-  const scheduler_stats& last_stats() const noexcept {
-    return last_stats_;
-  }
+  const scheduler_stats& last_stats() const noexcept { return last_stats_; }
 
   // ------------------------------------------------------
 
   [[nodiscard]]
-  bool interval_elapsed() const noexcept {
+  bool interval_elapsed() const noexcept
+  {
     return clock_type::now() - last_tick_ >= interval_;
   }
 
-  void tick(const scheduler_stats& stats) {
+  void tick(const scheduler_stats& stats)
+  {
     tick_ = clock_type::now();
     stats_ = stats;
 
