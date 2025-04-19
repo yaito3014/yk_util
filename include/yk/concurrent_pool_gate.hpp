@@ -36,8 +36,9 @@ struct concurrent_pool_gate_store<PoolT, concurrent_pool_gate_kind::counted> {
 
 template <class PoolT, detail::concurrent_pool_gate_kind kind = detail::concurrent_pool_gate_kind::not_counted>
 struct producer_gate : protected detail::concurrent_pool_gate_store<PoolT, kind> {
-  /*explicit*/ producer_gate(PoolT* pool) noexcept  //
-      : detail::concurrent_pool_gate_store<PoolT, kind>{pool, 0ll} {}
+  /*explicit*/ producer_gate(PoolT* pool) noexcept
+      : detail::concurrent_pool_gate_store<PoolT, kind>{pool, 0ll}
+  {}
 
   producer_gate() = delete;
   producer_gate(const producer_gate&) noexcept = delete;
@@ -49,7 +50,8 @@ struct producer_gate : protected detail::concurrent_pool_gate_store<PoolT, kind>
 #if __cpp_lib_jthread >= 201911L
   template <class T>
   [[nodiscard]]
-  bool push_wait(T&& value, std::stop_token stop_token) {
+  bool push_wait(T&& value, std::stop_token stop_token)
+  {
     if constexpr (kind == detail::concurrent_pool_gate_kind::counted) {
       ++this->count_;
     }
@@ -59,7 +61,8 @@ struct producer_gate : protected detail::concurrent_pool_gate_store<PoolT, kind>
 
   template <class T>
   [[nodiscard]]
-  bool push_wait(T&& value) {
+  bool push_wait(T&& value)
+  {
     if constexpr (kind == detail::concurrent_pool_gate_kind::counted) {
       ++this->count_;
     }
@@ -79,8 +82,9 @@ using counted_producer_gate = producer_gate<PoolT, detail::concurrent_pool_gate_
 
 template <class PoolT, detail::concurrent_pool_gate_kind kind = detail::concurrent_pool_gate_kind::not_counted>
 struct consumer_gate : protected detail::concurrent_pool_gate_store<PoolT, kind> {
-  /*explicit*/ consumer_gate(PoolT* pool) noexcept  //
-      : detail::concurrent_pool_gate_store<PoolT, kind>{pool, 0ll} {}
+  /*explicit*/ consumer_gate(PoolT* pool) noexcept
+      : detail::concurrent_pool_gate_store<PoolT, kind>{pool, 0ll}
+  {}
 
   consumer_gate() = delete;
   consumer_gate(const consumer_gate&) noexcept = delete;
@@ -92,7 +96,8 @@ struct consumer_gate : protected detail::concurrent_pool_gate_store<PoolT, kind>
 #if __cpp_lib_jthread >= 201911L
   template <class T>
   [[nodiscard]]
-  bool pop_wait(T& value, std::stop_token stop_token) {
+  bool pop_wait(T& value, std::stop_token stop_token)
+  {
     if constexpr (kind == detail::concurrent_pool_gate_kind::counted) {
       ++this->count_;
     }
@@ -102,7 +107,8 @@ struct consumer_gate : protected detail::concurrent_pool_gate_store<PoolT, kind>
 
   template <class T>
   [[nodiscard]]
-  bool pop_wait(T& value) {
+  bool pop_wait(T& value)
+  {
     if constexpr (kind == detail::concurrent_pool_gate_kind::counted) {
       ++this->count_;
     }
