@@ -5,6 +5,7 @@ if(BUILD_TESTING)
   add_executable(yk_util_test
     enum_bitops.cpp
     meta.cpp
+    util.cpp
     main.cpp
   )
   target_compile_features(yk_util_test PUBLIC cxx_std_20)
