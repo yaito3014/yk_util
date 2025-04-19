@@ -1,6 +1,8 @@
 ﻿#ifndef YK_EXEC_SCHEDULER_HPP
 #define YK_EXEC_SCHEDULER_HPP
 
+#include <version>
+
 // yk::exec::scheduler requires std::stop_token support
 #if __cpp_lib_jthread >= 201911L
 #define YK_HAS_EXEC_SCHEDULER 1
