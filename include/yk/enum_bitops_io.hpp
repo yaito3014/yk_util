@@ -3,8 +3,9 @@
 
 #include "yk/enum_bitops.hpp"
 
-#include <iosfwd>
 #include <format>
+#include <iosfwd>
+#include <ranges>
 #include <string>
 #include <string_view>
 
@@ -20,16 +21,15 @@ inline namespace bitops_operators {
 template <BitopsEnabledEnum T>
 std::ostream& operator<<(std::ostream& os, const T& val) {
   if constexpr (requires {
-    { to_string(val) } -> std::convertible_to<const std::string&>;
-  }) {
+                  { to_string(val) } -> std::convertible_to<const std::string&>;
+                }) {
     return os << to_string(val);
   } else {
     return os << yk::to_underlying(val);
   }
 }
 
-} // bitops_operators
-
+}  // namespace bitops_operators
 
 namespace detail {
 

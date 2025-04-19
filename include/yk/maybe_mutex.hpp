@@ -1,7 +1,7 @@
 ﻿#ifndef YK_MAYBE_MUTEX_HPP
 #define YK_MAYBE_MUTEX_HPP
 
-#include <mutex> // IWYU pragma: keep
+#include <mutex>  // IWYU pragma: keep
 #include <version>
 
 #if __cpp_lib_parallel_algorithm >= 201603L

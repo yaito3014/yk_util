@@ -4,10 +4,10 @@
 #include "yk/util/pack_indexing.hpp"
 
 #include <concepts>
+#include <functional>
 #include <ranges>
 #include <tuple>
 #include <utility>
-#include <functional>
 #include <variant>
 
 namespace yk {
