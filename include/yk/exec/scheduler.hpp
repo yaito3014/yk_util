@@ -74,17 +74,22 @@ public:
   static constexpr std::size_t default_queue_size = 10000;
   static constexpr long long default_producer_chunk_size_max = 100000;
 
-  template<class ProducerF_, class ConsumerF_>
+  template<class ProducerF_, class ConsumerF_, class R>
   scheduler(
-      const std::shared_ptr<worker_pool>& worker_pool,
-      ProducerF_&& producer_func,
-      ConsumerF_&& consumer_func
+    const std::shared_ptr<worker_pool>& worker_pool,
+    ProducerF_&& producer_func,
+    ConsumerF_&& consumer_func,
+    R&& producer_inputs
   )
     : worker_pool_(worker_pool)
     , producer_func_(std::forward<ProducerF_>(producer_func))
     , consumer_func_(std::forward<ConsumerF_>(consumer_func))
+    , producer_inputs_(std::forward<R>(producer_inputs))
   {
     queue_.reserve(default_queue_size);
+
+    last_producer_input_it_ = producer_inputs_.begin();
+    producer_input_total_ = static_cast<long long>(producer_inputs_.size());
   }
 
   ~scheduler()
@@ -133,25 +138,32 @@ public:
     stats_tracker_ = tracker;
 
     stats_tracker_thread_ = std::jthread{[this](std::stop_token stop_token) {
-      while (!worker_pool_->stop_requested()) {
-        std::unique_lock lock{pool_stats_mtx_};
+      try {
+        while (!worker_pool_->stop_requested()) {
+          std::unique_lock lock{pool_stats_mtx_};
 
-        const bool cv_ok = stats_tracker_cv_.wait_for(
-            lock, stop_token, stats_tracker_->get_interval(),
-            [this] {
-              return stats_tracker_->interval_elapsed();
-            }
-        );
+          const bool cv_ok = stats_tracker_cv_.wait_for(
+              lock, stop_token, stats_tracker_->get_interval(),
+              [this] {
+                return stats_tracker_->interval_elapsed();
+              }
+          );
 
-        const auto stats = stats_;
-        lock.unlock();
+          const auto stats = stats_;
+          lock.unlock();
 
-        // always print tick at the end
-        stats_tracker_->tick(stats);
+          // always print tick at the end
+          stats_tracker_->tick(stats);
 
-        if (stop_token.stop_requested() || !cv_ok) {
-          return;
+          if (stop_token.stop_requested() || !cv_ok) {
+            return;
+          }
         }
+
+      } catch (std::exception const& e) {
+        std::println("unhandled error in stats tracker: {}", e.what());
+      } catch (...) {
+        std::println("unknown error in stats tracker");
       }
     }};
   }
@@ -239,6 +251,10 @@ private:
       std::unique_lock lock{producer_input_mtx_};
       it_first = last_producer_input_it_;
 
+      if (it_first == producer_inputs_.end()) {
+          return false;
+      }
+
       if (const auto len = static_cast<long long>(std::ranges::distance(it_first, producer_inputs_.end()));
           len < producer_chunk_size_
       ) {
@@ -262,7 +278,7 @@ private:
     producer_gate_type gate{&queue_};
 
     for (auto it = it_first; it != it_last; ++it) {
-      producer_func_(worker_id, *it, gate);
+       producer_func_(worker_id, *it, gate);
     }
 
     {
@@ -270,7 +286,7 @@ private:
       stats_.producer_input_processed += count;
       stats_.producer_output += gate.count();
 
-      if (stats_.producer_input_processed >= producer_input_total_) {
+      if (it_last == producer_inputs_.end() || stats_.producer_input_processed >= producer_input_total_) {
         if (stats_.consumer_input_processed >= stats_.producer_output) {
           // all tasks done (reversed pattern; consumer outpaced our process)
           task_done_cv_.notify_all();
@@ -407,17 +423,19 @@ private:
   std::condition_variable_any stats_tracker_cv_;
 };
 
-template <std::ranges::forward_range ProducerInputRange, class T, class ProducerF_, class ConsumerF_>
+template <std::ranges::forward_range ProducerInputRange, class T, class ProducerF_, class ConsumerF_, class R>
 [[nodiscard]]
 auto make_scheduler(
     const std::shared_ptr<yk::exec::worker_pool>& worker_pool,
     ProducerF_&& producer_func,
-    ConsumerF_&& consumer_func
+    ConsumerF_&& consumer_func,
+    R&& producer_inputs
 ) {
   return scheduler<ProducerInputRange, T, std::decay_t<ProducerF_>, std::decay_t<ConsumerF_>>{
     worker_pool,
     std::forward<ProducerF_>(producer_func),
-    std::forward<ConsumerF_>(consumer_func)
+    std::forward<ConsumerF_>(consumer_func),
+    std::forward<R>(producer_inputs)
   };
 }
 

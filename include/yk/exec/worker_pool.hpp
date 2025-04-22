@@ -5,10 +5,11 @@
 
 #include <algorithm>
 #include <print>
-#include <stdexcept>
 #include <stop_token>
 #include <thread>
 #include <vector>
+#include <stdexcept>
+#include <exception>
 
 namespace yk::exec {
 
@@ -58,10 +59,24 @@ public:
   {
     halt();
 
+    std::exception_ptr exception;
+
     for (auto& thread : threads_) {
-      thread.join();
+      if (!thread.thread.joinable()) {
+        continue;
+      }
+
+      thread.thread.join();
+
+      if (thread.exception) {
+        exception = thread.exception;
+      }
     }
+
     threads_.clear();
+    if (exception) {
+      std::rethrow_exception(exception);
+    }
   }
 
   template <class F>
@@ -69,7 +84,7 @@ public:
   {
     static_assert(std::invocable<F, worker_id_t, std::stop_token>);
 
-    threads_.emplace_back([
+    threads_.emplace_back(std::thread{[
       this,
       id = static_cast<worker_id_t>(threads_.size()),
       f = std::forward<F>(f)
@@ -79,8 +94,12 @@ public:
 
       } catch (const yk::interrupt_exception&) {
         // do nothing
+
+      } catch (...) {
+        stop_source_.request_stop();
+        threads_[id].exception = std::current_exception();
       }
-    });
+    }}, std::exception_ptr{});
   }
 
   template <class F>
@@ -95,7 +114,13 @@ public:
 
 private:
   int worker_limit_ = 2;
-  std::vector<std::thread> threads_;
+
+  struct ThreadData
+  {
+    std::thread thread;
+    std::exception_ptr exception;
+  };
+  std::vector<ThreadData> threads_;
   std::stop_source stop_source_;
 };
 
