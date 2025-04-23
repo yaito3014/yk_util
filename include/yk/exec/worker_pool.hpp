@@ -52,7 +52,7 @@ public:
     if (!stop_source_.stop_requested()) {
       stop_source_.request_stop();
     }
-    stop_source_ = {};
+    //stop_source_ = {};
   }
 
   void halt_and_clear()

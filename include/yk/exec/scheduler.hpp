@@ -14,11 +14,11 @@
 
 #include "yk/exec/debug.hpp"
 #include "yk/exec/scheduler_stats.hpp"
-#include "yk/exec/worker_pool.hpp"
 
 #include "yk/concurrent_pool_gate.hpp"
 #include "yk/concurrent_vector.hpp"
 
+#include <vector>
 #include <algorithm>
 #include <concepts>
 #include <condition_variable>
@@ -71,9 +71,6 @@ public:
   static_assert(Producer<ProducerF, T, producer_input_value_type, producer_gate_type>);
   static_assert(Consumer<ConsumerF, T>);
 
-  static constexpr std::size_t default_queue_size = 10000;
-  static constexpr long long default_producer_chunk_size_max = 100000;
-
   template<class ProducerF_, class ConsumerF_, class R>
   scheduler(
     const std::shared_ptr<worker_pool>& worker_pool,
@@ -81,13 +78,10 @@ public:
     ConsumerF_&& consumer_func,
     R&& producer_inputs
   )
-    : worker_pool_(worker_pool)
-    , producer_func_(std::forward<ProducerF_>(producer_func))
+    : producer_func_(std::forward<ProducerF_>(producer_func))
     , consumer_func_(std::forward<ConsumerF_>(consumer_func))
     , producer_inputs_(std::forward<R>(producer_inputs))
   {
-    queue_.reserve(default_queue_size);
-
     last_producer_input_it_ = producer_inputs_.begin();
     producer_input_total_ = static_cast<long long>(producer_inputs_.size());
   }
@@ -97,122 +91,27 @@ public:
     this->abort();
   }
 
-  // not thread-safe
-  template <std::ranges::forward_range R>
-  void set_producer_inputs(R&& producer_inputs)
-  {
-    producer_inputs_ = std::forward<R>(producer_inputs);
-    last_producer_input_it_ = producer_inputs_.begin();
-    producer_input_total_ = static_cast<long long>(producer_inputs_.size());
-  }
-
-  // thread-safe while processing the same input
-  [[nodiscard]]
-  long long get_producer_input_total() const noexcept { return producer_input_total_; }
-
-  // not thread-safe
-  [[nodiscard]]
-  long long get_producer_chunk_size() const noexcept { return producer_chunk_size_; }
-
-  // not thread-safe
-  void set_producer_chunk_size(long long chunk_size)
-  {
-    if (chunk_size <= 0) {
-      throw std::length_error{"producer_chunk_size must be greater than 0"};
-    }
-    producer_chunk_size_ = chunk_size;
-  }
-
-  // not thread-safe
-  [[nodiscard]]
-  const std::shared_ptr<scheduler_stats_tracker>& get_stats_tracker() const noexcept
-  {
-    return stats_tracker_;
-  }
-
-  // not thread-safe
-  void set_stats_tracker(const std::shared_ptr<scheduler_stats_tracker>& tracker)
-  {
-    halt_stats_tracker();
-
-    stats_tracker_ = tracker;
-
-    stats_tracker_thread_ = std::jthread{[this](std::stop_token stop_token) {
-      try {
-        while (!worker_pool_->stop_requested()) {
-          std::unique_lock lock{pool_stats_mtx_};
-
-          const bool cv_ok = stats_tracker_cv_.wait_for(
-              lock, stop_token, stats_tracker_->get_interval(),
-              [this] {
-                return stats_tracker_->interval_elapsed();
-              }
-          );
-
-          const auto stats = stats_;
-          lock.unlock();
-
-          // always print tick at the end
-          stats_tracker_->tick(stats);
-
-          if (stop_token.stop_requested() || !cv_ok) {
-            return;
-          }
-        }
-
-      } catch (std::exception const& e) {
-        std::println("unhandled error in stats tracker: {}", e.what());
-      } catch (...) {
-        std::println("unknown error in stats tracker");
-      }
-    }};
-  }
-
-  // thread-safe
-  void halt_stats_tracker()
-  {
-    if (!stats_tracker_) return;
-
-    stats_tracker_thread_.request_stop();
-
-    if (stats_tracker_thread_.joinable()) {
-      stats_tracker_thread_.join();
-    }
-  }
-
-  // not thread-safe
   void start()
   {
-    if (producer_chunk_size_ <= 0) {
-      producer_chunk_size_ = std::clamp(
-          producer_input_total_ / worker_pool_->get_worker_limit(),
-          1ll,
-          default_producer_chunk_size_max
-      );
+    producer_chunk_size_ = 1000;
+
+    threads_.emplace_back([this] {
+      fixed_consumer(0, stop_source_.get_token());
+    });
+
+    for (worker_id_t worker_id = 0; worker_id < 30; ++worker_id) {
+      threads_.emplace_back([this, worker_id] {
+        fixed_producer(worker_id, stop_source_.get_token());
+      });
     }
-
-    worker_pool_->halt_and_clear();
-
-    worker_pool_->launch([this](const worker_id_t worker_id, std::stop_token stop_token) {
-      fixed_consumer(worker_id, std::move(stop_token));
-    });
-
-    worker_pool_->launch([this](const worker_id_t worker_id, std::stop_token stop_token) {
-      fixed_producer(worker_id, std::move(stop_token));
-    });
-
-    worker_pool_->launch_rest([this](const worker_id_t worker_id, std::stop_token stop_token) {
-      worker(worker_id, std::move(stop_token), worker_mode_t::producer);
-    });
   }
 
-  // thread-safe
   void wait_for_all_tasks()
   {
     {
       std::unique_lock lock{pool_stats_mtx_};
       task_done_cv_.wait(
-        lock, worker_pool_->stop_token(),
+        lock,
         [this] {
           return
             stats_.producer_input_processed >= producer_input_total_ &&
@@ -220,23 +119,20 @@ public:
         }
       );
 
-      if (worker_pool_->stop_requested()) {
-        lock.unlock();
-        queue_.close();
-        //std::println("interrupted! remaining items: {}", queue_.size());
-        return;
-      }
-
-      stats_.validate_counter_consistency(producer_input_total_);
+      std::println("wait_for_all_tasks: task done notified");
+      stop_source_.request_stop();
+      queue_.close();
     }
 
-    halt_stats_tracker();
+    for (auto& thread : threads_) {
+        thread.join();
+    }
+    threads_.clear();
+    std::println("wait_for_all_tasks: thread joined");
   }
 
-  // thread-safe
   void abort()
   {
-    halt_stats_tracker();
     queue_.close();
   }
 
@@ -246,24 +142,18 @@ private:
   {
     long long count = producer_chunk_size_;
 
-    producer_input_iterator_t it_first, it_last;
+    producer_input_iterator_t it_first = producer_inputs_.end();
+    producer_input_iterator_t it_last = producer_inputs_.end();
+    producer_input_iterator_t it_tmp = producer_inputs_.end();
     {
       std::unique_lock lock{producer_input_mtx_};
       it_first = last_producer_input_it_;
-
       if (it_first == producer_inputs_.end()) {
           return false;
       }
 
-      if (const auto len = static_cast<long long>(std::ranges::distance(it_first, producer_inputs_.end()));
-          len < producer_chunk_size_
-      ) {
-        count = len;
-        it_last = producer_inputs_.end();
-
-      } else {
-        it_last = std::ranges::next(it_first, producer_chunk_size_);
-      }
+      it_last = std::ranges::next(it_first, producer_chunk_size_, producer_inputs_.end());
+      count = static_cast<long long>(std::ranges::distance(it_first, it_last));
 
       last_producer_input_it_ = it_last;
     }
@@ -277,8 +167,12 @@ private:
 
     producer_gate_type gate{&queue_};
 
-    for (auto it = it_first; it != it_last; ++it) {
-       producer_func_(worker_id, *it, gate);
+    auto it = producer_inputs_.begin();
+
+    for (long long i = 0; i < count; ++i) {
+      auto current_it = it++;
+      auto tmp = *current_it;
+      producer_func_(worker_id, tmp, gate);
     }
 
     {
@@ -286,16 +180,18 @@ private:
       stats_.producer_input_processed += count;
       stats_.producer_output += gate.count();
 
-      if (it_last == producer_inputs_.end() || stats_.producer_input_processed >= producer_input_total_) {
-        if (stats_.consumer_input_processed >= stats_.producer_output) {
-          // all tasks done (reversed pattern; consumer outpaced our process)
-          task_done_cv_.notify_all();
-          return false;
-        }
-
-        // no more task for producer; need to switch
+      if (stats_.producer_input_processed >= producer_input_total_ &&
+        stats_.consumer_input_processed >= stats_.producer_output
+      ) {
+        // all tasks done (reversed pattern; consumer outpaced our process)
+        task_done_cv_.notify_all();
         return false;
       }
+    }
+
+    if (it_last == producer_inputs_.end()) {
+      // no more task for producer; need to switch
+      return false;
     }
 
     return true;
@@ -362,39 +258,7 @@ private:
     }
   }
 
-  void worker(const worker_id_t worker_id, std::stop_token stop_token, worker_mode_t worker_mode)
-  {
-    while (!stop_token.stop_requested()) {
-      if (worker_mode == worker_mode_t::producer) {
-        if (!do_worker_producer(worker_id)) {
-          // std::println("worker[{:2}] producer -> consumer", worker_id);
-          worker_mode = worker_mode_t::consumer;
-          continue;
-        }
-
-        const auto size_info = queue_.size_info();
-
-        if (size_info.size >= size_info.capacity * 0.9) {
-          // std::println("worker[{:2}] producer -> consumer", worker_id);
-          worker_mode = worker_mode_t::consumer;
-        }
-
-      } else {  // Consumer
-        if (!do_worker_consumer(worker_id)) {
-          return;
-        }
-
-        const auto size_info = queue_.size_info();
-
-        if (size_info.size <= size_info.capacity * 0.1) {
-          // std::println("worker[{:2}] consumer -> producer", worker_id);
-          worker_mode = worker_mode_t::producer;
-        }
-      }
-    }
-  }
-
-  std::shared_ptr<worker_pool> worker_pool_;
+  std::vector<std::thread> threads_;
 
   queue_type queue_;
 
@@ -418,9 +282,7 @@ private:
   std::condition_variable_any task_done_cv_;
   scheduler_stats stats_{};
 
-  std::shared_ptr<scheduler_stats_tracker> stats_tracker_;
-  std::jthread stats_tracker_thread_;
-  std::condition_variable_any stats_tracker_cv_;
+  std::stop_source stop_source_;
 };
 
 template <std::ranges::forward_range ProducerInputRange, class T, class ProducerF_, class ConsumerF_, class R>
