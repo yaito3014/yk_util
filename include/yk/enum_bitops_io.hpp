@@ -1,6 +1,8 @@
 #ifndef YK_ENUM_BITOPS_IO_HPP
 #define YK_ENUM_BITOPS_IO_HPP
 
+#include "yk/detail/string_like.hpp"
+
 #include "yk/enum_bitops.hpp"
 
 #include <format>
@@ -30,15 +32,6 @@ std::ostream& operator<<(std::ostream& os, const T& val) {
 }
 
 }  // namespace bitops_operators
-
-namespace detail {
-
-// TODO: move this to separate header.
-// (note: we need a solid definition for "string like", whatever that means)
-template <class T>
-concept StringLike = requires(T x) { std::basic_string_view{x}; };
-
-}  // namespace detail
 
 template <BitopsEnabledEnum T, detail::StringLike Str>
 [[nodiscard]] constexpr T parse_flag(const Str& str) noexcept {
