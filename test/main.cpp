@@ -1,6 +1,7 @@
 ﻿#include "yk/allocator/default_init_allocator.hpp"
 #include "yk/ranges/concat.hpp"
 #include "yk/stack.hpp"
+#include "yk/throwt.hpp"
 
 #define BOOST_TEST_MODULE yk_util_test
 #if YK_BUILD_UNIT_TEST_FRAMEWORK
@@ -267,6 +268,62 @@ BOOST_AUTO_TEST_CASE(Concat) {
     int b[]{1, 4, 1, 4, 2};
     BOOST_TEST(std::ranges::equal(yk::views::concat(a, b), std::vector{2, 7, 1, 8, 2, 8, 1, 4, 1, 4, 2}));
   }
+}
+
+BOOST_AUTO_TEST_CASE(Throwt) {
+  // default constructible
+  BOOST_REQUIRE_THROW(yk::throwt<std::exception>(), std::exception);
+
+  // constructible with argument
+  BOOST_REQUIRE_THROW(
+      {
+        try {
+          yk::throwt<std::runtime_error>("foobar");
+        } catch (const std::runtime_error& e) {
+          BOOST_TEST(e.what() == std::string_view{"foobar"});
+          throw;
+        }
+      },
+      std::runtime_error
+  );
+
+  // constructible with format string
+  BOOST_REQUIRE_THROW(
+      {
+        try {
+          yk::throwt<std::runtime_error>("{} - {}", 33, 4);
+
+        } catch (const std::runtime_error& e) {
+          BOOST_TEST(e.what() == std::string_view{"33 - 4"});
+          throw;
+        }
+      },
+      std::runtime_error
+  );
+
+  BOOST_REQUIRE_THROW(
+      {
+        try {
+          yk::throwt<std::system_error>(std::make_error_code(std::errc::invalid_argument), "{}", 42);
+        } catch (const std::system_error& e) {
+          BOOST_TEST(e.code() == std::make_error_code(std::errc::invalid_argument));
+          throw;
+        }
+      },
+      std::system_error
+  );
+
+  BOOST_REQUIRE_THROW(
+      {
+        try {
+          yk::throwt<std::system_error>(33 - 4, std::generic_category(), "{}", 42);
+        } catch (const std::system_error& e) {
+          BOOST_TEST((e.code() == std::error_code{33 - 4, std::generic_category()}));
+          throw;
+        }
+      },
+      std::system_error
+  );
 }
 
 BOOST_AUTO_TEST_SUITE_END()  // yk_util
