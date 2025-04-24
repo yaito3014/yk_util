@@ -1,7 +1,10 @@
 #include "yk/detail/string_like.hpp"
 
-#include <boost/exception/all.hpp>
 #include <boost/stacktrace/stacktrace.hpp>
+
+#include <boost/exception/info.hpp>
+
+#include <boost/exception/exception.hpp>
 
 #include <exception>
 #include <format>
