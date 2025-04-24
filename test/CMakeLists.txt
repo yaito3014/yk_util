@@ -36,10 +36,10 @@ if(BUILD_TESTING)
     target_link_libraries(yk_util_test PRIVATE TBB::tbb)
   endif()
 
-  find_package(Boost REQUIRED CONFIG COMPONENTS unit_test_framework stacktrace_basic)
+  find_package(Boost REQUIRED CONFIG COMPONENTS unit_test_framework stacktrace_noop)
   target_link_libraries(
     yk_util_test PUBLIC yk_util Boost::headers
-                        $<$<NOT:$<CXX_COMPILER_ID:Clang>>:Boost::unit_test_framework Boost::stacktrace_basic>
+                        $<$<NOT:$<CXX_COMPILER_ID:Clang>>:Boost::unit_test_framework Boost::stacktrace_noop>
   )
   add_test(NAME yk_util_test COMMAND yk_util_test)
 endif()
