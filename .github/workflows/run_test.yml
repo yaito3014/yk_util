@@ -165,7 +165,7 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: compilation_${{ matrix.os.name }}-${{ matrix.os.version }}_${{ matrix.boost_version }}_${{ matrix.compiler.executable }}_${{ matrix.build_type }}_log
+          name: compilation_${{ matrix.os.name }}-${{ matrix.os.version }}_${{ matrix.boost_version }}_${{ matrix.compiler.executable }}_${{ matrix.cpp_version }}_${{ matrix.build_type }}_log
           path: compilation*.log
 
   run-notifier:
