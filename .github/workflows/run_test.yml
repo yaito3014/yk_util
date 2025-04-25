@@ -148,3 +148,16 @@ jobs:
         run: |
           copy ${{ github.workspace }}/boost/dist/bin/*.dll .
           ./yk_util_test --report_level=short
+  
+  run-notifier:
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - uses: yaito3014/cpp-warning-notifier
+        with:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          APP_ID: ${{ vars.APP_ID }}
+          PRIVATE_KEY: ${{ secrets.PRIVATE_KEY }}
+          CLIENT_ID: ${{ vars.CLIENT_ID }}
+          CLIENT_SECRET: ${{ secrets.CLIENT_SECRET }}
+          INSTALLATION_ID: ${{ vars.INSTALLATION_ID }}
