@@ -1,6 +1,8 @@
 ﻿#ifndef YK_EXEC_WORKER_POOL_HPP
 #define YK_EXEC_WORKER_POOL_HPP
 
+#include "yk/exec/thread_id.hpp"
+
 #include "yk/interrupt_exception.hpp"
 #include "yk/throwt.hpp"
 
@@ -12,8 +14,6 @@
 #include <exception>
 
 namespace yk::exec {
-
-using thread_id_t = unsigned;
 
 class worker_pool {
 public:
