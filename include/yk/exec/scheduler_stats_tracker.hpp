@@ -71,7 +71,7 @@ public:
     tick_ = clock_type::now();
     stats_ = stats;
 
-    if (callback_) {
+    if (callback_ && stats_.count_updated(last_stats_)) {
       callback_(*this);
     }
 

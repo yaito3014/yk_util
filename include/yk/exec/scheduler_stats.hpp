@@ -58,12 +58,44 @@ struct scheduler_stats {
   {}
 
   [[nodiscard]]
+  constexpr bool same_count(const scheduler_stats& other) const noexcept
+  {
+    return
+      producer_input_consumed_all_ == other.producer_input_consumed_all_ &&
+      producer_input_consumed == other.producer_input_consumed &&
+      producer_input_processed == other.producer_input_processed &&
+      producer_output == other.producer_output &&
+      consumer_input_processed == other.consumer_input_processed
+    ;
+  }
+
+  constexpr bool count_updated(const scheduler_stats& other) const noexcept
+  {
+    return !same_count(other) || is_running != other.is_running;
+  }
+
+  [[nodiscard]]
   constexpr bool operator==(const scheduler_stats&) const noexcept = default;
 
   [[nodiscard]]
   constexpr std::strong_ordering operator<=>(const scheduler_stats&) const noexcept = default;
 
   // =============================================
+
+  [[nodiscard]]
+  bool is_producer_input_consumed_all() const noexcept
+  {
+    return producer_input_consumed_all_;
+  }
+
+  void set_producer_input_consumed_all()
+  {
+    if (producer_input_consumed_all_) {
+      throwt<std::logic_error>("set_producer_input_consumed_all has been called multiple times");
+    }
+
+    producer_input_consumed_all_ = true;
+  }
 
   [[nodiscard]]
   bool is_producer_input_processed_all() const noexcept
@@ -86,6 +118,18 @@ struct scheduler_stats {
         throwt<std::logic_error>("attempted to set producer_input_processed_all, but total count ({}) and processed count ({}) does not match", producer_input_total, producer_input_processed);
       }
     }
+  }
+
+  [[nodiscard]]
+  bool is_consumer_input_processed_all() const noexcept
+  {
+    return consumer_input_processed == producer_output;
+  }
+
+  [[nodiscard]]
+  bool is_all_task_done() const noexcept
+  {
+    return is_producer_input_processed_all() && is_consumer_input_processed_all();
   }
 
   void validate_counter_consistency(const count_type producer_input_total) const
@@ -132,6 +176,11 @@ struct scheduler_stats {
   }
 
 private:
+  // TODO: this can be omitted when the input range is sized_range because
+  //       in such cahses, this condition will be equivalent to
+  //       `producer_input_consumed == producer_input_total`
+  bool producer_input_consumed_all_ = false;
+
   bool producer_input_processed_all_ = false;
 };
 

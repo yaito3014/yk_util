@@ -233,7 +233,7 @@ public:
     });
   }
 
-  // thread-safe
+  // thread-safe, but must be called from the main thread
   void wait_for_all_tasks()
   {
     scheduler_stats last_stats;
@@ -241,9 +241,7 @@ public:
     {
       std::unique_lock lock{stats_mtx_};
       task_done_cv_.wait(lock, worker_pool_->stop_token(), [this] {
-        return
-          stats_.is_producer_input_processed_all() &&
-          stats_.consumer_input_processed >= stats_.producer_output;
+        return stats_.is_all_task_done();
       });
 
       last_stats = stats_;
@@ -305,7 +303,6 @@ private:
   [[nodiscard]]
   bool do_worker_producer(const thread_id_t worker_id)
   {
-    bool is_producer_inputs_all_consumed; // cache
     producer_input_iterator it_first, it_last;
 
     unsigned long long count;
@@ -328,9 +325,8 @@ private:
       stats_.producer_input_consumed += count;
 
       if (it_last == producer_input_end) {
-        is_producer_inputs_all_consumed_ = true;
+        stats_.set_producer_input_consumed_all();
       }
-      is_producer_inputs_all_consumed = is_producer_inputs_all_consumed_;
     }
 
     // ===== begin producer =====
@@ -346,30 +342,24 @@ private:
       stats_.producer_input_processed += count;
       stats_.producer_output += gate.count();
 
-      // update cache
-      is_producer_inputs_all_consumed = is_producer_inputs_all_consumed_;
-
-      if (is_producer_inputs_all_consumed &&
+      if (stats_.is_producer_input_consumed_all() &&
         stats_.producer_input_processed >= stats_.producer_input_consumed
       ) {
         stats_.set_producer_input_processed_all();
       }
 
       // (reversed pattern; consumer outpaced our process)
-      if (
-        stats_.is_producer_input_processed_all() &&
-        stats_.consumer_input_processed >= stats_.producer_output
-      ) {
+      if (stats_.is_all_task_done()) {
         task_done_cv_.notify_all();
+        return false; // need to switch to consumer
+      }
+
+      if (stats_.is_producer_input_consumed_all()) {
         return false; // need to switch to consumer
       }
     }
 
-    if (is_producer_inputs_all_consumed) {
-      return false; // need to switch to consumer
-    }
-
-    return true;
+    return true; // producer is still required
   }
 
   [[nodiscard]]
@@ -398,10 +388,7 @@ private:
       std::unique_lock lock{stats_mtx_};
       ++stats_.consumer_input_processed;
 
-      if (
-        stats_.is_producer_input_processed_all() &&
-        stats_.consumer_input_processed >= stats_.producer_output
-      ) {
+      if (stats_.is_all_task_done()) {
         task_done_cv_.notify_all();
         return false; // need to switch to consumer
       }
@@ -489,7 +476,6 @@ private:
   mutable std::mutex stats_mtx_;
   std::condition_variable_any task_done_cv_;
   scheduler_stats stats_{};
-  bool is_producer_inputs_all_consumed_ = false;
 
   // -----------------------------
 
@@ -506,7 +492,8 @@ auto make_scheduler(
   ProducerF_&& producer_func,
   ConsumerF_&& consumer_func,
   ProducerInputRangeT_&& producer_inputs
-) {
+)
+{
   return scheduler<std::decay_t<ProducerInputRangeT_>, T, std::decay_t<ProducerF_>, std::decay_t<ConsumerF_>>{
     worker_pool,
     std::forward<ProducerF_>(producer_func),
