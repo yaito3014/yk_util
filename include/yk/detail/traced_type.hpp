@@ -1,5 +1,5 @@
-#ifndef YK_DETAIL_TRAICED_TYPE
-#define YK_DETAIL_TRAICED_TYPE
+#ifndef YK_DETAIL_TRACED_TYPE
+#define YK_DETAIL_TRACED_TYPE
 
 #include <boost/exception/error_info.hpp>
 #include <boost/stacktrace/stacktrace_fwd.hpp>
@@ -14,4 +14,4 @@ using traced_type = boost::error_info<struct stacktrace_tag, boost::stacktrace::
 
 }  // namespace yk
 
-#endif  // YK_DETAIL_TRAICED_TYPE
+#endif  // YK_DETAIL_TRACED_TYPE
