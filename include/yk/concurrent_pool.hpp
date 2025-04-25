@@ -6,11 +6,16 @@
 #include "yk/enum_bitops.hpp"
 #include "yk/interrupt_exception.hpp"
 
+#include <version>
+
+#if __cpp_lib_jthread >= 201911L
+#include <stop_token>
+#endif
+
 #include <concepts>
 #include <condition_variable>
 #include <mutex>
 #include <stdexcept>
-#include <stop_token>
 #include <type_traits>
 #include <utility>
 
@@ -37,11 +42,17 @@ enum struct concurrent_pool_flag : unsigned {
 template <>
 struct bitops_enabled<concurrent_pool_flag> : std::true_type {};
 
+template <class T>
+concept ConcurrentPoolValue =
+  // unconditionally required for push/pop operations
+  std::movable<T> || std::copyable<T>
+;
+
 namespace detail {
 
 using concurrent_pool_size_type = std::make_signed_t<std::size_t>;
 
-template <class T, class BufT, concurrent_pool_flag Flags>
+template <ConcurrentPoolValue T, class BufT, concurrent_pool_flag Flags>
 struct concurrent_pool_traits {
   using value_type = T;
   using buf_type = BufT;
@@ -52,15 +63,18 @@ struct concurrent_pool_traits {
   static constexpr bool is_single_producer      = !is_multi_producer;
   static constexpr bool is_multi_consumer       = static_cast<bool>(flags & concurrent_pool_flag::multi_consumer);
   static constexpr bool is_single_consumer      = !is_multi_consumer;
-#if __cpp_lib_jthread >= 201911L
-  static constexpr bool has_stop_token_support  = static_cast<bool>(flags & concurrent_pool_flag::stop_token_support);
-#else
-  static constexpr bool has_stop_token_support  = false;
-#endif
+
   static constexpr bool is_queue_based_push_pop = static_cast<bool>(flags & concurrent_pool_flag::queue_based_push_pop);
 
+#if __cpp_lib_jthread >= 201911L
+  static constexpr bool enable_stop_token_support = static_cast<bool>(flags & concurrent_pool_flag::stop_token_support);
+#else
+  static constexpr bool enable_stop_token_support = false;
+  static_assert(!static_cast<bool>(flags & concurrent_pool_flag::stop_token_support), "stop_token_support cannot be enabled on this toolchain without std::stop_token");
+#endif
+
   using condition_variable_type = std::conditional_t<
-    has_stop_token_support,
+    enable_stop_token_support,
     std::condition_variable_any, // has stop_token overload
     std::condition_variable
   >;
@@ -105,23 +119,27 @@ struct concurrent_pool_traits {
 
   static constexpr bool default_access_strategy_is_stack = !is_queue_based_push_pop;
 
-  template <class U>
-  static void push(BufT& buf, U&& value, condition_variable_type& cv_not_empty)
+  static constexpr size_type default_capacity   = 1024;
+
+  // ---------------------------------------
+
+  template <class... Args>
+  static void push(BufT& buf, condition_variable_type& cv_not_empty, Args&&... args)
     requires is_single_producer && is_single_consumer
   {
     const bool was_empty = buf.empty();
-    do_push(buf, std::forward<U>(value));
+    do_push(buf, std::forward<Args>(args)...);
 
     if (was_empty) {
       cv_not_empty.notify_one();
     }
   }
 
-  template <class U>
-  static void push(BufT& buf, U&& value, condition_variable_type& cv_not_empty)
+  template <class... Args>
+  static void push(BufT& buf, condition_variable_type& cv_not_empty, Args&&... args)
     requires (!(is_single_producer && is_single_consumer))
   {
-    do_push(buf, std::forward<U>(value));
+    do_push(buf, std::forward<Args>(args)...);
 
     if constexpr (is_single_consumer) {
       cv_not_empty.notify_one();
@@ -130,7 +148,7 @@ struct concurrent_pool_traits {
     }
   }
 
-  static void pop(BufT& buf, T& value, condition_variable_type& cv_not_full, size_type capacity)
+  static void pop(BufT& buf, condition_variable_type& cv_not_full, size_type capacity, T& value)
     requires is_single_producer && is_single_consumer
   {
     const bool was_full = static_cast<size_type>(buf.size()) >= capacity;
@@ -141,7 +159,7 @@ struct concurrent_pool_traits {
     }
   }
 
-  static void pop(BufT& buf, T& value, condition_variable_type& cv_not_full)
+  static void pop(BufT& buf, condition_variable_type& cv_not_full, T& value)
     requires (!(is_single_producer && is_single_consumer))
   {
     do_pop(buf, value);
@@ -154,14 +172,14 @@ struct concurrent_pool_traits {
   }
 
 private:
-  template <class U>
-  static void do_push(BufT& buf, U&& value)
+  template <class... Args>
+  static void do_push(BufT& buf, Args&&... args)
   {
     if constexpr (has_back_access) {
-      buf.emplace_back(std::forward<U>(value));
+      buf.emplace_back(std::forward<Args>(args)...);
 
     } else {
-      buf.emplace(std::forward<U>(value));
+      buf.emplace(std::forward<Args>(args)...);
     }
   }
 
@@ -207,6 +225,8 @@ using concurrent_pool_allocator_t = std::conditional_t<
 template <class T, class BufT, concurrent_pool_flag Flags = concurrent_pool_flag::mpmc>
 class concurrent_pool {
 public:
+  static_assert(ConcurrentPoolValue<T>);
+
   static constexpr concurrent_pool_flag flags = Flags;
   using value_type                            = T;
   using buf_type                              = BufT;
@@ -232,15 +252,12 @@ public:
     capacity_ = new_capacity;
   }
 
-  void reserve(size_type new_capacity)
-    requires traits_type::has_reserve
+  void reserve_capacity() requires (!traits_type::has_reserve) = delete;
+
+  void reserve_capacity() requires traits_type::has_reserve
   {
-    if (new_capacity < 0) {
-      throw std::length_error("new capacity must be non-negative");
-    }
     std::unique_lock lock{mtx_};
-    capacity_ = new_capacity;
-    buf_.reserve(static_cast<std::size_t>(capacity_));
+    buf_.reserve(static_cast<typename decltype(buf_)::size_type>(capacity_));
   }
 
   // Note: this holds only the current state.
@@ -275,9 +292,9 @@ public:
 
   // -------------------------------------------
 
-  template <class U>
+  template <class... Args>
   [[nodiscard]]
-  bool push_wait(U&& value)
+  bool push_wait(Args&&... args)
   {
     std::unique_lock lock{mtx_};
     cv_not_full_.wait(lock, push_wait_cond());
@@ -285,20 +302,20 @@ public:
       return false;
     }
 
-    traits_type::push(buf_, std::forward<U>(value), cv_not_empty_);
+    traits_type::push(buf_, cv_not_empty_, std::forward<Args>(args)...);
     return true;
   }
 
 #if __cpp_lib_jthread >= 201911L
-  template <class U>
-  bool push_wait(U&& value, std::stop_token stop_token)
-    requires (!traits_type::has_stop_token_support)
+  template <class... Args>
+  bool push_wait(std::stop_token stop_token, Args&&... args)
+    requires (!traits_type::enable_stop_token_support)
   = delete;
 
-  template <class U>
+  template <class... Args>
   [[nodiscard]]
-  bool push_wait(U&& value, std::stop_token stop_token)
-    requires traits_type::has_stop_token_support
+  bool push_wait(std::stop_token stop_token, Args&&... args)
+    requires traits_type::enable_stop_token_support
   {
     std::unique_lock lock{mtx_};
     cv_not_full_.wait(lock, stop_token, push_wait_cond());
@@ -309,7 +326,7 @@ public:
       return false;
     }
 
-    traits_type::push(buf_, std::forward<U>(value), cv_not_empty_);
+    traits_type::push(buf_, cv_not_empty_, std::forward<Args>(args)...);
     return true;
   }
 #endif
@@ -326,22 +343,22 @@ public:
     }
 
     if constexpr (traits_type::is_single_producer && traits_type::is_single_consumer) {
-      traits_type::pop(buf_, value, cv_not_full_, capacity_);
+      traits_type::pop(buf_, cv_not_full_, capacity_, value);
 
     } else {
-      traits_type::pop(buf_, value, cv_not_full_);
+      traits_type::pop(buf_, cv_not_full_, value);
     }
     return true;
   }
 
 #if __cpp_lib_jthread >= 201911L
-  bool pop_wait(T& value, std::stop_token stop_token)
-    requires (!traits_type::has_stop_token_support)
+  bool pop_wait(std::stop_token stop_token, T& value)
+    requires (!traits_type::enable_stop_token_support)
   = delete;
 
   [[nodiscard]]
-  bool pop_wait(T& value, std::stop_token stop_token)
-    requires traits_type::has_stop_token_support
+  bool pop_wait(std::stop_token stop_token, T& value)
+    requires traits_type::enable_stop_token_support
   {
     std::unique_lock lock{mtx_};
     cv_not_empty_.wait(lock, stop_token, pop_wait_cond());
@@ -353,10 +370,10 @@ public:
     }
 
     if constexpr (traits_type::is_single_producer && traits_type::is_single_consumer) {
-      traits_type::pop(buf_, value, cv_not_full_, capacity_);
+      traits_type::pop(buf_, cv_not_full_, capacity_, value);
 
     } else {
-      traits_type::pop(buf_, value, cv_not_full_);
+      traits_type::pop(buf_, cv_not_full_, value);
     }
     return true;
   }
@@ -419,7 +436,7 @@ private:
 
   mutable std::mutex mtx_;
   buf_type buf_;
-  size_type capacity_ = 1024;
+  size_type capacity_ = traits_type::default_capacity;
 
   condition_variable_type cv_not_full_, cv_not_empty_;
 

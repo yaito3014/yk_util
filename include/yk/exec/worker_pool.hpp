@@ -4,7 +4,6 @@
 #include "yk/interrupt_exception.hpp"
 
 #include <algorithm>
-#include <print>
 #include <stop_token>
 #include <thread>
 #include <vector>
@@ -13,7 +12,7 @@
 
 namespace yk::exec {
 
-using worker_id_t = unsigned;
+using thread_id_t = unsigned;
 
 class worker_pool {
 public:
@@ -46,6 +45,22 @@ public:
 
   [[nodiscard]]
   bool stop_requested() const noexcept { return stop_source_.stop_requested(); }
+
+  void rethrow_exceptions()
+  {
+    if (!stop_source_.stop_requested()) {
+      return;
+    }
+
+    for (auto& [thread, exception] : threads_) {
+      if (thread.joinable()) {
+        thread.join();
+      }
+      if (exception) {
+        std::rethrow_exception(exception);
+      }
+    }
+  }
 
   void halt()
   {
@@ -82,18 +97,19 @@ public:
   template <class F>
   void launch(F&& f)
   {
-    static_assert(std::invocable<F, worker_id_t, std::stop_token>);
+    static_assert(std::invocable<F, thread_id_t, std::stop_token>);
 
     threads_.emplace_back(std::thread{[
       this,
-      id = static_cast<worker_id_t>(threads_.size()),
+      id = static_cast<thread_id_t>(threads_.size()),
       f = std::forward<F>(f)
     ]() mutable {
       try {
         f(id, stop_source_.get_token());
 
       } catch (const yk::interrupt_exception&) {
-        // do nothing
+        stop_source_.request_stop();
+        threads_[id].exception = std::current_exception();
 
       } catch (...) {
         stop_source_.request_stop();
