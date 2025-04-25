@@ -88,5 +88,5 @@ YK_THROWT_NORETURN void throwt(Arg0&& arg0, Arg1&& arg1, std::format_string<Args
 
 }  // namespace yk
 
-#endif
+#endif  // YK_THROWT_HPP
 
