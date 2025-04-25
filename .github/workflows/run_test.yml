@@ -145,11 +145,11 @@ jobs:
 
       - name: Build (Ubuntu)
         if: matrix.os.name == 'ubuntu'
-        run: cmake --build ${{ github.workspace }}/build --verbose --config ${{ matrix.build_type }} --target yk_util_test > compilation_ubuntu_${{ matrix.compiler.vendor }}.log 2>&1
+        run: cmake --build ${{ github.workspace }}/build --verbose --config ${{ matrix.build_type }} --target yk_util_test 2>&1 | tee compilation_ubuntu_${{ matrix.compiler.vendor }}.log
 
       - name: Build (Windows)
         if: matrix.os.name == 'windows'
-        run: cmake --build ${{ github.workspace }}/build/test --verbose --config ${{ matrix.build_type }} --target yk_util_test > compilation_msvc.log 2>&1
+        run: cmake --build ${{ github.workspace }}/build/test --verbose --config ${{ matrix.build_type }} --target yk_util_test 2>&1 | tee compilation_msvc.log
 
       - name: Test (Ubuntu)
         if: matrix.os.name == 'ubuntu'
@@ -162,11 +162,19 @@ jobs:
         run: |
           copy ${{ github.workspace }}/boost/dist/bin/*.dll .
           ./yk_util_test --report_level=short
+      
+      - uses: actions/upload-artifact@v4
+        with:
+          name: compilation_log
+          path: compilation*.log
 
   run-notifier:
     runs-on: ubuntu-latest
     needs: [changes, build]
     steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: compilation_log
       - uses: yaito3014/cpp-warning-notifier@v0.2.1
         with:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
