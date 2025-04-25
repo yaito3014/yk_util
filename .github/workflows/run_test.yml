@@ -23,7 +23,7 @@ jobs:
   build:
     needs: changes
     runs-on: ${{ matrix.os.name }}-${{ matrix.os.version }}
-    if: ${{ needs.changes.outputs.build === 'true' }}
+    if: ${{ needs.changes.outputs.build == 'true' }}
     strategy:
       fail-fast: false
 
