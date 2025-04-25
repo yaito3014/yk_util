@@ -1,3 +1,6 @@
+#ifndef YK_THROWT_HPP
+#define YK_THROWT_HPP
+
 #include "yk/detail/string_like.hpp"
 
 #include <boost/stacktrace/stacktrace.hpp>
@@ -83,3 +86,6 @@ template <class E, class Arg0, class Arg1, class... Args>
 }  // namespace error_functions
 
 }  // namespace yk
+
+#endif
+
