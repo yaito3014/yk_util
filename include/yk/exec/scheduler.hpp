@@ -149,7 +149,7 @@ public:
   {
     stats_tracker_thread_.request_stop();
     if (stats_tracker_thread_.joinable()) {
-        stats_tracker_thread_.join();
+      stats_tracker_thread_.join();
     }
 
     stats_tracker_ = std::move(tracker);
@@ -159,7 +159,7 @@ public:
   {
     stats_tracker_thread_.request_stop();
     if (stats_tracker_thread_.joinable()) {
-        stats_tracker_thread_.join();
+      stats_tracker_thread_.join();
     }
 
     if (!stats_tracker_) return;
@@ -170,10 +170,10 @@ public:
           std::unique_lock lock{stats_mtx_};
 
           const bool cv_ok = stats_tracker_cv_.wait_for(
-              lock, stop_token, stats_tracker_->get_interval(),
-              [this] {
-                return stats_tracker_->interval_elapsed();
-              }
+            lock, stop_token, stats_tracker_->get_interval(),
+            [this] {
+              return stats_tracker_->interval_elapsed();
+            }
           );
 
           const auto stats = stats_;
@@ -239,11 +239,10 @@ public:
     {
       std::unique_lock lock{stats_mtx_};
       task_done_cv_.wait(lock, worker_pool_->stop_token(), [this] {
-          return
-            stats_.is_producer_input_processed_all() &&
-            stats_.consumer_input_processed >= stats_.producer_output;
-        }
-      );
+        return
+          stats_.is_producer_input_processed_all() &&
+          stats_.consumer_input_processed >= stats_.producer_output;
+      });
 
       last_stats = stats_;
     }
@@ -296,7 +295,7 @@ public:
 
     stats_tracker_thread_.request_stop();
     if (stats_tracker_thread_.joinable()) {
-        stats_tracker_thread_.join();
+      stats_tracker_thread_.join();
     }
   }
 
@@ -315,7 +314,7 @@ private:
 
       it_first = last_producer_input_it_;
       if (it_first == producer_input_end) {
-          return false; // all producer done; need to switch to consumer
+        return false; // all producer done; need to switch to consumer
       }
 
       it_last = it_first;
@@ -327,7 +326,7 @@ private:
       stats_.producer_input_consumed += count;
 
       if (it_last == producer_input_end) {
-          is_producer_inputs_all_consumed_ = true;
+        is_producer_inputs_all_consumed_ = true;
       }
       is_producer_inputs_all_consumed = is_producer_inputs_all_consumed_;
     }
@@ -354,14 +353,13 @@ private:
         stats_.set_producer_input_processed_all();
       }
 
+      // (reversed pattern; consumer outpaced our process)
       if (
         stats_.is_producer_input_processed_all() &&
         stats_.consumer_input_processed >= stats_.producer_output
       ) {
-        // all producer & consumer done; need to switch to consumer
-        // (reversed pattern; consumer outpaced our process)
         task_done_cv_.notify_all();
-        return false;
+        return false; // need to switch to consumer
       }
     }
 
@@ -409,7 +407,7 @@ private:
         stats_.consumer_input_processed >= stats_.producer_output
       ) {
         task_done_cv_.notify_all();
-        return false;
+        return false; // need to switch to consumer
       }
     }
 
@@ -508,10 +506,10 @@ private:
 template <class T, class ProducerF_, class ConsumerF_, ProducerInputRange ProducerInputRangeT_>
 [[nodiscard]]
 auto make_scheduler(
-    const std::shared_ptr<yk::exec::worker_pool>& worker_pool,
-    ProducerF_&& producer_func,
-    ConsumerF_&& consumer_func,
-    ProducerInputRangeT_&& producer_inputs
+  const std::shared_ptr<yk::exec::worker_pool>& worker_pool,
+  ProducerF_&& producer_func,
+  ConsumerF_&& consumer_func,
+  ProducerInputRangeT_&& producer_inputs
 ) {
   return scheduler<std::decay_t<ProducerInputRangeT_>, T, std::decay_t<ProducerF_>, std::decay_t<ConsumerF_>>{
     worker_pool,
@@ -524,9 +522,9 @@ auto make_scheduler(
 template <ProducerInputRange ProducerInputRangeT, class T, class ProducerF_, class ConsumerF_>
 [[nodiscard]]
 auto make_scheduler(
-    const std::shared_ptr<yk::exec::worker_pool>& worker_pool,
-    ProducerF_&& producer_func,
-    ConsumerF_&& consumer_func
+  const std::shared_ptr<yk::exec::worker_pool>& worker_pool,
+  ProducerF_&& producer_func,
+  ConsumerF_&& consumer_func
 ) {
   return scheduler<ProducerInputRangeT, T, std::decay_t<ProducerF_>, std::decay_t<ConsumerF_>>{
     worker_pool,
