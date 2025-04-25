@@ -24,6 +24,7 @@ jobs:
     needs: changes
     runs-on: ${{ matrix.os.name }}-${{ matrix.os.version }}
     if: ${{ needs.changes.outputs.build == 'true' }}
+    name: ${{ matrix.os.name }}-${{ matrix.os.version }}_${{ matrix.boost_version }}_${{ matrix.compiler.executable }}_${{ matrix.cpp_version }}_${{ matrix.build_type }}
     strategy:
       fail-fast: false
 
@@ -117,13 +118,13 @@ jobs:
       - name: Build (Ubuntu)
         if: matrix.os.name == 'ubuntu'
         run: |
-          echo "#cppwarningnotifier jobId=${{ job.container.id }}" >> compilation.log
+          echo '#cppwarningnotifier { "run_id": ${{ github.run_id }} }' >> compilation.log
           cmake --build ${{ github.workspace }}/build --verbose --config ${{ matrix.build_type }} --target yk_util_test 2>&1 | tee -a compilation.log
           
       - name: Build (Windows)
         if: matrix.os.name == 'windows'
         run: |
-          echo "#cppwarningnotifier jobId=${{ job.container.id }}" >> compilation.log
+          echo '#cppwarningnotifier { "run_id": ${{ github.run_id }} }' >> compilation.log
           cmake --build ${{ github.workspace }}/build/test --verbose --config ${{ matrix.build_type }} --target yk_util_test 2>&1 | tee -a compilation.log
 
       - name: Test (Ubuntu)
