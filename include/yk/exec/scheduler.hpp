@@ -398,12 +398,6 @@ private:
       std::unique_lock lock{stats_mtx_};
       ++stats_.consumer_input_processed;
 
-      if (is_producer_inputs_all_consumed_ &&
-        stats_.producer_input_processed >= stats_.producer_input_consumed
-      ) {
-        stats_.set_producer_input_processed_all();
-      }
-
       if (
         stats_.is_producer_input_processed_all() &&
         stats_.consumer_input_processed >= stats_.producer_output
