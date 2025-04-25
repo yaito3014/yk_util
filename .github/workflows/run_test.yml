@@ -7,9 +7,23 @@ on:
     branches: ["main"]
 
 jobs:
-  build:
-    runs-on: ${{ matrix.os.name }}-${{ matrix.os.version }}
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      build: ${{ steps.filter.outputs.src }}
+    steps:
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            src:
+              - 'include/**/*'
+              - 'test/**/*'
 
+  build:
+    needs: changes
+    runs-on: ${{ matrix.os.name }}-${{ matrix.os.version }}
+    if: ${{ needs.changes.outputs.build }}
     strategy:
       fail-fast: false
 
@@ -131,11 +145,11 @@ jobs:
 
       - name: Build (Ubuntu)
         if: matrix.os.name == 'ubuntu'
-        run: cmake --build ${{ github.workspace }}/build --verbose --config ${{ matrix.build_type }} --target yk_util_test
+        run: cmake --build ${{ github.workspace }}/build --verbose --config ${{ matrix.build_type }} --target yk_util_test > compilation_ubuntu_${{ matrix.compiler.vendor }}.log 2>&1
 
       - name: Build (Windows)
         if: matrix.os.name == 'windows'
-        run: cmake --build ${{ github.workspace }}/build/test --verbose --config ${{ matrix.build_type }} --target yk_util_test
+        run: cmake --build ${{ github.workspace }}/build/test --verbose --config ${{ matrix.build_type }} --target yk_util_test > compilation_msvc.log 2>&1
 
       - name: Test (Ubuntu)
         if: matrix.os.name == 'ubuntu'
@@ -151,7 +165,7 @@ jobs:
 
   run-notifier:
     runs-on: ubuntu-latest
-    needs: build
+    needs: [changes, build]
     steps:
       - uses: yaito3014/cpp-warning-notifier@v0.2.0
         with:
