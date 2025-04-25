@@ -21,7 +21,13 @@
 
 #define YK_THROWT_THROW(...) throw __VA_ARGS__
 
-#endif
+#endif  // YK_THROWT_THROW
+
+#ifndef YK_THROWT_NORETURN
+
+#define YK_THROWT_NORETURN [[noreturn]]
+
+#endif  // YK_THROWT_NORETURN
 
 namespace yk {
 
@@ -34,7 +40,7 @@ using traced_type = boost::error_info<struct stacktrace_tag, boost::stacktrace::
 inline namespace error_functions {
 
 template <class E>
-[[noreturn]] void throwt() {
+YK_THROWT_NORETURN void throwt() {
   static_assert(std::is_base_of_v<std::exception, E>);
   static_assert(std::is_constructible_v<E>);
   YK_THROWT_THROW(boost::enable_error_info(E{}) << detail::traced_type{boost::stacktrace::stacktrace()});
@@ -42,7 +48,7 @@ template <class E>
 
 template <class E, class Arg, class... Rest>
   requires std::is_constructible_v<E, Arg, Rest...> && (!detail::StringLike<Arg>)
-[[noreturn]] void throwt(Arg&& arg, Rest&&... rest) {
+YK_THROWT_NORETURN void throwt(Arg&& arg, Rest&&... rest) {
   static_assert(std::is_base_of_v<std::exception, E>);
   YK_THROWT_THROW(
       boost::enable_error_info(E{std::forward<Arg>(arg), std::forward<Rest>(rest)...})
@@ -51,7 +57,7 @@ template <class E, class Arg, class... Rest>
 }
 
 template <class E, class... Args>
-[[noreturn]] void throwt(std::format_string<Args...> fmt, Args&&... args) {
+YK_THROWT_NORETURN void throwt(std::format_string<Args...> fmt, Args&&... args) {
   static_assert(std::is_base_of_v<std::exception, E>);
   static_assert(std::is_constructible_v<E, std::string>);
   YK_THROWT_THROW(
@@ -61,7 +67,7 @@ template <class E, class... Args>
 }
 
 template <class E, class Arg0, class... Args>
-[[noreturn]] void throwt(Arg0&& arg0, std::format_string<Args...> fmt, Args&&... args) {
+YK_THROWT_NORETURN void throwt(Arg0&& arg0, std::format_string<Args...> fmt, Args&&... args) {
   static_assert(std::is_base_of_v<std::exception, E>);
   static_assert(std::is_constructible_v<E, Arg0, std::string>);
   YK_THROWT_THROW(
@@ -71,7 +77,7 @@ template <class E, class Arg0, class... Args>
 }
 
 template <class E, class Arg0, class Arg1, class... Args>
-[[noreturn]] void throwt(Arg0&& arg0, Arg1&& arg1, std::format_string<Args...> fmt, Args&&... args) {
+YK_THROWT_NORETURN void throwt(Arg0&& arg0, Arg1&& arg1, std::format_string<Args...> fmt, Args&&... args) {
   static_assert(std::is_base_of_v<std::exception, E>);
   static_assert(std::is_constructible_v<E, Arg0, Arg1, std::string>);
   YK_THROWT_THROW(
