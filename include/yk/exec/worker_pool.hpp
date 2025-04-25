@@ -2,6 +2,7 @@
 #define YK_EXEC_WORKER_POOL_HPP
 
 #include "yk/interrupt_exception.hpp"
+#include "yk/throwt.hpp"
 
 #include <algorithm>
 #include <stop_token>
@@ -29,7 +30,7 @@ public:
   void set_worker_limit(int worker_limit)
   {
     if (worker_limit < 2) {
-      throw std::invalid_argument{"worker limit must be >= 2"};
+      throwt<std::invalid_argument>("worker limit must be >= 2");
     }
     worker_limit_ = worker_limit;
   }

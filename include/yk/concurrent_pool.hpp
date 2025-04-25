@@ -5,6 +5,7 @@
 #include "yk/util/to_underlying.hpp"
 #include "yk/enum_bitops.hpp"
 #include "yk/interrupt_exception.hpp"
+#include "yk/throwt.hpp"
 
 #include <version>
 
@@ -246,7 +247,7 @@ public:
   void set_capacity(size_type new_capacity)
   {
     if (new_capacity < 0) {
-      throw std::length_error("new capacity must be non-negative");
+      throwt<std::length_error>("new capacity must be non-negative");
     }
     std::unique_lock lock{mtx_};
     capacity_ = new_capacity;
@@ -320,7 +321,7 @@ public:
     std::unique_lock lock{mtx_};
     cv_not_full_.wait(lock, stop_token, push_wait_cond());
     if (stop_token.stop_requested()) {
-      throw interrupt_exception{};
+      throwt<interrupt_exception>();
     }
     if (push_wait_cond_error()) {
       return false;
@@ -363,7 +364,7 @@ public:
     std::unique_lock lock{mtx_};
     cv_not_empty_.wait(lock, stop_token, pop_wait_cond());
     if (stop_token.stop_requested()) {
-      throw interrupt_exception{};
+      throwt<interrupt_exception>();
     }
     if (pop_wait_cond_error()) {
       return false;

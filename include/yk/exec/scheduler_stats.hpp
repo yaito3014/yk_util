@@ -3,6 +3,7 @@
 
 #include "yk/exec/debug.hpp"
 #include "yk/exec/scheduler_traits.hpp"
+#include "yk/throwt.hpp"
 
 #include <limits>
 #include <chrono>
@@ -46,7 +47,7 @@ struct scheduler_stats {
     using raw_size_t = decltype(raw_size);
 
     if (raw_size > static_cast<raw_size_t>(std::numeric_limits<count_type>::max())) {
-      throw std::invalid_argument{"too many producer inputs"};
+      throwt<std::invalid_argument>("too many producer inputs");
     }
 
     producer_input_total = static_cast<count_type>(raw_size);
@@ -73,7 +74,7 @@ struct scheduler_stats {
   void set_producer_input_processed_all()
   {
     if (producer_input_processed_all_) {
-      throw std::logic_error{"set_producer_input_processed_all has been called multiple times; this leads to invalid (duplicate) wakeups"};
+      throwt<std::logic_error>("set_producer_input_processed_all has been called multiple times; this leads to invalid (duplicate) wakeups");
     }
 
     if (producer_input_total == UNPREDICTABLE) {
@@ -82,7 +83,7 @@ struct scheduler_stats {
     } else {
       producer_input_processed_all_ = true;
       if (producer_input_processed != producer_input_total) {
-        throw std::logic_error{std::format("attempted to set producer_input_processed_all, but total count ({}) and processed count ({}) does not match", producer_input_total, producer_input_processed)};
+        throwt<std::logic_error>("attempted to set producer_input_processed_all, but total count ({}) and processed count ({}) does not match", producer_input_total, producer_input_processed);
       }
     }
   }
@@ -91,40 +92,40 @@ struct scheduler_stats {
   {
 #if YK_EXEC_DEBUG
     if (producer_input_consumed > producer_input_total) {
-      throw std::logic_error{std::format("producer overconsumption (input total: {}, consumed: {})", producer_input_total, producer_input_consumed)};
+      throwt<std::logic_error>("producer overconsumption (input total: {}, consumed: {})", producer_input_total, producer_input_consumed);
     }
 
     if (producer_input_processed > producer_input_consumed) {
-      throw std::logic_error{std::format("producer overprocess (consumed: {}, processed: {})", producer_input_consumed, producer_input_processed)};
+      throwt<std::logic_error>("producer overprocess (consumed: {}, processed: {})", producer_input_consumed, producer_input_processed);
     }
 #endif
 
     if (producer_input_processed > producer_input_total) {
-      throw std::logic_error{std::format("producer overprocess (input total: {}, processed: {})", producer_input_total, producer_input_processed)};
+      throwt<std::logic_error>("producer overprocess (input total: {}, processed: {})", producer_input_total, producer_input_processed);
     }
 
 #if YK_EXEC_DEBUG
     if (consumer_input_consumed > producer_output) {
-      throw std::logic_error{std::format("consumer overconsumption (producer output: {}, consumed: {})", producer_output, consumer_input_consumed)};
+      throwt<std::logic_error>("consumer overconsumption (producer output: {}, consumed: {})", producer_output, consumer_input_consumed);
     }
 
     if (consumer_input_processed > consumer_input_consumed) {
-      throw std::logic_error{std::format("consumer overprocess (consumed: {}, processed: {})", consumer_input_consumed, consumer_input_processed)};
+      throwt<std::logic_error>("consumer overprocess (consumed: {}, processed: {})", consumer_input_consumed, consumer_input_processed);
     }
 #endif
     if (consumer_input_processed > producer_output) {
-      throw std::logic_error{std::format("consumer overprocess (producer output: {}, consumer processed: {})", producer_output, consumer_input_processed)};
+      throwt<std::logic_error>("consumer overprocess (producer output: {}, consumer processed: {})", producer_output, consumer_input_processed);
     }
 
     if (producer_input_total != UNPREDICTABLE) {
       if (producer_input_processed_all_) {
         if (producer_input_processed != producer_input_total) {
-          throw std::logic_error{std::format("producer input has been completed, but processed count ({}) does not match the total input ({})", producer_input_processed, producer_input_total)};
+          throwt<std::logic_error>("producer input has been completed, but processed count ({}) does not match the total input ({})", producer_input_processed, producer_input_total);
         }
 
       } else {
         if (producer_input_processed == producer_input_total) {
-          throw std::logic_error{std::format("producer input was marked as NOT completed, but processed count already fulfills the total input ({})", producer_input_processed)};
+          throwt<std::logic_error>("producer input was marked as NOT completed, but processed count already fulfills the total input ({})", producer_input_processed);
         }
       }
     }

@@ -21,6 +21,8 @@
 #include "yk/concurrent_pool_gate.hpp"
 #include "yk/concurrent_vector.hpp"
 
+#include "yk/throwt.hpp"
+
 #if YK_EXEC_DEBUG
 #include <print>
 #endif
@@ -86,10 +88,10 @@ public:
     std::scoped_lock lock{stats_mtx_, producer_input_mtx_};
 
     if (stats_.is_running) {
-      throw std::invalid_argument{
+      throwt<std::invalid_argument>(
         "Attempted to assign new producer inputs while scheduler is already running;"
         " this operation is unsupported due to implementation limitations"
-      };
+      );
     }
 
     producer_inputs_ = std::forward<ProducerInputRangeT_>(r);
@@ -111,7 +113,7 @@ public:
     std::scoped_lock lock{stats_mtx_, producer_input_mtx_};
 
     if (stats_.is_running) {
-      throw std::invalid_argument{"scheduler is already running"};
+      throwt<std::invalid_argument>("scheduler is already running");
     }
 
     last_producer_input_it_ = std::ranges::begin(producer_inputs_);
@@ -130,7 +132,7 @@ public:
   void set_producer_chunk_size(long long chunk_size)
   {
     if (chunk_size < 1) {
-      throw std::invalid_argument{"producer chunk size cannot be less than 1"};
+      throwt<std::invalid_argument>("producer chunk size cannot be less than 1");
     }
 
     std::unique_lock lock{producer_input_mtx_};
@@ -206,10 +208,10 @@ public:
     {
       std::unique_lock lock{stats_mtx_};
       if (stats_.is_running) {
-        throw std::invalid_argument{"Cannot start the scheduler while the jobs are running"};
+        throwt<std::invalid_argument>("Cannot start the scheduler while the jobs are running");
       }
       if (stats_.is_producer_input_processed_all()) {
-        throw std::invalid_argument{"Cannot start the scheduler after a successful iteration. If this is your intended action, call: reset_same_inputs_for_next_execution()"};
+        throwt<std::invalid_argument>("Cannot start the scheduler after a successful iteration. If this is your intended action, call: reset_same_inputs_for_next_execution()");
       }
     }
 
@@ -283,7 +285,7 @@ public:
 
       auto const remaining_tasks = queue_.size();
       if (remaining_tasks != 0) {
-        throw std::logic_error{std::format("wait_for_all_tasks: queue is not empty ({})", remaining_tasks)};
+        throwt<std::logic_error>("wait_for_all_tasks: queue is not empty ({})", remaining_tasks);
       }
     }
   }
