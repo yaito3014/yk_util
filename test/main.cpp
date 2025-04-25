@@ -334,15 +334,11 @@ BOOST_AUTO_TEST_CASE(Throwt) {
     BOOST_TEST(ss.str() == "foobar\n");
   }
 
-  struct my_exception : std::runtime_error, std::nested_exception {
-    using runtime_error::runtime_error;
-  };
-
   try {
     try {
       throw std::runtime_error("foo");
     } catch (const std::exception& e) {
-      throw my_exception("bar");
+      std::throw_with_nested(std::runtime_error("bar"));
     }
   } catch (const std::exception& e) {
     std::stringstream ss;
