@@ -2,6 +2,7 @@
 #define YK_THROWT_HPP
 
 #include "yk/detail/string_like.hpp"
+#include "yk/detail/traced_type.hpp"
 
 #include <boost/stacktrace/stacktrace.hpp>
 
@@ -30,12 +31,6 @@
 #endif  // YK_THROWT_NORETURN
 
 namespace yk {
-
-namespace detail {
-
-using traced_type = boost::error_info<struct stacktrace_tag, boost::stacktrace::stacktrace>;
-
-}  // namespace detail
 
 inline namespace error_functions {
 

@@ -2,6 +2,7 @@
 #include "yk/ranges/concat.hpp"
 #include "yk/stack.hpp"
 #include "yk/throwt.hpp"
+#include "yk/printt.hpp"
 
 #define BOOST_TEST_MODULE yk_util_test
 #if YK_BUILD_UNIT_TEST_FRAMEWORK
@@ -14,7 +15,7 @@
 #include <compare>
 #include <forward_list>
 #include <functional>
-#include <iostream>
+#include <sstream>
 #include <iterator>
 #include <list>
 #include <memory>
@@ -324,6 +325,26 @@ BOOST_AUTO_TEST_CASE(Throwt) {
       },
       std::system_error
   );
+
+  try {
+    throw std::runtime_error("foobar");
+  } catch (const std::exception& e) {
+    std::stringstream ss;
+    yk::printt(ss, e);
+    BOOST_TEST(ss.str() == "foobar\n");
+  }
+
+  try {
+    try {
+      throw std::runtime_error("foo");
+    } catch (const std::exception& e) {
+      std::throw_with_nested(std::runtime_error("bar"));
+    }
+  } catch (const std::exception& e) {
+    std::stringstream ss;
+    yk::printt(ss, e);
+    BOOST_TEST(ss.str() == "bar\nfoo\n");
+  }
 }
 
 BOOST_AUTO_TEST_SUITE_END()  // yk_util
