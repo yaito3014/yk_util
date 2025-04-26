@@ -183,7 +183,7 @@ jobs:
 
   run-notifier:
     runs-on: ubuntu-latest
-    needs: [changes, build]
+    needs: build
     steps:
       - uses: actions/download-artifact@v4
       - uses: yaito3014/cpp-warning-notifier@test
