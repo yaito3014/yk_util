@@ -31,7 +31,7 @@ jobs:
         os:
           - name: ubuntu
             version: 24.04
-        build_type: [Debug]
+        build_type: [Release, Debug]
         cpp_version: [20]
         boost_version: [1.86.0]
         compiler:
