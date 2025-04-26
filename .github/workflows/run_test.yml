@@ -24,7 +24,6 @@ jobs:
     needs: changes
     runs-on: ${{ matrix.os.name }}-${{ matrix.os.version }}
     if: ${{ needs.changes.outputs.build == 'true' }}
-    name: ${{ matrix.os.name }}-${{ matrix.os.version }}_${{ matrix.boost_version }}_${{ matrix.compiler.executable }}_${{ matrix.cpp_version }}_${{ matrix.build_type }}
     strategy:
       fail-fast: false
 
