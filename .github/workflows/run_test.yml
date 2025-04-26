@@ -120,7 +120,7 @@ jobs:
         run: |
           echo '#cppwarningnotifier { "run_id": ${{ github.run_id }} }' >> compilation.log
           cmake --build ${{ github.workspace }}/build --verbose --config ${{ matrix.build_type }} --target yk_util_test 2>&1 | tee -a compilation.log
-          
+
       - name: Build (Windows)
         if: matrix.os.name == 'windows'
         run: |
@@ -140,9 +140,17 @@ jobs:
           ./yk_util_test --report_level=short
       - uses: qoomon/actions--context@v4
         id: context
+
       - uses: actions/upload-artifact@v4
+        if: matrix.os.name == 'ubuntu'
         with:
-          name: compilation_${{ github.run_id }}_${{ steps.context.outputs.job_id }}_${{ matrix.os.name == "ubuntu" ? 11 : 12 }}_log
+          name: compilation_${{ github.run_id }}_${{ steps.context.outputs.job_id }}_11_log
+          path: compilation*.log
+
+      - uses: actions/upload-artifact@v4
+        if: matrix.os.name == 'windows'
+        with:
+          name: compilation_${{ github.run_id }}_${{ steps.context.outputs.job_id }}_12_log
           path: compilation*.log
 
   run-notifier:
