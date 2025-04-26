@@ -149,7 +149,7 @@ jobs:
     needs: [changes, build]
     steps:
       - uses: actions/download-artifact@v4
-      - uses: yaito3014/cpp-warning-notifier@main
+      - uses: yaito3014/cpp-warning-notifier@test
         with:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           APP_ID: ${{ vars.APP_ID }}
