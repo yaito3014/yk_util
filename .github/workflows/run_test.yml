@@ -138,10 +138,11 @@ jobs:
         run: |
           copy ${{ github.workspace }}/boost/dist/bin/*.dll .
           ./yk_util_test --report_level=short
-
+      - uses: qoomon/actions--context@v4
+        id: context
       - uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.os.name }}-${{ matrix.os.version }}_${{ matrix.boost_version }}_${{ matrix.compiler.executable }}_${{ matrix.cpp_version }}_${{ matrix.build_type }}
+          name: compilation_${{ github.run_id }}_${{ steps.context.outputs.job_id }}_${{ matrix.os.name == "ubuntu" ? 11 : 12 }}_log
           path: compilation*.log
 
   run-notifier:
