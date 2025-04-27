@@ -24,7 +24,7 @@ public:
 
   ~worker_pool()
   {
-    halt_and_clear();
+    halt_and_clear_impl<true>();
   }
 
   void set_worker_limit(int worker_limit)
@@ -59,8 +59,20 @@ public:
       }
       if (exception) {
         std::rethrow_exception(exception);
+        exception = {};
       }
     }
+  }
+
+  [[nodiscard]]
+  bool get_rethrow_exceptions_on_exit() const noexcept
+  {
+    return rethrow_exceptions_on_exit_;
+  }
+
+  void set_rethrow_exceptions_on_exit(bool flag) noexcept
+  {
+    rethrow_exceptions_on_exit_ = flag;
   }
 
   void halt()
@@ -73,26 +85,7 @@ public:
 
   void halt_and_clear()
   {
-    halt();
-
-    std::exception_ptr exception;
-
-    for (auto& thread : threads_) {
-      if (!thread.thread.joinable()) {
-        continue;
-      }
-
-      thread.thread.join();
-
-      if (thread.exception) {
-        exception = thread.exception;
-      }
-    }
-
-    threads_.clear();
-    if (exception) {
-      std::rethrow_exception(exception);
-    }
+    halt_and_clear_impl<false>();
   }
 
   template <class F>
@@ -130,6 +123,37 @@ public:
   }
 
 private:
+  template<bool IsExiting>
+  void halt_and_clear_impl()
+  {
+    halt();
+
+    [[maybe_unused]]
+    std::exception_ptr first_exception;
+
+    for (auto& thread : threads_) {
+      if (!thread.thread.joinable()) {
+        continue;
+      }
+
+      thread.thread.join();
+
+      if constexpr (IsExiting) {
+        if (rethrow_exceptions_on_exit_ && thread.exception) {
+          first_exception = thread.exception;
+        }
+      }
+    }
+
+    threads_.clear();
+
+    if constexpr (IsExiting) {
+      if (first_exception) {
+        std::rethrow_exception(first_exception);
+      }
+    }
+  }
+
   int worker_limit_ = 2;
 
   struct ThreadData
@@ -139,6 +163,8 @@ private:
   };
   std::vector<ThreadData> threads_;
   std::stop_source stop_source_;
+
+  bool rethrow_exceptions_on_exit_ = true;
 };
 
 }  // namespace yk::exec

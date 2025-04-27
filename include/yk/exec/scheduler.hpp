@@ -220,6 +220,8 @@ public:
 
     launch_stats_tracker();
 
+    worker_pool_->set_rethrow_exceptions_on_exit(true);
+
     worker_pool_->launch([this](const thread_id_t worker_id, std::stop_token stop_token) {
       this->fixed_producer(worker_id, std::move(stop_token));
     });
@@ -273,6 +275,7 @@ public:
 #endif
 
       queue_.close();
+      worker_pool_->set_rethrow_exceptions_on_exit(false);
       worker_pool_->rethrow_exceptions();
       return;
 
