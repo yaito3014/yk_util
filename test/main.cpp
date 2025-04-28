@@ -326,6 +326,8 @@ BOOST_AUTO_TEST_CASE(Throwt) {
       std::system_error
   );
 
+#if __cpp_lib_print >= 202207L
+
   try {
     throw std::runtime_error("foobar");
   } catch (const std::exception& e) {
@@ -345,6 +347,9 @@ BOOST_AUTO_TEST_CASE(Throwt) {
     yk::printt(ss, e);
     BOOST_TEST(ss.str() == "bar\nfoo\n");
   }
+
+#endif
+
 }
 
 BOOST_AUTO_TEST_SUITE_END()  // yk_util
