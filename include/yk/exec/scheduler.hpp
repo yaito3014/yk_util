@@ -48,12 +48,13 @@ template <
   ProducerInputRange ProducerInputRangeT,
   class T,
   class ProducerF,
-  class ConsumerF
+  class ConsumerF,
+  class TraitsT = scheduler_traits<ProducerKind, ConsumerKind, ProducerInputRangeT, T>
 >
 class scheduler
 {
 public:
-  using traits_type        = scheduler_traits<ProducerKind, ConsumerKind, ProducerInputRangeT, T>;
+  using traits_type        = TraitsT;
   using queue_type         = typename traits_type::queue_type;
   using producer_gate_type = typename traits_type::producer_gate_type;
   using consumer_gate_type = typename traits_type::consumer_gate_type;
@@ -63,7 +64,19 @@ public:
   static_assert(Producer<ProducerF, T, ProducerInputRangeT, producer_gate_type>);
   static_assert(Consumer<ConsumerF, consumer_gate_type>);
 
-  template<class ProducerF_, class ConsumerF_, class R>
+  template <class ProducerF_, class ConsumerF_>
+  scheduler(
+    const std::shared_ptr<worker_pool>& worker_pool,
+    ProducerF_&& producer_func,
+    ConsumerF_&& consumer_func
+  ) requires std::is_default_constructible_v<ProducerInputRangeT>
+    : worker_pool_(worker_pool)
+    , producer_func_(std::forward<ProducerF_>(producer_func))
+    , consumer_func_(std::forward<ConsumerF_>(consumer_func))
+  {
+  }
+
+  template <class ProducerF_, class ConsumerF_, class R>
   scheduler(
     const std::shared_ptr<worker_pool>& worker_pool,
     ProducerF_&& producer_func,
@@ -78,6 +91,12 @@ public:
     , stats_(producer_inputs_)
   {
   }
+
+  scheduler() = delete;
+  scheduler(scheduler const&) = delete;
+  scheduler(scheduler&&) = delete;
+  scheduler& operator=(scheduler const&) = delete;
+  scheduler& operator=(scheduler&&) = delete;
 
   // thread-safe, but must be called from the master thread
   ~scheduler()
@@ -498,7 +517,7 @@ private:
 
   mutable std::mutex stats_mtx_;
   std::condition_variable_any task_done_cv_;
-  scheduler_stats stats_{};
+  scheduler_stats stats_{producer_inputs_};
 
   // -----------------------------
 
@@ -508,18 +527,28 @@ private:
   std::exception_ptr stats_tracker_exception_;
 };
 
-template <
-  producer_kind ProducerKind, consumer_kind ConsumerKind,
-  class ProducerInputRangeT_, class T, class ProducerF_, class ConsumerF_
->
-using make_scheduler_t = scheduler<
-  ProducerKind, ConsumerKind,
-  std::decay_t<ProducerInputRangeT_>, T, std::decay_t<ProducerF_>, std::decay_t<ConsumerF_>
->;
+
+namespace detail {
 
 template <
   producer_kind ProducerKind, consumer_kind ConsumerKind,
-  class T, class ProducerF_, class ConsumerF_, ProducerInputRange ProducerInputRangeT_
+  class ProducerInputRangeT_, class T,
+  class ProducerF_, class ConsumerF_,
+  class TraitsT = scheduler_traits<ProducerKind, ConsumerKind, ProducerInputRangeT_, T>
+>
+using make_scheduler_t = scheduler<
+  ProducerKind, ConsumerKind,
+  std::decay_t<ProducerInputRangeT_>, T, std::decay_t<ProducerF_>, std::decay_t<ConsumerF_>,
+  TraitsT
+>;
+
+} // detail
+
+
+template <
+  producer_kind ProducerKind, consumer_kind ConsumerKind,
+  class T,
+  class ProducerF_, class ConsumerF_, ProducerInputRange ProducerInputRangeT_
 >
 [[nodiscard]]
 auto make_scheduler(
@@ -529,7 +558,7 @@ auto make_scheduler(
   ProducerInputRangeT_&& producer_inputs
 )
 {
-  return make_scheduler_t<ProducerKind, ConsumerKind, ProducerInputRangeT_, T, ProducerF_, ConsumerF_>{
+  return detail::make_scheduler_t<ProducerKind, ConsumerKind, ProducerInputRangeT_, T, ProducerF_, ConsumerF_>{
     worker_pool,
     std::forward<ProducerF_>(producer_func),
     std::forward<ConsumerF_>(consumer_func),
@@ -539,7 +568,9 @@ auto make_scheduler(
 
 template <
   producer_kind ProducerKind, consumer_kind ConsumerKind,
-  ProducerInputRange ProducerInputRangeT, class T, class ProducerF_, class ConsumerF_
+  ProducerInputRange ProducerInputRangeT, class T,
+  class TraitsT = scheduler_traits<ProducerKind, ConsumerKind, ProducerInputRangeT, T>,
+  class ProducerF_, class ConsumerF_
 >
 [[nodiscard]]
 auto make_scheduler(
@@ -547,7 +578,7 @@ auto make_scheduler(
   ProducerF_&& producer_func,
   ConsumerF_&& consumer_func
 ) {
-  return make_scheduler_t<ProducerKind, ConsumerKind, ProducerInputRangeT, T, ProducerF_, ConsumerF_>{
+  return detail::make_scheduler_t<ProducerKind, ConsumerKind, ProducerInputRangeT, T, ProducerF_, ConsumerF_, TraitsT>{
     worker_pool,
     std::forward<ProducerF_>(producer_func),
     std::forward<ConsumerF_>(consumer_func)
@@ -561,9 +592,9 @@ struct make_scheduler_with_traits_impl;
 
 template <
   producer_kind ProducerKind, consumer_kind ConsumerKind,
-  ProducerInputRange ProducerInputRangeT, class T
+  ProducerInputRange ProducerInputRangeT, class T, class BufT
 >
-struct make_scheduler_with_traits_impl<scheduler_traits<ProducerKind, ConsumerKind, ProducerInputRangeT, T>>
+struct make_scheduler_with_traits_impl<scheduler_traits<ProducerKind, ConsumerKind, ProducerInputRangeT, T, BufT>>
 {
   template <class ProducerF_, class ConsumerF_, class... Args>
   static auto apply(
@@ -572,7 +603,7 @@ struct make_scheduler_with_traits_impl<scheduler_traits<ProducerKind, ConsumerKi
       ConsumerF_&& consumer_func,
       Args&&... args
   ) {
-    return make_scheduler_t<ProducerKind, ConsumerKind, ProducerInputRangeT, T, ProducerF_, ConsumerF_>{
+    return make_scheduler_t<ProducerKind, ConsumerKind, ProducerInputRangeT, T, ProducerF_, ConsumerF_, scheduler_traits<ProducerKind, ConsumerKind, ProducerInputRangeT, T, BufT>>{
       worker_pool,
       std::forward<ProducerF_>(producer_func),
       std::forward<ConsumerF_>(consumer_func),

@@ -3,9 +3,10 @@
 
 #include "yk/exec/debug.hpp"
 #include "yk/exec/thread_id.hpp" // intentionally included
-#include "yk/concurrent_vector.hpp"
+#include "yk/concurrent_pool.hpp"
 #include "yk/concurrent_pool_gate.hpp"
 
+#include <vector>
 #include <ranges>
 #include <concepts>
 #include <type_traits>
@@ -51,7 +52,11 @@ concept Producer =
 template <class F, class GateT>
 concept Consumer = std::invocable<F, thread_id_t, GateT&>;
 
-template <producer_kind ProducerKind, consumer_kind ConsumerKind, ProducerInputRange ProducerInputRangeT, class T>
+template <
+  producer_kind ProducerKind, consumer_kind ConsumerKind,
+  ProducerInputRange ProducerInputRangeT, class T,
+  class BufT = std::vector<T, concurrent_pool_allocator_t<T>>
+>
 struct scheduler_traits
 {
   static constexpr bool is_multi_push = ProducerKind == producer_kind::multi_push;
@@ -62,7 +67,7 @@ struct scheduler_traits
   using producer_input_value_type = std::ranges::range_value_t<ProducerInputRangeT>;
   using producer_input_iterator = std::ranges::iterator_t<ProducerInputRangeT>;
 
-  using queue_type = yk::concurrent_mpmc_vector<T>;
+  using queue_type = yk::concurrent_pool<T, BufT, concurrent_pool_flag::mpmc>;
 
   using producer_gate_type = std::conditional_t<
     is_multi_push,

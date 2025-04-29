@@ -15,12 +15,12 @@
 #include <stop_token>
 #endif
 
-#include <concepts>
 #include <condition_variable>
 #include <mutex>
 #include <stdexcept>
 #include <type_traits>
 #include <utility>
+#include <concepts>
 
 #include <cstddef>
 
@@ -248,7 +248,8 @@ public:
     capacity_ = new_capacity;
   }
 
-  void reserve_capacity() requires (!traits_type::has_reserve) = delete;
+  void reserve_capacity() requires (!traits_type::has_reserve)
+  {}
 
   void reserve_capacity() requires traits_type::has_reserve
   {
