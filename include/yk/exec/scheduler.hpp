@@ -363,13 +363,32 @@ private:
     // ===== begin producer =====
     producer_gate_type gate{&queue_};
 
+#if YK_EXEC_DEBUG
+    std::chrono::nanoseconds process_time{};
+#endif
+
     for (auto it = it_first; it != it_last; ++it) {
+#if YK_EXEC_DEBUG
+      auto const start_time = std::chrono::steady_clock::now();
+#endif
+
       producer_func_(worker_id, *it, gate);
+
+#if YK_EXEC_DEBUG
+      process_time += std::chrono::steady_clock::now() - start_time;
+#endif
     }
+
     // ===== end producer =====
 
     {
       std::unique_lock lock{stats_mtx_};
+
+#if YK_EXEC_DEBUG
+      stats_.producer_time += process_time;
+      stats_.queue_overhead += gate.elapsed_time();
+#endif
+
       stats_.producer_input_processed += count;
 
       if constexpr (traits_type::is_multi_push) {
@@ -414,12 +433,26 @@ private:
     // ===== begin consumer =====
 
     consumer_gate_type gate{&queue_};
+
+#if YK_EXEC_DEBUG
+    auto const start_time = std::chrono::steady_clock::now();
+#endif
+
     consumer_func_(worker_id, gate);
+
+#if YK_EXEC_DEBUG
+    auto const process_time = std::chrono::steady_clock::now() - start_time;
+#endif
 
     // ===== end consumer =====
 
     {
       std::unique_lock lock{stats_mtx_};
+
+#if YK_EXEC_DEBUG
+      stats_.consumer_time += process_time;
+      stats_.queue_overhead += gate.elapsed_time();
+#endif
 
       if constexpr (traits_type::is_multi_pop) {
         stats_.consumer_input_processed += gate.count();

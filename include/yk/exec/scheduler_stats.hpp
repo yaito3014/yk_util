@@ -5,8 +5,11 @@
 #include "yk/exec/scheduler_traits.hpp"
 #include "yk/throwt.hpp"
 
-#include <limits>
+#if YK_EXEC_DEBUG
 #include <chrono>
+#endif
+
+#include <limits>
 #include <compare>
 #include <format>
 #include <functional>
@@ -31,6 +34,12 @@ struct scheduler_stats {
   count_type producer_output = 0; // type is T
 
   count_type consumer_input_processed = 0; // type is T
+
+  // =============================================
+
+#if YK_EXEC_DEBUG
+  std::chrono::nanoseconds producer_time{}, consumer_time{}, queue_overhead{};
+#endif
 
   // =============================================
 
@@ -71,10 +80,10 @@ struct scheduler_stats {
   }
 
   [[nodiscard]]
-  constexpr bool operator==(const scheduler_stats&) const noexcept = default;
+  constexpr bool operator==(const scheduler_stats&) const noexcept = delete;
 
   [[nodiscard]]
-  constexpr std::strong_ordering operator<=>(const scheduler_stats&) const noexcept = default;
+  constexpr auto operator<=>(const scheduler_stats&) const noexcept = delete;
 
   // =============================================
 

@@ -7,6 +7,10 @@
 
 #include <boost/assert.hpp>
 
+#if YK_EXEC_DEBUG
+#include <chrono>
+#endif
+
 #include <version>
 #include <stdexcept>
 
@@ -91,6 +95,32 @@ struct concurrent_pool_gate_store_base
 
   concurrent_pool_size_type last_pool_size(this const auto& self) noexcept requires (!need_info)
     = delete;
+
+#if YK_EXEC_DEBUG
+  [[nodiscard]] std::chrono::nanoseconds elapsed_time() const noexcept { return elapsed_time_; }
+#endif
+
+protected:
+#if YK_EXEC_DEBUG
+  std::chrono::nanoseconds elapsed_time_{};
+
+  void add_time(std::chrono::nanoseconds elapsed_time)
+  {
+      elapsed_time_ += elapsed_time;
+  }
+
+  friend struct auto_timer;
+  struct auto_timer
+  {
+    concurrent_pool_gate_store_base* base = nullptr;
+
+    using clock_type = std::chrono::steady_clock;
+    clock_type::time_point start_time;
+
+    auto_timer(concurrent_pool_gate_store_base* base) : base(base), start_time(clock_type::now()) {}
+    ~auto_timer() { base->add_time(clock_type::now() - start_time); }
+  };
+#endif
 };
 
 
@@ -162,6 +192,10 @@ struct producer_gate
   [[nodiscard]]
   bool push_wait(std::stop_token stop_token, Args&&... args)
   {
+#if YK_EXEC_DEBUG
+    typename base_type::auto_timer timer{this};
+#endif
+
     if constexpr (base_type::is_counted) {
       ++this->count_;
 
@@ -193,6 +227,10 @@ struct producer_gate
   [[nodiscard]]
   bool push_wait(Args&&... args)
   {
+#if YK_EXEC_DEBUG
+    typename base_type::auto_timer timer{this};
+#endif
+
     if constexpr (base_type::is_counted) {
       ++this->count_;
 
@@ -255,6 +293,10 @@ struct consumer_gate
   [[nodiscard]]
   bool pop_wait(std::stop_token stop_token, value_type& value)
   {
+#if YK_EXEC_DEBUG
+    typename base_type::auto_timer timer{this};
+#endif
+
     if constexpr (base_type::is_counted) {
       ++this->count_;
 
@@ -285,6 +327,10 @@ struct consumer_gate
   [[nodiscard]]
   bool pop_wait(value_type& value)
   {
+#if YK_EXEC_DEBUG
+    typename base_type::auto_timer timer{this};
+#endif
+
     if constexpr (base_type::is_counted) {
       ++this->count_;
 
