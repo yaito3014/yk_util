@@ -15,6 +15,7 @@
 #include <stop_token>
 #endif
 
+#include <new> // false sharing thingy
 #include <condition_variable>
 #include <mutex>
 #include <stdexcept>
@@ -512,12 +513,11 @@ private:
     return closed_;
   }
 
-  mutable std::mutex mtx_;
+  alignas(std::hardware_destructive_interference_size) mutable std::mutex mtx_;
+  alignas(std::hardware_destructive_interference_size) condition_variable_type cv_not_full_, cv_not_empty_;
+
   buf_type buf_;
   size_type capacity_ = traits_type::default_capacity;
-
-  condition_variable_type cv_not_full_, cv_not_empty_;
-
   bool closed_ = false;
 };
 
