@@ -295,6 +295,7 @@ public:
   void abort()
   {
     queue_.close();
+    worker_pool_->halt_and_clear();
 
     stats_tracker_thread_.request_stop();
     if (stats_tracker_thread_.joinable()) {
