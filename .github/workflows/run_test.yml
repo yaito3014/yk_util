@@ -37,53 +37,53 @@ jobs:
         cpp_version: [20, 23, 26]
         boost_version: [1.86.0]
         compiler:
-          - vendor: GNU
+          - name: GCC
             version: 13
             executable: g++-13
-          - vendor: GNU
+          - name: GCC
             version: 14
             executable: g++-14
-          - vendor: LLVM
+          - name: Clang
             version: 19
             executable: clang++-19
             cxxflags: -stdlib=libc++
-          - vendor: LLVM
+          - name: Clang
             version: 20
             executable: clang++-20
             cxxflags: -stdlib=libc++
-          - vendor: Microsoft
+          - name: MSVC
             version: v142
             executable: cl
         exclude:
           - compiler:
-              vendor: GNU
+              name: GCC
               version: 13
             cpp_version: 26
           - os:
               name: windows
             compiler:
-              vendor: GNU
+              name: GCC
           - os:
               name: windows
             compiler:
-              vendor: LLVM
+              name: Clang
           - os:
               name: ubuntu
             compiler:
-              vendor: Microsoft
+              name: MSVC
 
     steps:
       - uses: actions/checkout@v4
 
       - name: Setup Clang
-        if: matrix.compiler.vendor == 'LLVM'
+        if: matrix.compiler.name == 'Clang'
         run: |
           wget https://apt.llvm.org/llvm.sh
           chmod +x ./llvm.sh
           sudo ./llvm.sh ${{ matrix.compiler.version }} all
 
       - name: Setup GCC
-        if: matrix.compiler.vendor == 'GNU'
+        if: matrix.compiler.name == 'GCC'
         run: sudo apt update && sudo apt install -y g++-${{ matrix.compiler.version }}
 
       - name: Install Dependencies
@@ -186,7 +186,7 @@ jobs:
     needs: build
     steps:
       - uses: actions/download-artifact@v4
-      - uses: yaito3014/cpp-warning-notifier@v0.4.1
+      - uses: yaito3014/cpp-warning-notifier@v0.4.2
         with:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           APP_ID: ${{ vars.APP_ID }}
