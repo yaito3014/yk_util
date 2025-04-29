@@ -246,6 +246,9 @@ public:
       throwt<std::length_error>("new capacity must be non-negative");
     }
     std::unique_lock lock{mtx_};
+    if (static_cast<typename BufT::size_type>(new_capacity) > buf_.max_size()) {
+      throwt<std::length_error>("new capacity ({}) exceeds underlying buffer's max_size ({})", new_capacity, buf_.max_size());
+    }
     capacity_ = new_capacity;
   }
 

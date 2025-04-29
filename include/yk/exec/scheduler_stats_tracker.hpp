@@ -31,8 +31,7 @@ public:
     : callback_(std::forward<F>(f))
   {}
 
-  [[nodiscard]]
-  std::chrono::milliseconds get_interval() const noexcept { return interval_; }
+  [[nodiscard]] std::chrono::milliseconds get_interval() const noexcept { return interval_; }
   void set_interval(std::chrono::milliseconds interval) noexcept { interval_ = interval; }
 
   template <std::invocable<const scheduler_stats_tracker&> F>
@@ -41,16 +40,23 @@ public:
     callback_ = std::forward<F>(f);
   }
 
-  [[nodiscard]]
-  const callback_type& get_callback() const noexcept { return callback_; }
+  [[nodiscard]] const callback_type& get_callback() const noexcept { return callback_; }
 
   // ------------------------------------------------------
 
-  [[nodiscard]]
-  clock_type::time_point tick() const noexcept { return tick_; }
+  [[nodiscard]] clock_type::time_point tick() const noexcept { return tick_; }
+  [[nodiscard]] clock_type::time_point last_tick() const noexcept { return last_tick_; }
 
+  [[nodiscard]] clock_type::time_point first_tick() const noexcept { return first_tick_; }
+  void reset_first_tick() noexcept { first_tick_ = clock_type::now(); }
+
+  template <class Duration = std::chrono::duration<double>>
   [[nodiscard]]
-  clock_type::time_point last_tick() const noexcept { return last_tick_; }
+  Duration total_time() const noexcept { return std::chrono::duration_cast<Duration>(tick_ - first_tick_); }
+
+  template <class Duration = std::chrono::duration<double>>
+  [[nodiscard]]
+  Duration delta_time() const noexcept { return std::chrono::duration_cast<Duration>(tick_ - last_tick_); }
 
   [[nodiscard]]
   const scheduler_stats& stats() const noexcept { return stats_; }
@@ -82,7 +88,7 @@ public:
 private:
   std::chrono::milliseconds interval_{1000};
   callback_type callback_;
-  clock_type::time_point tick_{}, last_tick_{};
+  clock_type::time_point first_tick_{}, tick_{}, last_tick_{};
 
   scheduler_stats stats_{}, last_stats_{};
 };

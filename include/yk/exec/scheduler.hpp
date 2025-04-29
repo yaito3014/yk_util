@@ -189,6 +189,8 @@ public:
 
     if (!stats_tracker_) return;
 
+    stats_tracker_->reset_first_tick();
+
     stats_tracker_thread_ = std::jthread{[this](std::stop_token stop_token) {
       try {
         while (!worker_pool_->stop_requested()) {
@@ -246,11 +248,11 @@ public:
     worker_pool_->set_rethrow_exceptions_on_exit(true);
 
     worker_pool_->launch([this](const thread_id_t worker_id, std::stop_token stop_token) {
-      this->fixed_producer(worker_id, std::move(stop_token));
+      this->fixed_consumer(worker_id, std::move(stop_token));
     });
 
     worker_pool_->launch([this](const thread_id_t worker_id, std::stop_token stop_token) {
-      this->fixed_consumer(worker_id, std::move(stop_token));
+      this->fixed_producer(worker_id, std::move(stop_token));
     });
 
     worker_pool_->launch_rest([this](const thread_id_t worker_id, std::stop_token stop_token) {
@@ -475,13 +477,13 @@ private:
       if (worker_mode == detail::worker_mode_t::producer) {
         const auto [ok, size] = do_worker_producer<true>(worker_id);
         if (!ok) {
-          // std::println("worker[{:2}] producer -> consumer", worker_id);
+          //std::println("worker[{:2}] producer -> consumer", worker_id);
           worker_mode = detail::worker_mode_t::consumer;
           continue;
         }
 
         if (size >= queue_capacity_ * 0.9) {
-          // std::println("worker[{:2}] producer -> consumer", worker_id);
+          //std::println("worker[{:2}] producer -> consumer", worker_id);
           worker_mode = detail::worker_mode_t::consumer;
         }
 
@@ -490,7 +492,7 @@ private:
         if (!ok) return;
 
         if (size <= queue_capacity_ * 0.1) {
-          // std::println("worker[{:2}] consumer -> producer", worker_id);
+          //std::println("worker[{:2}] consumer -> producer", worker_id);
           worker_mode = detail::worker_mode_t::producer;
         }
       }
@@ -499,7 +501,7 @@ private:
 
   std::shared_ptr<worker_pool> worker_pool_;
   queue_type queue_;
-  typename queue_type::size_type queue_capacity_ = 1024;
+  typename queue_type::size_type queue_capacity_ = 20 * 1024;
 
   // -----------------------------
 
