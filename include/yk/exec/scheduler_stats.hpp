@@ -30,10 +30,6 @@ struct scheduler_stats {
 
   count_type producer_output = 0; // type is T
 
-#if YK_EXEC_DEBUG
-  count_type consumer_input_consumed = 0; // type is T
-#endif
-
   count_type consumer_input_processed = 0; // type is T
 
   // =============================================
@@ -148,15 +144,6 @@ struct scheduler_stats {
       throwt<std::logic_error>("producer overprocess (input total: {}, processed: {})", producer_input_total, producer_input_processed);
     }
 
-#if YK_EXEC_DEBUG
-    if (consumer_input_consumed > producer_output) {
-      throwt<std::logic_error>("consumer overconsumption (producer output: {}, consumed: {})", producer_output, consumer_input_consumed);
-    }
-
-    if (consumer_input_processed > consumer_input_consumed) {
-      throwt<std::logic_error>("consumer overprocess (consumed: {}, processed: {})", consumer_input_consumed, consumer_input_processed);
-    }
-#endif
     if (consumer_input_processed > producer_output) {
       throwt<std::logic_error>("consumer overprocess (producer output: {}, consumer processed: {})", producer_output, consumer_input_processed);
     }

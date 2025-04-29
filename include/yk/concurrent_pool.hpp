@@ -1,6 +1,8 @@
 ﻿#ifndef YK_CONCURRENT_POOL_HPP
 #define YK_CONCURRENT_POOL_HPP
 
+#include "yk/concurrent_pool_types.hpp"
+
 #include "yk/allocator/default_init_allocator.hpp"
 #include "yk/util/to_underlying.hpp"
 #include "yk/enum_bitops.hpp"
@@ -50,8 +52,6 @@ concept ConcurrentPoolValue =
 ;
 
 namespace detail {
-
-using concurrent_pool_size_type = std::make_signed_t<std::size_t>;
 
 template <ConcurrentPoolValue T, class BufT, concurrent_pool_flag Flags>
 struct concurrent_pool_traits {
@@ -209,11 +209,6 @@ private:
   }
 };
 
-// implementation-defined
-struct concurrent_pool_size_info {
-  concurrent_pool_size_type size = 0, capacity = 0;
-};
-
 }  // namespace detail
 
 template <class T>
@@ -285,7 +280,7 @@ public:
   // Note: this holds only the current state.
   // If you need a consistent value, close() the pool first.
   [[nodiscard]]
-  detail::concurrent_pool_size_info size_info() const
+  concurrent_pool_size_info size_info() const
   {
     std::unique_lock lock{mtx_};
     return {.size = static_cast<size_type>(buf_.size()), .capacity = capacity_};
@@ -307,9 +302,28 @@ public:
     return true;
   }
 
+  template <class... Args>
+  [[nodiscard]]
+  concurrent_pool_access_result push_wait_info(Args&&... args)
+  {
+    std::unique_lock lock{mtx_};
+    cv_not_full_.wait(lock, push_wait_cond());
+    if (push_wait_cond_error()) {
+      return {false};
+    }
+
+    traits_type::push(buf_, cv_not_empty_, std::forward<Args>(args)...);
+    return {true, static_cast<size_type>(buf_.size())};
+  }
+
 #if __cpp_lib_jthread >= 201911L
   template <class... Args>
   bool push_wait(std::stop_token stop_token, Args&&... args)
+    requires (!traits_type::enable_stop_token_support)
+  = delete;
+
+  template <class... Args>
+  concurrent_pool_access_result push_wait_info(std::stop_token stop_token, Args&&... args)
     requires (!traits_type::enable_stop_token_support)
   = delete;
 
@@ -329,6 +343,24 @@ public:
 
     traits_type::push(buf_, cv_not_empty_, std::forward<Args>(args)...);
     return true;
+  }
+
+  template <class... Args>
+  [[nodiscard]]
+  concurrent_pool_access_result push_wait_info(std::stop_token stop_token, Args&&... args)
+    requires traits_type::enable_stop_token_support
+  {
+    std::unique_lock lock{mtx_};
+    cv_not_full_.wait(lock, stop_token, push_wait_cond());
+    if (stop_token.stop_requested()) {
+      throwt<interrupt_exception>();
+    }
+    if (push_wait_cond_error()) {
+      return {false};
+    }
+
+    traits_type::push(buf_, cv_not_empty_, std::forward<Args>(args)...);
+    return {true, static_cast<size_type>(buf_.size())};
   }
 #endif
 
@@ -352,8 +384,30 @@ public:
     return true;
   }
 
+  [[nodiscard]]
+  concurrent_pool_access_result pop_wait_info(T& value)
+  {
+    std::unique_lock lock{mtx_};
+    cv_not_empty_.wait(lock, pop_wait_cond());
+    if (pop_wait_cond_error()) {
+      return {false};
+    }
+
+    if constexpr (traits_type::is_single_producer && traits_type::is_single_consumer) {
+      traits_type::pop(buf_, cv_not_full_, capacity_, value);
+
+    } else {
+      traits_type::pop(buf_, cv_not_full_, value);
+    }
+    return {true, static_cast<size_type>(buf_.size())};
+  }
+
 #if __cpp_lib_jthread >= 201911L
   bool pop_wait(std::stop_token stop_token, T& value)
+    requires (!traits_type::enable_stop_token_support)
+  = delete;
+
+  concurrent_pool_access_result pop_wait_info(std::stop_token stop_token, T& value)
     requires (!traits_type::enable_stop_token_support)
   = delete;
 
@@ -377,6 +431,28 @@ public:
       traits_type::pop(buf_, cv_not_full_, value);
     }
     return true;
+  }
+
+  [[nodiscard]]
+  concurrent_pool_access_result pop_wait_info(std::stop_token stop_token, T& value)
+    requires traits_type::enable_stop_token_support
+  {
+    std::unique_lock lock{mtx_};
+    cv_not_empty_.wait(lock, stop_token, pop_wait_cond());
+    if (stop_token.stop_requested()) {
+      throwt<interrupt_exception>();
+    }
+    if (pop_wait_cond_error()) {
+      return {false};
+    }
+
+    if constexpr (traits_type::is_single_producer && traits_type::is_single_consumer) {
+      traits_type::pop(buf_, cv_not_full_, capacity_, value);
+
+    } else {
+      traits_type::pop(buf_, cv_not_full_, value);
+    }
+    return {true, static_cast<size_type>(buf_.size())};
   }
 #endif
 

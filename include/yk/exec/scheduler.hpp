@@ -27,6 +27,7 @@
 #include <print>
 #endif
 
+#include <tuple>
 #include <algorithm>
 #include <condition_variable>
 #include <memory>
@@ -42,14 +43,17 @@
 namespace yk::exec {
 
 template <
+  producer_kind ProducerKind,
+  consumer_kind ConsumerKind,
   ProducerInputRange ProducerInputRangeT,
   class T,
   class ProducerF,
   class ConsumerF
 >
-class scheduler {
+class scheduler
+{
 public:
-  using traits_type        = scheduler_traits<ProducerInputRangeT, T>;
+  using traits_type        = scheduler_traits<ProducerKind, ConsumerKind, ProducerInputRangeT, T>;
   using queue_type         = typename traits_type::queue_type;
   using producer_gate_type = typename traits_type::producer_gate_type;
   using consumer_gate_type = typename traits_type::consumer_gate_type;
@@ -57,7 +61,7 @@ public:
   using producer_input_iterator = typename traits_type::producer_input_iterator;
 
   static_assert(Producer<ProducerF, T, ProducerInputRangeT, producer_gate_type>);
-  static_assert(Consumer<ConsumerF, T>);
+  static_assert(Consumer<ConsumerF, consumer_gate_type>);
 
   template<class ProducerF_, class ConsumerF_, class R>
   scheduler(
@@ -215,7 +219,7 @@ public:
       }
     }
 
-    queue_.set_capacity(1024);
+    queue_.set_capacity(queue_capacity_);
     queue_.reserve_capacity();
 
     launch_stats_tracker();
@@ -231,7 +235,7 @@ public:
     });
 
     worker_pool_->launch_rest([this](const thread_id_t worker_id, std::stop_token stop_token) {
-      this->dynamic_worker(worker_id, std::move(stop_token), worker_mode_t::producer);
+      this->dynamic_worker(worker_id, std::move(stop_token), detail::worker_mode_t::producer);
     });
   }
 
@@ -304,8 +308,10 @@ public:
   }
 
 private:
+  template<bool NeedInfo>
   [[nodiscard]]
-  bool do_worker_producer(const thread_id_t worker_id)
+  std::conditional_t<NeedInfo, concurrent_pool_access_result, bool>
+  do_worker_producer(const thread_id_t worker_id)
   {
     producer_input_iterator it_first, it_last;
 
@@ -317,7 +323,7 @@ private:
 
       it_first = last_producer_input_it_;
       if (it_first == producer_input_end) {
-        return false; // all producer done; need to switch to consumer
+        return {false}; // all producer done; need to switch to consumer
       }
 
       it_last = it_first;
@@ -344,7 +350,12 @@ private:
     {
       std::unique_lock lock{stats_mtx_};
       stats_.producer_input_processed += count;
-      stats_.producer_output += gate.count();
+
+      if constexpr (traits_type::is_multi_push) {
+        stats_.producer_output += gate.count();
+      } else {
+        if (!gate.is_discarded()) ++stats_.producer_output;
+      }
 
       if (stats_.is_producer_input_consumed_all() &&
         stats_.producer_input_processed >= stats_.producer_input_consumed
@@ -355,56 +366,67 @@ private:
       // (reversed pattern; consumer outpaced our process)
       if (stats_.is_all_task_done()) {
         task_done_cv_.notify_all();
-        return false; // need to switch to consumer
+        return {false}; // need to switch to consumer
       }
 
       if (stats_.is_producer_input_consumed_all()) {
-        return false; // need to switch to consumer
+        return {false}; // need to switch to consumer
       }
     }
 
-    return true; // producer is still required
+    //
+    // producer is still required...
+    //
+    if constexpr (NeedInfo) {
+      return {true, gate.last_pool_size()};
+
+    } else {
+      return true;
+    }
   }
 
+  template<bool NeedInfo>
   [[nodiscard]]
-  bool do_worker_consumer(const thread_id_t worker_id)
+  std::conditional_t<NeedInfo, concurrent_pool_access_result, bool>
+  do_worker_consumer(const thread_id_t worker_id)
   {
-    T value;
-    const bool got_value = queue_.pop_wait(value);
-    if (!got_value) {
-      return false;
-    }
-
-#if YK_EXEC_DEBUG
-    {
-      std::unique_lock lock{stats_mtx_};
-      ++stats_.consumer_input_consumed;
-    }
-#endif
-
     // ===== begin consumer =====
 
-    consumer_func_(worker_id, std::move(value));
+    consumer_gate_type gate{&queue_};
+    consumer_func_(worker_id, gate);
 
     // ===== end consumer =====
 
     {
       std::unique_lock lock{stats_mtx_};
-      ++stats_.consumer_input_processed;
+
+      if constexpr (traits_type::is_multi_pop) {
+        stats_.consumer_input_processed += gate.count();
+      } else {
+        if (!gate.is_discarded()) ++stats_.consumer_input_processed;
+      }
 
       if (stats_.is_all_task_done()) {
         task_done_cv_.notify_all();
-        return false; // need to switch to consumer
+        return {false}; // need to switch to consumer
       }
     }
 
-    return true;
+    //
+    // consumer is still required...
+    //
+    if constexpr (NeedInfo) {
+      return {true, gate.last_pool_size()};
+
+    } else {
+      return true;
+    }
   }
 
   void fixed_producer(const thread_id_t worker_id, std::stop_token stop_token)
   {
     while (!stop_token.stop_requested()) {
-      if (!do_worker_producer(worker_id)) {
+      if (!do_worker_producer<false>(worker_id)) {
         break;
       }
     }
@@ -413,7 +435,7 @@ private:
     }
 
     while (!stop_token.stop_requested()) {
-      if (!do_worker_consumer(worker_id)) {
+      if (!do_worker_consumer<false>(worker_id)) {
         break;
       }
     }
@@ -422,39 +444,35 @@ private:
   void fixed_consumer(const thread_id_t worker_id, std::stop_token stop_token)
   {
     while (!stop_token.stop_requested()) {
-      if (!do_worker_consumer(worker_id)) {
+      if (!do_worker_consumer<false>(worker_id)) {
         break;
       }
     }
   }
 
-  void dynamic_worker(const thread_id_t worker_id, std::stop_token stop_token, worker_mode_t worker_mode)
+  void dynamic_worker(const thread_id_t worker_id, std::stop_token stop_token, detail::worker_mode_t worker_mode)
   {
     while (!stop_token.stop_requested()) {
-      if (worker_mode == worker_mode_t::producer) {
-        if (!do_worker_producer(worker_id)) {
+      if (worker_mode == detail::worker_mode_t::producer) {
+        const auto [ok, size] = do_worker_producer<true>(worker_id);
+        if (!ok) {
           // std::println("worker[{:2}] producer -> consumer", worker_id);
-          worker_mode = worker_mode_t::consumer;
+          worker_mode = detail::worker_mode_t::consumer;
           continue;
         }
 
-        const auto size_info = queue_.size_info();
-
-        if (size_info.size >= size_info.capacity * 0.9) {
+        if (size >= queue_capacity_ * 0.9) {
           // std::println("worker[{:2}] producer -> consumer", worker_id);
-          worker_mode = worker_mode_t::consumer;
+          worker_mode = detail::worker_mode_t::consumer;
         }
 
       } else {  // Consumer
-        if (!do_worker_consumer(worker_id)) {
-          return;
-        }
+        const auto [ok, size] = do_worker_consumer<true>(worker_id);
+        if (!ok) return;
 
-        const auto size_info = queue_.size_info();
-
-        if (size_info.size <= size_info.capacity * 0.1) {
+        if (size <= queue_capacity_ * 0.1) {
           // std::println("worker[{:2}] consumer -> producer", worker_id);
-          worker_mode = worker_mode_t::producer;
+          worker_mode = detail::worker_mode_t::producer;
         }
       }
     }
@@ -462,6 +480,7 @@ private:
 
   std::shared_ptr<worker_pool> worker_pool_;
   queue_type queue_;
+  typename queue_type::size_type queue_capacity_ = 1024;
 
   // -----------------------------
 
@@ -489,7 +508,19 @@ private:
   std::exception_ptr stats_tracker_exception_;
 };
 
-template <class T, class ProducerF_, class ConsumerF_, ProducerInputRange ProducerInputRangeT_>
+template <
+  producer_kind ProducerKind, consumer_kind ConsumerKind,
+  class ProducerInputRangeT_, class T, class ProducerF_, class ConsumerF_
+>
+using make_scheduler_t = scheduler<
+  ProducerKind, ConsumerKind,
+  std::decay_t<ProducerInputRangeT_>, T, std::decay_t<ProducerF_>, std::decay_t<ConsumerF_>
+>;
+
+template <
+  producer_kind ProducerKind, consumer_kind ConsumerKind,
+  class T, class ProducerF_, class ConsumerF_, ProducerInputRange ProducerInputRangeT_
+>
 [[nodiscard]]
 auto make_scheduler(
   const std::shared_ptr<yk::exec::worker_pool>& worker_pool,
@@ -498,7 +529,7 @@ auto make_scheduler(
   ProducerInputRangeT_&& producer_inputs
 )
 {
-  return scheduler<std::decay_t<ProducerInputRangeT_>, T, std::decay_t<ProducerF_>, std::decay_t<ConsumerF_>>{
+  return make_scheduler_t<ProducerKind, ConsumerKind, ProducerInputRangeT_, T, ProducerF_, ConsumerF_>{
     worker_pool,
     std::forward<ProducerF_>(producer_func),
     std::forward<ConsumerF_>(consumer_func),
@@ -506,21 +537,62 @@ auto make_scheduler(
   };
 }
 
-template <ProducerInputRange ProducerInputRangeT, class T, class ProducerF_, class ConsumerF_>
+template <
+  producer_kind ProducerKind, consumer_kind ConsumerKind,
+  ProducerInputRange ProducerInputRangeT, class T, class ProducerF_, class ConsumerF_
+>
 [[nodiscard]]
 auto make_scheduler(
   const std::shared_ptr<yk::exec::worker_pool>& worker_pool,
   ProducerF_&& producer_func,
   ConsumerF_&& consumer_func
 ) {
-  return scheduler<ProducerInputRangeT, T, std::decay_t<ProducerF_>, std::decay_t<ConsumerF_>>{
+  return make_scheduler_t<ProducerKind, ConsumerKind, ProducerInputRangeT, T, ProducerF_, ConsumerF_>{
     worker_pool,
     std::forward<ProducerF_>(producer_func),
     std::forward<ConsumerF_>(consumer_func)
   };
 }
 
-}  // namespace yk::exec
+namespace detail {
+
+template <class SchedulerTraits>
+struct make_scheduler_with_traits_impl;
+
+template <
+  producer_kind ProducerKind, consumer_kind ConsumerKind,
+  ProducerInputRange ProducerInputRangeT, class T
+>
+struct make_scheduler_with_traits_impl<scheduler_traits<ProducerKind, ConsumerKind, ProducerInputRangeT, T>>
+{
+  template <class ProducerF_, class ConsumerF_, class... Args>
+  static auto apply(
+      const std::shared_ptr<yk::exec::worker_pool>& worker_pool,
+      ProducerF_&& producer_func,
+      ConsumerF_&& consumer_func,
+      Args&&... args
+  ) {
+    return make_scheduler_t<ProducerKind, ConsumerKind, ProducerInputRangeT, T, ProducerF_, ConsumerF_>{
+      worker_pool,
+      std::forward<ProducerF_>(producer_func),
+      std::forward<ConsumerF_>(consumer_func),
+      std::forward<Args>(args)...
+    };
+  }
+};
+
+} // detail
+
+template <class SchedulerTraits, class... Args>
+[[nodiscard]]
+auto make_scheduler(Args&&... args)
+{
+  return detail::make_scheduler_with_traits_impl<SchedulerTraits>::apply(
+    std::forward<Args>(args)...
+  );
+}
+
+}  // yk::exec
 
 #endif  // YK_HAS_EXEC_SCHEDULER
 
