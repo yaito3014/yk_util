@@ -64,16 +64,21 @@ BOOST_AUTO_TEST_CASE(ConcurrentVector) {
   {
     {
       yk::concurrent_vector<int> pool;
-      BOOST_REQUIRE_THROW(pool.reserve(-1), std::length_error);
+      BOOST_REQUIRE_THROW(pool.set_capacity(-1), std::length_error);
+    }
+    {
+      yk::concurrent_vector<int> pool;
+      BOOST_REQUIRE_NO_THROW(pool.set_capacity(1024));
+      BOOST_REQUIRE_NO_THROW(pool.reserve_capacity());
     }
     {
       yk::concurrent_vector<int> stack_like_pool;
-      static_cast<void>(stack_like_pool.push_wait(1));
-      static_cast<void>(stack_like_pool.push_wait(2));
+      (void)stack_like_pool.push_wait(1);
+      (void)stack_like_pool.push_wait(2);
       int value = -1;
-      static_cast<void>(stack_like_pool.pop_wait(value));
+      (void)stack_like_pool.pop_wait(value);
       BOOST_TEST(value == 2);
-      static_cast<void>(stack_like_pool.pop_wait(value));
+      (void)stack_like_pool.pop_wait(value);
       BOOST_TEST(value == 1);
     }
     // Single Producer Single Consumer
@@ -81,7 +86,7 @@ BOOST_AUTO_TEST_CASE(ConcurrentVector) {
       using CV = yk::concurrent_spsc_vector<int>;
       const auto producer = [](CV& vec) {
         for (int i = 0; i < 10; ++i) {
-          static_cast<void>(vec.push_wait(i));
+          (void)vec.push_wait(i);
         }
       };
 
@@ -89,7 +94,7 @@ BOOST_AUTO_TEST_CASE(ConcurrentVector) {
       const auto consumer = [&](CV& vec) {
         for (int i = 0; i < 10; ++i) {
           int value = -1;
-          static_cast<void>(vec.pop_wait(value));
+          (void)vec.pop_wait(value);
           result.push_back(value);
         }
       };
@@ -107,7 +112,7 @@ BOOST_AUTO_TEST_CASE(ConcurrentVector) {
       using CV = yk::concurrent_mpsc_vector<int>;
       const auto producer = [](CV& vec, int id) {
         for (int i = 0; i < 10; ++i) {
-          static_cast<void>(vec.push_wait(id * 100 + i));
+          (void)vec.push_wait(id * 100 + i);
         }
       };
 
@@ -115,7 +120,7 @@ BOOST_AUTO_TEST_CASE(ConcurrentVector) {
       const auto consumer = [&](CV& vec) {
         for (int i = 0; i < 10 * 4; ++i) {
           int value = -1;
-          static_cast<void>(vec.pop_wait(value));
+          (void)vec.pop_wait(value);
           result.push_back(value);
         }
       };
@@ -142,7 +147,7 @@ BOOST_AUTO_TEST_CASE(ConcurrentVector) {
       using CV = yk::concurrent_vector<int, yk::concurrent_pool_flag::spmc>;
       const auto producer = [](CV& vec) {
         for (int i = 0; i < 40; ++i) {
-          static_cast<void>(vec.push_wait(i));
+          (void)vec.push_wait(i);
         }
       };
       std::mutex mtx;
@@ -150,7 +155,7 @@ BOOST_AUTO_TEST_CASE(ConcurrentVector) {
       const auto consumer = [&](CV& vec) {
         for (int i = 0; i < 10; ++i) {
           int value = -1;
-          static_cast<void>(vec.pop_wait(value));
+          (void)vec.pop_wait(value);
           std::lock_guard lock(mtx);
           result.push_back(value);
         }
@@ -177,7 +182,7 @@ BOOST_AUTO_TEST_CASE(ConcurrentVector) {
       using CV = yk::concurrent_mpmc_vector<int>;
       auto producer = [](CV& vec, int id) {
         for (int i = 0; i < 10; ++i) {
-          static_cast<void>(vec.push_wait(id * 100 + i));
+          (void)vec.push_wait(id * 100 + i);
         }
       };
       std::mutex mtx;
@@ -185,7 +190,7 @@ BOOST_AUTO_TEST_CASE(ConcurrentVector) {
       const auto consumer = [&](CV& vec) {
         for (int i = 0; i < 10; ++i) {
           int value = -1;
-          static_cast<void>(vec.pop_wait(value));
+          (void)vec.pop_wait(value);
           std::lock_guard lock(mtx);
           result.push_back(value);
         }
@@ -219,7 +224,7 @@ BOOST_AUTO_TEST_CASE(ConcurrentVector) {
       using CV = yk::concurrent_spsc_vector<int, yk::concurrent_pool_flag::stop_token_support>;
       const auto producer = [](CV& vec) {
         for (int i = 0; i < 10; ++i) {
-          static_cast<void>(vec.push_wait(i));
+          (void)vec.push_wait(i);
         }
       };
       std::vector<int> result;
@@ -228,7 +233,7 @@ BOOST_AUTO_TEST_CASE(ConcurrentVector) {
           if (stoken.stop_requested()) break;
           int value = -1;
           try {
-            static_cast<void>(vec.pop_wait(value, stoken));
+            (void)vec.pop_wait(stoken, value);
           } catch (yk::interrupt_exception&) {
             break;
           }
@@ -253,12 +258,12 @@ BOOST_AUTO_TEST_CASE(ConcurrentDeque) {
   {
     {
       yk::concurrent_deque<int> stack_like_pool;
-      static_cast<void>(stack_like_pool.push_wait(1));
-      static_cast<void>(stack_like_pool.push_wait(2));
+      (void)stack_like_pool.push_wait(1);
+      (void)stack_like_pool.push_wait(2);
       int value = -1;
-      static_cast<void>(stack_like_pool.pop_wait(value));
+      (void)stack_like_pool.pop_wait(value);
       BOOST_TEST(value == 2);
-      static_cast<void>(stack_like_pool.pop_wait(value));
+      (void)stack_like_pool.pop_wait(value);
       BOOST_TEST(value == 1);
     }
     // Single Producer Single Consumer
@@ -266,7 +271,7 @@ BOOST_AUTO_TEST_CASE(ConcurrentDeque) {
       using CV = yk::concurrent_spsc_deque<int>;
       const auto producer = [](CV& vec) {
         for (int i = 0; i < 10; ++i) {
-          static_cast<void>(vec.push_wait(i));
+          (void)vec.push_wait(i);
         }
       };
 
@@ -274,7 +279,7 @@ BOOST_AUTO_TEST_CASE(ConcurrentDeque) {
       const auto consumer = [&](CV& vec) {
         for (int i = 0; i < 10; ++i) {
           int value = -1;
-          static_cast<void>(vec.pop_wait(value));
+          (void)vec.pop_wait(value);
           result.push_back(value);
         }
       };
@@ -292,7 +297,7 @@ BOOST_AUTO_TEST_CASE(ConcurrentDeque) {
       using CV = yk::concurrent_mpsc_deque<int>;
       const auto producer = [](CV& vec, int id) {
         for (int i = 0; i < 10; ++i) {
-          static_cast<void>(vec.push_wait(id * 100 + i));
+          (void)vec.push_wait(id * 100 + i);
         }
       };
 
@@ -300,7 +305,7 @@ BOOST_AUTO_TEST_CASE(ConcurrentDeque) {
       const auto consumer = [&](CV& vec) {
         for (int i = 0; i < 10 * 4; ++i) {
           int value = -1;
-          static_cast<void>(vec.pop_wait(value));
+          (void)vec.pop_wait(value);
           result.push_back(value);
         }
       };
@@ -327,7 +332,7 @@ BOOST_AUTO_TEST_CASE(ConcurrentDeque) {
       using CV = yk::concurrent_deque<int, yk::concurrent_pool_flag::spmc>;
       const auto producer = [](CV& vec) {
         for (int i = 0; i < 40; ++i) {
-          static_cast<void>(vec.push_wait(i));
+          (void)vec.push_wait(i);
         }
       };
       std::mutex mtx;
@@ -335,7 +340,7 @@ BOOST_AUTO_TEST_CASE(ConcurrentDeque) {
       const auto consumer = [&](CV& vec) {
         for (int i = 0; i < 10; ++i) {
           int value = -1;
-          static_cast<void>(vec.pop_wait(value));
+          (void)vec.pop_wait(value);
           std::lock_guard lock(mtx);
           result.push_back(value);
         }
@@ -362,7 +367,7 @@ BOOST_AUTO_TEST_CASE(ConcurrentDeque) {
       using CV = yk::concurrent_mpmc_deque<int>;
       auto producer = [](CV& vec, int id) {
         for (int i = 0; i < 10; ++i) {
-          static_cast<void>(vec.push_wait(id * 100 + i));
+          (void)vec.push_wait(id * 100 + i);
         }
       };
       std::mutex mtx;
@@ -370,7 +375,7 @@ BOOST_AUTO_TEST_CASE(ConcurrentDeque) {
       const auto consumer = [&](CV& vec) {
         for (int i = 0; i < 10; ++i) {
           int value = -1;
-          static_cast<void>(vec.pop_wait(value));
+          (void)vec.pop_wait(value);
           std::lock_guard lock(mtx);
           result.push_back(value);
         }
@@ -404,7 +409,7 @@ BOOST_AUTO_TEST_CASE(ConcurrentDeque) {
       using CV = yk::concurrent_spsc_deque<int, yk::concurrent_pool_flag::stop_token_support>;
       const auto producer = [](CV& vec) {
         for (int i = 0; i < 10; ++i) {
-          static_cast<void>(vec.push_wait(i));
+          (void)vec.push_wait(i);
         }
       };
       std::vector<int> result;
@@ -415,7 +420,7 @@ BOOST_AUTO_TEST_CASE(ConcurrentDeque) {
           }
           int value = -1;
           try {
-            static_cast<void>(vec.pop_wait(value, stoken));
+            (void)vec.pop_wait(stoken, value);
           } catch (yk::interrupt_exception&) {
             break;
           }
@@ -438,12 +443,12 @@ BOOST_AUTO_TEST_CASE(ConcurrentDeque) {
   {
     {
       yk::concurrent_deque<int, yk::concurrent_pool_flag::queue_based_push_pop> queue_like_pool;
-      static_cast<void>(queue_like_pool.push_wait(1));
-      static_cast<void>(queue_like_pool.push_wait(2));
+      (void)queue_like_pool.push_wait(1);
+      (void)queue_like_pool.push_wait(2);
       int value = -1;
-      static_cast<void>(queue_like_pool.pop_wait(value));
+      (void)queue_like_pool.pop_wait(value);
       BOOST_TEST(value == 1);
-      static_cast<void>(queue_like_pool.pop_wait(value));
+      (void)queue_like_pool.pop_wait(value);
       BOOST_TEST(value == 2);
     }
     // Single Producer Single Consumer
@@ -451,7 +456,7 @@ BOOST_AUTO_TEST_CASE(ConcurrentDeque) {
       using CV = yk::concurrent_spsc_deque<int, yk::concurrent_pool_flag::queue_based_push_pop>;
       const auto producer = [](CV& vec) {
         for (int i = 0; i < 10; ++i) {
-          static_cast<void>(vec.push_wait(i));
+          (void)vec.push_wait(i);
         }
       };
 
@@ -459,7 +464,7 @@ BOOST_AUTO_TEST_CASE(ConcurrentDeque) {
       const auto consumer = [&](CV& vec) {
         for (int i = 0; i < 10; ++i) {
           int value = -1;
-          static_cast<void>(vec.pop_wait(value));
+          (void)vec.pop_wait(value);
           result.push_back(value);
         }
       };
@@ -477,7 +482,7 @@ BOOST_AUTO_TEST_CASE(ConcurrentDeque) {
       using CV = yk::concurrent_mpsc_deque<int, yk::concurrent_pool_flag::queue_based_push_pop>;
       const auto producer = [](CV& vec, int id) {
         for (int i = 0; i < 10; ++i) {
-          static_cast<void>(vec.push_wait(id * 100 + i));
+          (void)vec.push_wait(id * 100 + i);
         }
       };
 
@@ -485,7 +490,7 @@ BOOST_AUTO_TEST_CASE(ConcurrentDeque) {
       const auto consumer = [&](CV& vec) {
         for (int i = 0; i < 10 * 4; ++i) {
           int value = -1;
-          static_cast<void>(vec.pop_wait(value));
+          (void)vec.pop_wait(value);
           result.push_back(value);
         }
       };
@@ -512,7 +517,7 @@ BOOST_AUTO_TEST_CASE(ConcurrentDeque) {
       using CV = yk::concurrent_spmc_deque<int, yk::concurrent_pool_flag::queue_based_push_pop>;
       const auto producer = [](CV& vec) {
         for (int i = 0; i < 40; ++i) {
-          static_cast<void>(vec.push_wait(i));
+          (void)vec.push_wait(i);
         }
       };
       std::mutex mtx;
@@ -520,7 +525,7 @@ BOOST_AUTO_TEST_CASE(ConcurrentDeque) {
       const auto consumer = [&](CV& vec) {
         for (int i = 0; i < 10; ++i) {
           int value = -1;
-          static_cast<void>(vec.pop_wait(value));
+          (void)vec.pop_wait(value);
           std::lock_guard lock(mtx);
           result.push_back(value);
         }
@@ -547,7 +552,7 @@ BOOST_AUTO_TEST_CASE(ConcurrentDeque) {
       using CV = yk::concurrent_mpmc_deque<int, yk::concurrent_pool_flag::queue_based_push_pop>;
       auto producer = [](CV& vec, int id) {
         for (int i = 0; i < 10; ++i) {
-          static_cast<void>(vec.push_wait(id * 100 + i));
+          (void)vec.push_wait(id * 100 + i);
         }
       };
       std::mutex mtx;
@@ -555,7 +560,7 @@ BOOST_AUTO_TEST_CASE(ConcurrentDeque) {
       const auto consumer = [&](CV& vec) {
         for (int i = 0; i < 10; ++i) {
           int value = -1;
-          static_cast<void>(vec.pop_wait(value));
+          (void)vec.pop_wait(value);
           std::lock_guard lock(mtx);
           result.push_back(value);
         }
@@ -589,7 +594,7 @@ BOOST_AUTO_TEST_CASE(ConcurrentDeque) {
       using CV = yk::concurrent_spsc_deque<int, yk::concurrent_pool_flag::stop_token_support | yk::concurrent_pool_flag::queue_based_push_pop>;
       const auto producer = [](CV& vec) {
         for (int i = 0; i < 10; ++i) {
-          static_cast<void>(vec.push_wait(i));
+          (void)vec.push_wait(i);
         }
       };
       std::vector<int> result;
@@ -598,7 +603,7 @@ BOOST_AUTO_TEST_CASE(ConcurrentDeque) {
           if (stoken.stop_requested()) break;
           int value = -1;
           try {
-            static_cast<void>(vec.pop_wait(value, stoken));
+            (void)vec.pop_wait(stoken, value);
           } catch (yk::interrupt_exception&) {
             break;
           }
