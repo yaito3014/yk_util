@@ -4,8 +4,6 @@
 #include "yk/stack.hpp"
 #include "yk/throwt.hpp"
 
-#include "test_utility.hpp"
-
 #define BOOST_TEST_MODULE yk_util_test
 #if YK_BUILD_UNIT_TEST_FRAMEWORK
 #include <boost/test/included/unit_test.hpp>
@@ -337,6 +335,11 @@ BOOST_AUTO_TEST_CASE(Throwt) {
     my_exception(const std::string& name, const std::string& message) : runtime_error(name + ": " + message) {}
   };
 
+#ifdef _MSC_VER
+#pragma warning(push)
+#pragma warning(disable: 4702)
+#endif
+
   YK_CHECK_THROWT("foo", std::runtime_error, "foo");
   YK_CHECK_THROWT("foo", std::runtime_error, std::string{"foo"});
   YK_CHECK_THROWT("foo", std::runtime_error, std::string{"foo"}.c_str());
@@ -359,7 +362,7 @@ BOOST_AUTO_TEST_CASE(Throwt) {
 
 
   // default constructible
-  BOOST_REQUIRE_THROW(yk::testing::throw_std_exception(), std::exception);
+  BOOST_REQUIRE_THROW(yk::throwt<std::exception>(), std::exception);
 
   // constructible with argument
   YK_CHECK_THROWT("foobar", std::runtime_error, "foobar");
@@ -370,7 +373,7 @@ BOOST_AUTO_TEST_CASE(Throwt) {
   BOOST_REQUIRE_THROW(
       {
         try {
-          yk::testing::throw_system_error(std::make_error_code(std::errc::invalid_argument), std::format("{}", 42).c_str());
+          yk::throwt<std::system_error>(std::make_error_code(std::errc::invalid_argument), "{}", 42);
         } catch (const std::system_error& e) {
           BOOST_TEST(e.code() == std::make_error_code(std::errc::invalid_argument));
           throw;
@@ -382,7 +385,7 @@ BOOST_AUTO_TEST_CASE(Throwt) {
   BOOST_REQUIRE_THROW(
       {
         try {
-          yk::testing::throw_system_error(33 - 4, std::generic_category(), std::format("{}", 42).c_str());
+          yk::throwt<std::system_error>(33 - 4, std::generic_category(), "{}", 42);
         } catch (const std::system_error& e) {
           BOOST_TEST((e.code() == std::error_code{33 - 4, std::generic_category()}));
           throw;
@@ -390,6 +393,10 @@ BOOST_AUTO_TEST_CASE(Throwt) {
       },
       std::system_error
   );
+
+#ifdef _MSC_VER
+#pragma warning(pop)
+#endif
 
 #if __cpp_lib_print >= 202207L
 
