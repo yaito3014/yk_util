@@ -258,7 +258,10 @@ private:
     constexpr iterator& operator--()
       requires xo::concat_is_bidirectional<Const, Views...>
     {
-      invoke_with_runtime_index_member([this]<std::size_t Idx>() { prev<Idx>(); });
+      invoke_with_runtime_index_member([this]<std::size_t Idx>() {
+        // workaround against clang warning
+        this->prev<Idx>();
+      });
       return *this;
     }
 
