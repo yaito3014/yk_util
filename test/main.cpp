@@ -329,16 +329,16 @@ BOOST_AUTO_TEST_CASE(Concat) {
       E                                     \
   )
 
+#ifdef _MSC_VER
+#pragma warning(push)
+#pragma warning(disable: 4702)
+#endif
+
 BOOST_AUTO_TEST_CASE(Throwt) {
   class my_exception : public std::runtime_error {
   public:
     my_exception(const std::string& name, const std::string& message) : runtime_error(name + ": " + message) {}
   };
-
-#ifdef _MSC_VER
-#pragma warning(push)
-#pragma warning(disable: 4702)
-#endif
 
   YK_CHECK_THROWT("foo", std::runtime_error, "foo");
   YK_CHECK_THROWT("foo", std::runtime_error, std::string{"foo"});
@@ -394,10 +394,6 @@ BOOST_AUTO_TEST_CASE(Throwt) {
       std::system_error
   );
 
-#ifdef _MSC_VER
-#pragma warning(pop)
-#endif
-
 #if __cpp_lib_print >= 202207L
 
   try {
@@ -423,5 +419,9 @@ BOOST_AUTO_TEST_CASE(Throwt) {
 #endif
 
 }
+
+#ifdef _MSC_VER
+#pragma warning(pop)
+#endif
 
 BOOST_AUTO_TEST_SUITE_END()  // yk_util
