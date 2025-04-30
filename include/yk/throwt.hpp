@@ -33,12 +33,17 @@
 namespace yk {
 
 namespace detail {
-  
-template <class T>
+
+template <class T, class... Args>
 concept constructible_from_string_like_types =
-  std::is_constructible_v<T, std::string>
-  || std::is_constructible_v<T, std::string_view>
-  || std::is_constructible_v<T, const char*>;
+    (
+         std::is_constructible_v<T, Args..., std::string>
+      || std::is_constructible_v<T, Args..., std::string_view>
+      || std::is_constructible_v<T, Args..., const char*>
+    );
+    
+template <class T>
+concept NotStringLike = !StringLike<T>;
 
 }  // namespace detail
 
@@ -72,8 +77,8 @@ YK_THROWT_NORETURN void throwt(std::format_string<Args...> fmt, Args&&... args) 
   );
 }
 
-template <class E, class Arg0, class... Args>
-  requires std::is_constructible_v<E, Arg0, std::string>
+template <class E, detail::NotStringLike Arg0, class... Args>
+  requires detail::constructible_from_string_like_types<E, Arg0>
 YK_THROWT_NORETURN void throwt(Arg0&& arg0, std::format_string<Args...> fmt, Args&&... args) {
   static_assert(std::is_base_of_v<std::exception, E>);
   YK_THROWT_THROW(
@@ -82,8 +87,8 @@ YK_THROWT_NORETURN void throwt(Arg0&& arg0, std::format_string<Args...> fmt, Arg
   );
 }
 
-template <class E, class Arg0, class Arg1, class... Args>
-  requires std::is_constructible_v<E, Arg0, Arg1, std::string>
+template <class E, detail::NotStringLike Arg0, detail::NotStringLike Arg1, class... Args>
+  requires detail::constructible_from_string_like_types<E, Arg0, Arg1>
 YK_THROWT_NORETURN void throwt(Arg0&& arg0, Arg1&& arg1, std::format_string<Args...> fmt, Args&&... args) {
   static_assert(std::is_base_of_v<std::exception, E>);
   YK_THROWT_THROW(

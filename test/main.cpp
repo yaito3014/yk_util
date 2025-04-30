@@ -1,8 +1,8 @@
 ﻿#include "yk/allocator/default_init_allocator.hpp"
 #include "yk/ranges/concat.hpp"
+#include "yk/printt.hpp"
 #include "yk/stack.hpp"
 #include "yk/throwt.hpp"
-#include "yk/printt.hpp"
 
 #include "test_utility.hpp"
 
@@ -17,11 +17,11 @@
 #include <compare>
 #include <forward_list>
 #include <functional>
-#include <sstream>
 #include <iterator>
 #include <list>
 #include <memory>
 #include <ranges>
+#include <sstream>
 #include <string_view>
 #include <utility>
 #include <vector>
@@ -318,6 +318,15 @@ BOOST_AUTO_TEST_CASE(Concat) {
   }
 }
 
+#define YK_CHECK_THROWT(expected, E, ...) \
+  do {                                    \
+    try {                                 \
+      yk::throwt<E>(__VA_ARGS__);         \
+    } catch (const std::exception& e) {   \
+      BOOST_TEST(e.what() == expected);   \
+    }                                     \
+  } while (0)
+
 BOOST_AUTO_TEST_CASE(Throwt) {
   class my_exception : public std::runtime_error {
   public:
@@ -325,25 +334,26 @@ BOOST_AUTO_TEST_CASE(Throwt) {
   };
 
   try {
-    yk::throwt<std::exception>();
-    yk::throwt<std::runtime_error>("foo");
-    yk::throwt<std::runtime_error>(std::string{"foo"});
-    yk::throwt<std::runtime_error>(std::string{"foo"}.c_str());
-    yk::throwt<std::runtime_error>(std::string_view{"foo"});
-    yk::throwt<std::runtime_error>("{}");
-    yk::throwt<std::runtime_error>("{}", 42);
-    yk::throwt<std::runtime_error>("{}", "foo");
-    yk::throwt<std::runtime_error>("{}", std::string{"foo"});
-    yk::throwt<std::runtime_error>("{}", std::string{"foo"}.c_str());
-    yk::throwt<std::runtime_error>("{}", std::string_view{"foo"});
+    YK_CHECK_THROWT("foo", std::runtime_error, "foo");
+    YK_CHECK_THROWT("foo", std::runtime_error, std::string{"foo"});
+    YK_CHECK_THROWT("foo", std::runtime_error, std::string{"foo"}.c_str());
+    YK_CHECK_THROWT("foo", std::runtime_error, std::string_view{"foo"});
+    YK_CHECK_THROWT("{}", std::runtime_error, "{}");
+    YK_CHECK_THROWT("42", std::runtime_error, "{}", 42);
+    YK_CHECK_THROWT("foo", std::runtime_error, "{}", "foo");
+    YK_CHECK_THROWT("foo", std::runtime_error, "{}", std::string{"foo"});
+    YK_CHECK_THROWT("foo", std::runtime_error, "{}", std::string{"foo"}.c_str());
+    YK_CHECK_THROWT("foo", std::runtime_error, "{}", std::string_view{"foo"});
 
-    yk::throwt<my_exception>("foo", "bar");
-    yk::throwt<my_exception>("foo", "{}", "bar");
-    yk::throwt<my_exception>("{}", "foo", "bar");
+    YK_CHECK_THROWT("{}: bar", my_exception, "{}", "bar");
+    YK_CHECK_THROWT("foo: bar", my_exception, "foo", "bar");
+    
+    // YK_CHECK_THROWT("foo: bar", my_exception, "foo", "{}", "bar");   // must be error
+    // YK_CHECK_THROWT("{}: foo",  my_exception, "{}", "foo", "bar");   // must be error
+    // YK_CHECK_THROWT("foo: bar", my_exception, "foo", "bar", "baz");  // must be error
 
     // yk::throwt<std::runtime_error>(std::runtime_error("foo"));  // must be error
   } catch (const std::exception&) {
-
   }
 
   // default constructible
