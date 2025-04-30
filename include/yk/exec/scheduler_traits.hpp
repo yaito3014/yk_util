@@ -43,7 +43,7 @@ inline constexpr consumer_kind multi_pop_consumer = consumer_kind::multi_pop;
 template <class R>
 concept ProducerInputRange = std::ranges::forward_range<R>;
 
-template <class F, class T, class ProducerInputRangeT, class GateT>
+template <class F, class ProducerInputRangeT, class GateT>
 concept Producer =
   ProducerInputRange<ProducerInputRangeT> &&
   std::invocable<F, thread_index_t, std::ranges::range_value_t<ProducerInputRangeT>, GateT&>
@@ -56,7 +56,6 @@ template <
   producer_kind ProducerKind,
   consumer_kind ConsumerKind,
   ProducerInputRange ProducerInputRangeT,
-  class T,
   class QueueT
 >
 struct scheduler_traits
@@ -64,8 +63,8 @@ struct scheduler_traits
   static constexpr bool is_multi_push = ProducerKind == producer_kind::multi_push;
   static constexpr bool is_multi_pop = ConsumerKind == consumer_kind::multi_pop;
 
-  using value_type = T;
   using queue_type = QueueT;
+  using value_type = typename QueueT::value_type;
 
   using producer_input_value_type = std::ranges::range_value_t<ProducerInputRangeT>;
   using producer_input_iterator = std::ranges::iterator_t<ProducerInputRangeT>;
