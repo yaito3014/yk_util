@@ -365,7 +365,7 @@ BOOST_AUTO_TEST_CASE(Throwt) {
   YK_CHECK_THROWT("foobar", std::runtime_error, "foobar");
 
   // constructible with format string
-  YK_CHECK_THROWT("33 - 4", std::runtime_error, "{} - {}");
+  YK_CHECK_THROWT("33 - 4", std::runtime_error, "{} - {}", 33, 4);
 
   BOOST_REQUIRE_THROW(
       {
