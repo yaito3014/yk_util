@@ -319,6 +319,33 @@ BOOST_AUTO_TEST_CASE(Concat) {
 }
 
 BOOST_AUTO_TEST_CASE(Throwt) {
+  class my_exception : std::runtime_error {
+  public:
+    my_exception(const std::string& name, const std::string& message) : runtime_error(name + ": " + message) {}
+  };
+
+  try {
+    yk::throwt<std::exception>();
+    yk::throwt<std::runtime_error>("foo");
+    yk::throwt<std::runtime_error>(std::string{"foo"});
+    yk::throwt<std::runtime_error>(std::string{"foo"}.c_str());
+    yk::throwt<std::runtime_error>(std::string_view{"foo"});
+    yk::throwt<std::runtime_error>("{}");
+    yk::throwt<std::runtime_error>("{}", 42);
+    yk::throwt<std::runtime_error>("{}", "foo");
+    yk::throwt<std::runtime_error>("{}", std::string{"foo"});
+    yk::throwt<std::runtime_error>("{}", std::string{"foo"}.c_str());
+    yk::throwt<std::runtime_error>("{}", std::string_view{"foo"});
+
+    yk::throwt<my_exception>("foo", "bar");
+    yk::throwt<my_exception>("foo", "{}", "bar");
+    yk::throwt<my_exception>("{}", "foo", "bar");
+
+    // yk::throwt<std::runtime_error>(std::runtime_error("foo"));  // must be error
+  } catch (const std::exception&) {
+
+  }
+
   // default constructible
   BOOST_REQUIRE_THROW(yk::testing::throw_std_exception(), std::exception);
 

@@ -32,6 +32,16 @@
 
 namespace yk {
 
+namespace detail {
+  
+template <class T>
+concept constructible_from_string_like_types =
+  std::is_constructible_v<T, std::string>
+  || std::is_constructible_v<T, std::string_view>
+  || std::is_constructible_v<T, const char*>;
+
+}  // namespace detail
+
 inline namespace error_functions {
 
 template <class E>
@@ -45,6 +55,7 @@ template <class E, class Arg, class... Rest>
   requires std::is_constructible_v<E, Arg, Rest...>
 YK_THROWT_NORETURN void throwt(Arg&& arg, Rest&&... rest) {
   static_assert(std::is_base_of_v<std::exception, E>);
+  static_assert(!std::is_base_of_v<std::exception, std::remove_cvref_t<Arg>>, "don't copy/move construct exception types directly");
   YK_THROWT_THROW(
       boost::enable_error_info(E{std::forward<Arg>(arg), std::forward<Rest>(rest)...})
       << detail::traced_type{boost::stacktrace::stacktrace()}
@@ -52,9 +63,9 @@ YK_THROWT_NORETURN void throwt(Arg&& arg, Rest&&... rest) {
 }
 
 template <class E, class... Args>
+  requires detail::constructible_from_string_like_types<E>
 YK_THROWT_NORETURN void throwt(std::format_string<Args...> fmt, Args&&... args) {
   static_assert(std::is_base_of_v<std::exception, E>);
-  static_assert(std::is_constructible_v<E, std::string>);
   YK_THROWT_THROW(
       boost::enable_error_info(E{std::format(std::move(fmt), std::forward<Args>(args)...)})
       << detail::traced_type{boost::stacktrace::stacktrace()}
@@ -62,9 +73,9 @@ YK_THROWT_NORETURN void throwt(std::format_string<Args...> fmt, Args&&... args) 
 }
 
 template <class E, class Arg0, class... Args>
+  requires std::is_constructible_v<E, Arg0, std::string>
 YK_THROWT_NORETURN void throwt(Arg0&& arg0, std::format_string<Args...> fmt, Args&&... args) {
   static_assert(std::is_base_of_v<std::exception, E>);
-  static_assert(std::is_constructible_v<E, Arg0, std::string>);
   YK_THROWT_THROW(
       boost::enable_error_info(E{std::forward<Arg0>(arg0), std::format(std::move(fmt), std::forward<Args>(args)...)})
       << detail::traced_type{boost::stacktrace::stacktrace()}
@@ -72,9 +83,9 @@ YK_THROWT_NORETURN void throwt(Arg0&& arg0, std::format_string<Args...> fmt, Arg
 }
 
 template <class E, class Arg0, class Arg1, class... Args>
+  requires std::is_constructible_v<E, Arg0, Arg1, std::string>
 YK_THROWT_NORETURN void throwt(Arg0&& arg0, Arg1&& arg1, std::format_string<Args...> fmt, Args&&... args) {
   static_assert(std::is_base_of_v<std::exception, E>);
-  static_assert(std::is_constructible_v<E, Arg0, Arg1, std::string>);
   YK_THROWT_THROW(
       boost::enable_error_info(
           E{std::forward<Arg0>(arg0), std::forward<Arg1>(arg1),
