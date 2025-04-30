@@ -4,6 +4,8 @@
 #include "yk/throwt.hpp"
 #include "yk/printt.hpp"
 
+#include "test_utility.hpp"
+
 #define BOOST_TEST_MODULE yk_util_test
 #if YK_BUILD_UNIT_TEST_FRAMEWORK
 #include <boost/test/included/unit_test.hpp>
@@ -318,7 +320,7 @@ BOOST_AUTO_TEST_CASE(Concat) {
 
 BOOST_AUTO_TEST_CASE(Throwt) {
   // default constructible
-  BOOST_REQUIRE_THROW(yk::throwt<std::exception>(), std::exception);
+  BOOST_REQUIRE_THROW(yk::testing::throw_std_exception(), std::exception);
 
   // constructible with argument
   BOOST_REQUIRE_THROW(
