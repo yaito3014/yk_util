@@ -455,8 +455,17 @@ private:
     return closed_;
   }
 
+#if _MSC_VER
+# pragma warning(push)
+# pragma warning(disable: 4324)
+#endif
+
   alignas(yk::hardware_destructive_interference_size) mutable std::mutex mtx_;
   alignas(yk::hardware_destructive_interference_size) condition_variable_type cv_not_full_, cv_not_empty_;
+
+#if _MSC_VER
+# pragma warning(pop)
+#endif
 
   buf_type buf_;
   size_type capacity_ = traits_type::default_capacity;
