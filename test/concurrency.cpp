@@ -591,6 +591,7 @@ BOOST_AUTO_TEST_CASE(ConcurrentDeque) {
 #if __cpp_lib_jthread >= 201911L
     // stop_token
     {
+      using namespace yk::bitops_operators;
       using CV = yk::exec::spsc_cv_deque<int, yk::exec::cv_queue_flag::stop_token_support | yk::exec::cv_queue_flag::queue_based_push_pop>;
       const auto producer = [](CV& vec) {
         for (int i = 0; i < 10; ++i) {
