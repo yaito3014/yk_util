@@ -1,7 +1,6 @@
-#ifndef YK_CONCURRENT_POOL_GATE_HPP
-#define YK_CONCURRENT_POOL_GATE_HPP
+#ifndef YK_EXEC_CONCURRENT_GATE_HPP
+#define YK_EXEC_CONCURRENT_GATE_HPP
 
-#include "yk/concurrent_pool_types.hpp"
 #include "yk/enum_bitops.hpp"
 #include "yk/throwt.hpp"
 
@@ -18,43 +17,46 @@
 #include <stop_token>
 #endif
 
-namespace yk {
+namespace yk::exec::detail {
 
-namespace detail {
+using concurrent_gate_store_counter_type = long long;
 
-using concurrent_pool_gate_store_counter_type = long long;
-
-enum struct concurrent_pool_gate_flags : unsigned {
+enum struct concurrent_gate_flags : unsigned {
   not_counted = 0b0,
   counted     = 0b1,
 };
 
-} // detail
-
-template<>
-struct bitops_enabled<detail::concurrent_pool_gate_flags> : std::true_type {};
+} // yk::exec::detail
 
 
+namespace yk {
+
+template<> struct bitops_enabled<exec::detail::concurrent_gate_flags> : std::true_type {};
+
+} // yk
+
+
+namespace yk::exec {
 namespace detail {
 
-template <class PoolT, concurrent_pool_gate_flags flags>
-struct concurrent_pool_gate_store_base
+template <class QueueT, concurrent_gate_flags flags>
+struct concurrent_gate_store_base
 {
-  static constexpr bool is_counted = contains(flags, concurrent_pool_gate_flags::counted);
+  static constexpr bool is_counted = contains(flags, concurrent_gate_flags::counted);
 
-  static constexpr bool is_lock_free = requires(PoolT& pool) {
-    typename PoolT::value_type;
-    { pool.is_lock_free() } -> std::convertible_to<bool>;
-    { pool.push(std::declval<typename PoolT::value_type&>()) } -> std::convertible_to<bool>;
+  static constexpr bool is_lock_free = requires(QueueT& queue) {
+    typename QueueT::value_type;
+    { queue.is_lock_free() } -> std::convertible_to<bool>;
+    { queue.push(std::declval<typename QueueT::value_type&>()) } -> std::convertible_to<bool>;
   };
 
   template <class Derived>
-  concurrent_pool_gate_store_counter_type count(this const Derived& self) noexcept
+  concurrent_gate_store_counter_type count(this const Derived& self) noexcept
     requires (!is_counted) = delete;
 
   template <class Derived>
   [[nodiscard]]
-  concurrent_pool_gate_store_counter_type count(this const Derived& self) noexcept
+  concurrent_gate_store_counter_type count(this const Derived& self) noexcept
     requires (is_counted)
   {
     return self.count_;
@@ -65,7 +67,7 @@ struct concurrent_pool_gate_store_base
   [[nodiscard]]
   bool is_discarded(this const auto& self) noexcept requires (!is_counted)
   {
-    bool const discarded = !self.pool_;
+    bool const discarded = !self.queue_;
     BOOST_ASSERT(discarded || self.already_accessed_);
     return discarded;
   }
@@ -77,10 +79,10 @@ struct concurrent_pool_gate_store_base
 
   void discard(this auto& self) requires (!is_counted)
   {
-    if (!self.pool_) {
+    if (!self.queue_) {
       throwt<std::logic_error>("gate.discard() has been called multiple times");
     }
-    self.pool_ = nullptr;
+    self.queue_ = nullptr;
   }
 
   void discard(this const auto& self) requires (is_counted)
@@ -104,51 +106,51 @@ protected:
   friend struct auto_timer;
   struct auto_timer
   {
-    concurrent_pool_gate_store_base* base = nullptr;
+    concurrent_gate_store_base* base = nullptr;
 
     using clock_type = std::chrono::steady_clock;
     clock_type::time_point start_time;
 
-    auto_timer(concurrent_pool_gate_store_base* base) : base(base), start_time(clock_type::now()) {}
+    auto_timer(concurrent_gate_store_base* base) : base(base), start_time(clock_type::now()) {}
     ~auto_timer() { base->add_time(clock_type::now() - start_time); }
   };
 #endif
 };
 
 
-template <class PoolT, concurrent_pool_gate_flags flags>
-struct concurrent_pool_gate_store : concurrent_pool_gate_store_base<PoolT, flags>
+template <class QueueT, concurrent_gate_flags flags>
+struct concurrent_gate_store : concurrent_gate_store_base<QueueT, flags>
 {
-  PoolT* pool_ = nullptr;
+  QueueT* queue_ = nullptr;
 
 #ifndef NDEBUG
   bool already_accessed_ = false;
 #endif
 };
 
-template <class PoolT>
-struct concurrent_pool_gate_store<PoolT, concurrent_pool_gate_flags::counted>
-  : concurrent_pool_gate_store_base<PoolT, concurrent_pool_gate_flags::counted>
+template <class QueueT>
+struct concurrent_gate_store<QueueT, concurrent_gate_flags::counted>
+  : concurrent_gate_store_base<QueueT, concurrent_gate_flags::counted>
 {
-  PoolT* pool_ = nullptr;
-  concurrent_pool_gate_store_counter_type count_ = 0;
+  QueueT* queue_ = nullptr;
+  concurrent_gate_store_counter_type count_ = 0;
 };
 
 }  // namespace detail
 
 
-template <class PoolT, detail::concurrent_pool_gate_flags flags = detail::concurrent_pool_gate_flags::not_counted>
+template <class QueueT, detail::concurrent_gate_flags flags = detail::concurrent_gate_flags::not_counted>
 struct producer_gate
-  : detail::concurrent_pool_gate_store<PoolT, flags>
+  : detail::concurrent_gate_store<QueueT, flags>
 {
-  using base_type = detail::concurrent_pool_gate_store<PoolT, flags>;
-  using pool_type = PoolT;
-  using value_type = typename PoolT::value_type;
+  using base_type = detail::concurrent_gate_store<QueueT, flags>;
+  using queue_type = QueueT;
+  using value_type = typename QueueT::value_type;
 
-  /*explicit*/ producer_gate(PoolT* pool) noexcept
-    : base_type{.pool_ = pool}
+  /*explicit*/ producer_gate(QueueT* queue) noexcept
+    : base_type{.queue_ = queue}
   {
-    BOOST_ASSERT(pool != nullptr);
+    BOOST_ASSERT(queue != nullptr);
   }
 
   producer_gate() = delete;
@@ -183,7 +185,7 @@ struct producer_gate
 #endif
     }
 
-    return this->pool_->push_wait(std::move(stop_token), std::forward<Args>(args)...);
+    return this->queue_->push_wait(std::move(stop_token), std::forward<Args>(args)...);
   }
 #endif
 
@@ -212,33 +214,33 @@ struct producer_gate
     }
 
     if constexpr (base_type::is_lock_free) {
-      while (!this->pool_->bounded_push(std::forward<Args>(args)...)) {
+      while (!this->queue_->bounded_push(std::forward<Args>(args)...)) {
         //std::this_thread::yield();
       }
       return true;
 
     } else {
-      return this->pool_->push_wait(std::forward<Args>(args)...);
+      return this->queue_->push_wait(std::forward<Args>(args)...);
     }
   }
 };
 
-template <class PoolT>
-using counted_producer_gate = producer_gate<PoolT, detail::concurrent_pool_gate_flags::counted>;
+template <class QueueT>
+using counted_producer_gate = producer_gate<QueueT, detail::concurrent_gate_flags::counted>;
 
 
-template <class PoolT, detail::concurrent_pool_gate_flags flags = detail::concurrent_pool_gate_flags::not_counted>
+template <class QueueT, detail::concurrent_gate_flags flags = detail::concurrent_gate_flags::not_counted>
 struct consumer_gate
-  : detail::concurrent_pool_gate_store<PoolT, flags>
+  : detail::concurrent_gate_store<QueueT, flags>
 {
-  using base_type = detail::concurrent_pool_gate_store<PoolT, flags>;
-  using pool_type = PoolT;
-  using value_type = typename PoolT::value_type;
+  using base_type = detail::concurrent_gate_store<QueueT, flags>;
+  using queue_type = QueueT;
+  using value_type = typename QueueT::value_type;
 
-  /*explicit*/ consumer_gate(PoolT* pool) noexcept
-    : base_type{.pool_ = pool}
+  /*explicit*/ consumer_gate(QueueT* queue) noexcept
+    : base_type{.queue_ = queue}
   {
-    BOOST_ASSERT(pool != nullptr);
+    BOOST_ASSERT(queue != nullptr);
   }
 
   consumer_gate() = delete;
@@ -272,7 +274,7 @@ struct consumer_gate
 #endif
     }
 
-    return this->pool_->pop_wait(std::move(stop_token), value);
+    return this->queue_->pop_wait(std::move(stop_token), value);
   }
 #endif
 
@@ -300,20 +302,20 @@ struct consumer_gate
     }
 
     if constexpr (base_type::is_lock_free) {
-      while (!this->pool_->pop(value)) {
+      while (!this->queue_->pop(value)) {
         //std::this_thread::yield();
       }
       return true;
 
     } else {
-      return this->pool_->pop_wait(value);
+      return this->queue_->pop_wait(value);
     }
   }
 };
 
-template <class PoolT>
-using counted_consumer_gate = consumer_gate<PoolT, detail::concurrent_pool_gate_flags::counted>;
+template <class QueueT>
+using counted_consumer_gate = consumer_gate<QueueT, detail::concurrent_gate_flags::counted>;
 
-}  // namespace yk
+}  // yk::exec
 
 #endif

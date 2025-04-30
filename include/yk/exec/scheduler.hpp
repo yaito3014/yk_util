@@ -17,9 +17,7 @@
 #include "yk/exec/scheduler_stats.hpp"
 #include "yk/exec/scheduler_stats_tracker.hpp"
 #include "yk/exec/worker_pool.hpp"
-
-#include "yk/concurrent_pool_gate.hpp"
-#include "yk/concurrent_vector.hpp"
+#include "yk/exec/concurrent_gate.hpp"
 
 #include "yk/throwt.hpp"
 
@@ -64,24 +62,27 @@ public:
   static_assert(Producer<ProducerF, T, ProducerInputRangeT, producer_gate_type>);
   static_assert(Consumer<ConsumerF, consumer_gate_type>);
 
-  template <class ProducerF_, class ConsumerF_>
-  scheduler(
-    const std::shared_ptr<worker_pool>& worker_pool,
-    ProducerF_&& producer_func,
-    ConsumerF_&& consumer_func
-  ) requires std::is_default_constructible_v<ProducerInputRangeT>
-    : worker_pool_(worker_pool)
-    , producer_func_(std::forward<ProducerF_>(producer_func))
-    , consumer_func_(std::forward<ConsumerF_>(consumer_func))
-  {
-  }
-
-  template <class ProducerF_, class ConsumerF_, class R>
+  template <class ProducerF_, class ConsumerF_, class... QueueArgs>
   scheduler(
     const std::shared_ptr<worker_pool>& worker_pool,
     ProducerF_&& producer_func,
     ConsumerF_&& consumer_func,
-    R&& producer_inputs
+    QueueArgs&&... queue_args
+  ) requires std::is_default_constructible_v<ProducerInputRangeT>
+    : worker_pool_(worker_pool)
+    , producer_func_(std::forward<ProducerF_>(producer_func))
+    , consumer_func_(std::forward<ConsumerF_>(consumer_func))
+    , queue_(std::forward<QueueArgs>(queue_args)...)
+  {
+  }
+
+  template <class ProducerF_, class ConsumerF_, class R, class... QueueArgs>
+  scheduler(
+    const std::shared_ptr<worker_pool>& worker_pool,
+    ProducerF_&& producer_func,
+    ConsumerF_&& consumer_func,
+    R&& producer_inputs,
+    QueueArgs&&... queue_args
   )
     : worker_pool_(worker_pool)
     , producer_func_(std::forward<ProducerF_>(producer_func))
@@ -89,7 +90,7 @@ public:
     , producer_inputs_(std::forward<R>(producer_inputs))
     , last_producer_input_it_(std::ranges::begin(producer_inputs_))
     , stats_(producer_inputs_)
-    , queue_(20 * 1024)
+    , queue_(std::forward<QueueArgs>(queue_args)...)
   {
   }
 
@@ -249,15 +250,15 @@ public:
 
     worker_pool_->set_rethrow_exceptions_on_exit(true);
 
-    worker_pool_->launch([this](const thread_id_t worker_id, std::stop_token stop_token) {
+    worker_pool_->launch([this](const thread_index_t worker_id, std::stop_token stop_token) {
       this->fixed_consumer(worker_id, std::move(stop_token));
     });
 
-    worker_pool_->launch([this](const thread_id_t worker_id, std::stop_token stop_token) {
+    worker_pool_->launch([this](const thread_index_t worker_id, std::stop_token stop_token) {
       this->fixed_producer(worker_id, std::move(stop_token));
     });
 
-    worker_pool_->launch_rest([this](const thread_id_t worker_id, std::stop_token stop_token) {
+    worker_pool_->launch_rest([this](const thread_index_t worker_id, std::stop_token stop_token) {
       this->dynamic_worker(worker_id, std::move(stop_token), detail::worker_mode_t::producer);
     });
   }
@@ -332,11 +333,15 @@ public:
     }
   }
 
+
+  [[nodiscard]] queue_type const& queue() const noexcept { return queue_; }
+  [[nodiscard]] queue_type& queue() noexcept { return queue_; }
+
 private:
   template<bool NeedInfo>
   [[nodiscard]]
   std::conditional_t<NeedInfo, std::pair<bool, long long>, bool>
-  do_worker_producer(const thread_id_t worker_id)
+  do_worker_producer(const thread_index_t worker_id)
   {
     producer_input_iterator it_first, it_last;
 
@@ -442,7 +447,7 @@ private:
   template<bool NeedInfo>
   [[nodiscard]]
   std::conditional_t<NeedInfo, std::pair<bool, long long>, bool>
-  do_worker_consumer(const thread_id_t worker_id)
+  do_worker_consumer(const thread_index_t worker_id)
   {
     // ===== begin consumer =====
 
@@ -501,7 +506,7 @@ private:
     }
   }
 
-  void fixed_producer(const thread_id_t worker_id, std::stop_token stop_token)
+  void fixed_producer(const thread_index_t worker_id, std::stop_token stop_token)
   {
     while (!stop_token.stop_requested()) {
       if (!do_worker_producer<false>(worker_id)) {
@@ -519,7 +524,7 @@ private:
     }
   }
 
-  void fixed_consumer(const thread_id_t worker_id, std::stop_token stop_token)
+  void fixed_consumer(const thread_index_t worker_id, std::stop_token stop_token)
   {
     while (!stop_token.stop_requested()) {
       if (!do_worker_consumer<false>(worker_id)) {
@@ -528,7 +533,7 @@ private:
     }
   }
 
-  void dynamic_worker(const thread_id_t worker_id, std::stop_token stop_token, detail::worker_mode_t worker_mode)
+  void dynamic_worker(const thread_index_t worker_id, std::stop_token stop_token, detail::worker_mode_t worker_mode)
   {
     while (!stop_token.stop_requested()) {
       if (worker_mode == detail::worker_mode_t::producer) {

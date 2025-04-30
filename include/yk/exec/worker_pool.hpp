@@ -1,7 +1,7 @@
 ﻿#ifndef YK_EXEC_WORKER_POOL_HPP
 #define YK_EXEC_WORKER_POOL_HPP
 
-#include "yk/exec/thread_id.hpp"
+#include "yk/exec/thread_index.hpp"
 
 #include "yk/interrupt_exception.hpp"
 #include "yk/throwt.hpp"
@@ -91,11 +91,11 @@ public:
   template <class F>
   void launch(F&& f)
   {
-    static_assert(std::invocable<F, thread_id_t, std::stop_token>);
+    static_assert(std::invocable<F, thread_index_t, std::stop_token>);
 
     threads_.emplace_back(std::thread{[
       this,
-      id = static_cast<thread_id_t>(threads_.size()),
+      id = static_cast<thread_index_t>(threads_.size()),
       f = std::forward<F>(f)
     ]() mutable {
       try {

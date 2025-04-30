@@ -1,13 +1,16 @@
-﻿#ifndef YK_CONCURRENT_POOL_HPP
-#define YK_CONCURRENT_POOL_HPP
+﻿#ifndef YK_EXEC_CV_QUEUE_HPP
+#define YK_EXEC_CV_QUEUE_HPP
 
-#include "yk/concurrent_pool_types.hpp"
+#include "yk/exec/cv_queue_types.hpp"
 
 #include "yk/allocator/default_init_allocator.hpp"
 #include "yk/util/to_underlying.hpp"
+
 #include "yk/enum_bitops.hpp"
 #include "yk/interrupt_exception.hpp"
 #include "yk/throwt.hpp"
+
+#include "yk/arch.hpp"
 
 #include <version>
 
@@ -15,7 +18,6 @@
 #include <stop_token>
 #endif
 
-#include <new> // false sharing thingy
 #include <condition_variable>
 #include <mutex>
 #include <stdexcept>
@@ -25,9 +27,9 @@
 
 #include <cstddef>
 
-namespace yk {
+namespace yk::exec {
 
-enum struct concurrent_pool_flag : unsigned {
+enum struct cv_queue_flag : unsigned {
   multi_producer = 0b01,
   multi_consumer = 0b10,
 
@@ -43,36 +45,52 @@ enum struct concurrent_pool_flag : unsigned {
   queue_based_push_pop = 0b1000,
 };
 
+} // yk::exec
+
+
+namespace yk {
+
 template <>
-struct bitops_enabled<concurrent_pool_flag> : std::true_type {};
+struct bitops_enabled<::yk::exec::cv_queue_flag> : std::true_type {};
+
+} // yk
+
+
+namespace yk::exec {
 
 template <class T>
-concept ConcurrentPoolValue =
+concept CVQueueValue =
   // unconditionally required for push/pop operations
   std::movable<T> || std::copyable<T>
 ;
 
+struct [[nodiscard]] cv_queue_size_info
+{
+    detail::cv_queue_size_type size = 0, capacity = 0;
+};
+
 namespace detail {
 
-template <ConcurrentPoolValue T, class BufT, concurrent_pool_flag Flags>
-struct concurrent_pool_traits {
+template <CVQueueValue T, class BufT, cv_queue_flag Flags>
+struct cv_queue_traits
+{
   using value_type = T;
   using buf_type = BufT;
-  using size_type = concurrent_pool_size_type;
+  using size_type = cv_queue_size_type;
 
-  static constexpr concurrent_pool_flag flags   = Flags;
-  static constexpr bool is_multi_producer       = static_cast<bool>(flags & concurrent_pool_flag::multi_producer);
+  static constexpr cv_queue_flag flags   = Flags;
+  static constexpr bool is_multi_producer       = static_cast<bool>(flags & cv_queue_flag::multi_producer);
   static constexpr bool is_single_producer      = !is_multi_producer;
-  static constexpr bool is_multi_consumer       = static_cast<bool>(flags & concurrent_pool_flag::multi_consumer);
+  static constexpr bool is_multi_consumer       = static_cast<bool>(flags & cv_queue_flag::multi_consumer);
   static constexpr bool is_single_consumer      = !is_multi_consumer;
 
-  static constexpr bool is_queue_based_push_pop = static_cast<bool>(flags & concurrent_pool_flag::queue_based_push_pop);
+  static constexpr bool is_queue_based_push_pop = static_cast<bool>(flags & cv_queue_flag::queue_based_push_pop);
 
 #if __cpp_lib_jthread >= 201911L
-  static constexpr bool enable_stop_token_support = static_cast<bool>(flags & concurrent_pool_flag::stop_token_support);
+  static constexpr bool enable_stop_token_support = static_cast<bool>(flags & cv_queue_flag::stop_token_support);
 #else
   static constexpr bool enable_stop_token_support = false;
-  static_assert(!static_cast<bool>(flags & concurrent_pool_flag::stop_token_support), "stop_token_support cannot be enabled on this toolchain without std::stop_token");
+  static_assert(!static_cast<bool>(flags & cv_queue_flag::stop_token_support), "stop_token_support cannot be enabled on this toolchain without std::stop_token");
 #endif
 
   using condition_variable_type = std::conditional_t<
@@ -213,24 +231,25 @@ private:
 }  // namespace detail
 
 template <class T>
-using concurrent_pool_allocator_t = std::conditional_t<
+using cv_queue_allocator_t = std::conditional_t<
     std::is_trivially_copyable_v<T>,
     yk::default_init_allocator<T>,
     std::allocator<T>
 >;
 
-template <class T, class BufT, concurrent_pool_flag Flags>
-class concurrent_pool
+// Condition-Variable based concurrent Queue, aka cv_queue
+template <class T, class BufT, cv_queue_flag Flags>
+class cv_queue
 {
 public:
-  static_assert(ConcurrentPoolValue<T>);
+  static_assert(CVQueueValue<T>);
 
-  static constexpr concurrent_pool_flag flags = Flags;
-  using value_type                            = T;
-  using buf_type                              = BufT;
-  using traits_type                           = detail::concurrent_pool_traits<T, BufT, Flags>;
-  using condition_variable_type               = typename traits_type::condition_variable_type;
-  using size_type                             = typename traits_type::size_type;
+  static constexpr cv_queue_flag flags = Flags;
+  using value_type                     = T;
+  using buf_type                       = BufT;
+  using traits_type                    = detail::cv_queue_traits<T, BufT, Flags>;
+  using condition_variable_type        = typename traits_type::condition_variable_type;
+  using size_type                      = typename traits_type::size_type;
 
   // -------------------------------------------
 
@@ -286,7 +305,7 @@ public:
   // Note: this holds only the current state.
   // If you need a consistent value, close() the pool first.
   [[nodiscard]]
-  concurrent_pool_size_info size_info() const
+  cv_queue_size_info size_info() const
   {
     std::unique_lock lock{mtx_};
     return {.size = static_cast<size_type>(buf_.size()), .capacity = capacity_};
@@ -308,28 +327,9 @@ public:
     return true;
   }
 
-  template <class... Args>
-  [[nodiscard]]
-  concurrent_pool_access_result push_wait_info(Args&&... args)
-  {
-    std::unique_lock lock{mtx_};
-    cv_not_full_.wait(lock, push_wait_cond());
-    if (push_wait_cond_error()) {
-      return {false};
-    }
-
-    traits_type::push(buf_, cv_not_empty_, std::forward<Args>(args)...);
-    return {true, static_cast<size_type>(buf_.size())};
-  }
-
 #if __cpp_lib_jthread >= 201911L
   template <class... Args>
   bool push_wait(std::stop_token stop_token, Args&&... args)
-    requires (!traits_type::enable_stop_token_support)
-  = delete;
-
-  template <class... Args>
-  concurrent_pool_access_result push_wait_info(std::stop_token stop_token, Args&&... args)
     requires (!traits_type::enable_stop_token_support)
   = delete;
 
@@ -349,24 +349,6 @@ public:
 
     traits_type::push(buf_, cv_not_empty_, std::forward<Args>(args)...);
     return true;
-  }
-
-  template <class... Args>
-  [[nodiscard]]
-  concurrent_pool_access_result push_wait_info(std::stop_token stop_token, Args&&... args)
-    requires traits_type::enable_stop_token_support
-  {
-    std::unique_lock lock{mtx_};
-    cv_not_full_.wait(lock, stop_token, push_wait_cond());
-    if (stop_token.stop_requested()) {
-      throwt<interrupt_exception>();
-    }
-    if (push_wait_cond_error()) {
-      return {false};
-    }
-
-    traits_type::push(buf_, cv_not_empty_, std::forward<Args>(args)...);
-    return {true, static_cast<size_type>(buf_.size())};
   }
 #endif
 
@@ -390,30 +372,8 @@ public:
     return true;
   }
 
-  [[nodiscard]]
-  concurrent_pool_access_result pop_wait_info(T& value)
-  {
-    std::unique_lock lock{mtx_};
-    cv_not_empty_.wait(lock, pop_wait_cond());
-    if (pop_wait_cond_error()) {
-      return {false};
-    }
-
-    if constexpr (traits_type::is_single_producer && traits_type::is_single_consumer) {
-      traits_type::pop(buf_, cv_not_full_, capacity_, value);
-
-    } else {
-      traits_type::pop(buf_, cv_not_full_, value);
-    }
-    return {true, static_cast<size_type>(buf_.size())};
-  }
-
 #if __cpp_lib_jthread >= 201911L
   bool pop_wait(std::stop_token stop_token, T& value)
-    requires (!traits_type::enable_stop_token_support)
-  = delete;
-
-  concurrent_pool_access_result pop_wait_info(std::stop_token stop_token, T& value)
     requires (!traits_type::enable_stop_token_support)
   = delete;
 
@@ -437,28 +397,6 @@ public:
       traits_type::pop(buf_, cv_not_full_, value);
     }
     return true;
-  }
-
-  [[nodiscard]]
-  concurrent_pool_access_result pop_wait_info(std::stop_token stop_token, T& value)
-    requires traits_type::enable_stop_token_support
-  {
-    std::unique_lock lock{mtx_};
-    cv_not_empty_.wait(lock, stop_token, pop_wait_cond());
-    if (stop_token.stop_requested()) {
-      throwt<interrupt_exception>();
-    }
-    if (pop_wait_cond_error()) {
-      return {false};
-    }
-
-    if constexpr (traits_type::is_single_producer && traits_type::is_single_consumer) {
-      traits_type::pop(buf_, cv_not_full_, capacity_, value);
-
-    } else {
-      traits_type::pop(buf_, cv_not_full_, value);
-    }
-    return {true, static_cast<size_type>(buf_.size())};
   }
 #endif
 
@@ -517,8 +455,8 @@ private:
     return closed_;
   }
 
-  alignas(std::hardware_destructive_interference_size) mutable std::mutex mtx_;
-  alignas(std::hardware_destructive_interference_size) condition_variable_type cv_not_full_, cv_not_empty_;
+  alignas(yk::hardware_destructive_interference_size) mutable std::mutex mtx_;
+  alignas(yk::hardware_destructive_interference_size) condition_variable_type cv_not_full_, cv_not_empty_;
 
   buf_type buf_;
   size_type capacity_ = traits_type::default_capacity;
@@ -526,34 +464,30 @@ private:
 };
 
 
-template <class T, class BufT, concurrent_pool_flag Flags = {}>
-using concurrent_spsc_pool = concurrent_pool<
-  T,
-  BufT,
-  (Flags & ~concurrent_pool_flag::producer_consumer_mask) | concurrent_pool_flag::spsc
+template <class T, class BufT, cv_queue_flag Flags = {}>
+using spsc_cv_queue = cv_queue<
+  T, BufT,
+  (Flags & ~cv_queue_flag::producer_consumer_mask) | cv_queue_flag::spsc
 >;
 
-template <class T, class BufT, concurrent_pool_flag Flags = {}>
-using concurrent_mpmc_pool = concurrent_pool<
-  T,
-  BufT,
-  (Flags & ~concurrent_pool_flag::producer_consumer_mask) | concurrent_pool_flag::mpmc
+template <class T, class BufT, cv_queue_flag Flags = {}>
+using mpmc_cv_queue = cv_queue<
+  T, BufT,
+  (Flags & ~cv_queue_flag::producer_consumer_mask) | cv_queue_flag::mpmc
 >;
 
-template <class T, class BufT, concurrent_pool_flag Flags = {}>
-using concurrent_spmc_pool = concurrent_pool<
-  T,
-  BufT,
-  (Flags & ~concurrent_pool_flag::producer_consumer_mask) | concurrent_pool_flag::spmc
+template <class T, class BufT, cv_queue_flag Flags = {}>
+using spmc_cv_queue = cv_queue<
+  T, BufT,
+  (Flags & ~cv_queue_flag::producer_consumer_mask) | cv_queue_flag::spmc
 >;
 
-template <class T, class BufT, concurrent_pool_flag Flags = {}>
-using concurrent_mpsc_pool = concurrent_pool<
-  T,
-  BufT,
-  (Flags & ~concurrent_pool_flag::producer_consumer_mask) | concurrent_pool_flag::mpsc
+template <class T, class BufT, cv_queue_flag Flags = {}>
+using mpsc_cv_queue = cv_queue<
+  T, BufT,
+  (Flags & ~cv_queue_flag::producer_consumer_mask) | cv_queue_flag::mpsc
 >;
 
-}  // namespace yk
+}  // yk::exec
 
 #endif

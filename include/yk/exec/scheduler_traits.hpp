@@ -2,10 +2,9 @@
 #define YK_EXEC_SCHEDULER_TRAITS_HPP
 
 #include "yk/exec/debug.hpp"
-#include "yk/exec/thread_id.hpp" // intentionally included
+#include "yk/exec/thread_index.hpp" // intentionally included
 
-#include "yk/concurrent_vector.hpp"
-#include "yk/concurrent_pool_gate.hpp"
+#include "yk/exec/concurrent_gate.hpp"
 
 #include <ranges>
 #include <concepts>
@@ -47,18 +46,18 @@ concept ProducerInputRange = std::ranges::forward_range<R>;
 template <class F, class T, class ProducerInputRangeT, class GateT>
 concept Producer =
   ProducerInputRange<ProducerInputRangeT> &&
-  std::invocable<F, thread_id_t, std::ranges::range_value_t<ProducerInputRangeT>, GateT&>
+  std::invocable<F, thread_index_t, std::ranges::range_value_t<ProducerInputRangeT>, GateT&>
 ;
 
 template <class F, class GateT>
-concept Consumer = std::invocable<F, thread_id_t, GateT&>;
+concept Consumer = std::invocable<F, thread_index_t, GateT&>;
 
 template <
   producer_kind ProducerKind,
   consumer_kind ConsumerKind,
   ProducerInputRange ProducerInputRangeT,
   class T,
-  class QueueT = yk::concurrent_mpmc_vector<T>
+  class QueueT
 >
 struct scheduler_traits
 {
@@ -73,14 +72,14 @@ struct scheduler_traits
 
   using producer_gate_type = std::conditional_t<
     is_multi_push,
-    yk::counted_producer_gate<QueueT>,
-    yk::producer_gate<QueueT>
+    counted_producer_gate<QueueT>,
+    producer_gate<QueueT>
   >;
 
   using consumer_gate_type = std::conditional_t<
     is_multi_pop,
-    yk::counted_consumer_gate<QueueT>,
-    yk::consumer_gate<QueueT>
+    counted_consumer_gate<QueueT>,
+    consumer_gate<QueueT>
   >;
 };
 
