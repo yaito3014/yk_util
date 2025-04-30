@@ -7,36 +7,20 @@
 
 namespace yk {
 
-template <class T, concurrent_pool_flag Flags = concurrent_pool_flag::mpmc>
-using concurrent_vector = concurrent_pool<
-  T,
-  std::vector<T, yk::concurrent_pool_allocator_t<T>>,
-  Flags
->;
+template <class T, concurrent_pool_flag Flags>
+using concurrent_vector = concurrent_pool<T, std::vector<T, yk::concurrent_pool_allocator_t<T>>, Flags>;
 
 template <class T, concurrent_pool_flag Flags = {}>
-using concurrent_spsc_vector = concurrent_vector<
-  T,
-  (Flags & ~concurrent_pool_flag::producer_consumer_mask) | concurrent_pool_flag::spsc
->;
+using concurrent_spsc_vector = concurrent_spsc_pool<T, std::vector<T, yk::concurrent_pool_allocator_t<T>>, Flags>;
 
 template <class T, concurrent_pool_flag Flags = {}>
-using concurrent_mpmc_vector = concurrent_vector<
-  T,
-  (Flags & ~concurrent_pool_flag::producer_consumer_mask) | concurrent_pool_flag::mpmc
->;
+using concurrent_mpmc_vector = concurrent_mpmc_pool<T, std::vector<T, yk::concurrent_pool_allocator_t<T>>, Flags>;
 
 template <class T, concurrent_pool_flag Flags = {}>
-using concurrent_spmc_vector = concurrent_vector<
-  T,
-  (Flags & ~concurrent_pool_flag::producer_consumer_mask) | concurrent_pool_flag::spmc
->;
+using concurrent_spmc_vector = concurrent_spmc_pool<T, std::vector<T, yk::concurrent_pool_allocator_t<T>>, Flags>;
 
 template <class T, concurrent_pool_flag Flags = {}>
-using concurrent_mpsc_vector = concurrent_vector<
-  T,
-  (Flags & ~concurrent_pool_flag::producer_consumer_mask) | concurrent_pool_flag::mpsc
->;
+using concurrent_mpsc_vector = concurrent_mpsc_pool<T, std::vector<T, yk::concurrent_pool_allocator_t<T>>, Flags>;
 
 }  // namespace yk
 

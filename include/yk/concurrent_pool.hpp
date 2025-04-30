@@ -219,8 +219,9 @@ using concurrent_pool_allocator_t = std::conditional_t<
     std::allocator<T>
 >;
 
-template <class T, class BufT, concurrent_pool_flag Flags = concurrent_pool_flag::mpmc>
-class concurrent_pool {
+template <class T, class BufT, concurrent_pool_flag Flags>
+class concurrent_pool
+{
 public:
   static_assert(ConcurrentPoolValue<T>);
 
@@ -523,6 +524,35 @@ private:
   size_type capacity_ = traits_type::default_capacity;
   bool closed_ = false;
 };
+
+
+template <class T, class BufT, concurrent_pool_flag Flags = {}>
+using concurrent_spsc_pool = concurrent_pool<
+  T,
+  BufT,
+  (Flags & ~concurrent_pool_flag::producer_consumer_mask) | concurrent_pool_flag::spsc
+>;
+
+template <class T, class BufT, concurrent_pool_flag Flags = {}>
+using concurrent_mpmc_pool = concurrent_pool<
+  T,
+  BufT,
+  (Flags & ~concurrent_pool_flag::producer_consumer_mask) | concurrent_pool_flag::mpmc
+>;
+
+template <class T, class BufT, concurrent_pool_flag Flags = {}>
+using concurrent_spmc_pool = concurrent_pool<
+  T,
+  BufT,
+  (Flags & ~concurrent_pool_flag::producer_consumer_mask) | concurrent_pool_flag::spmc
+>;
+
+template <class T, class BufT, concurrent_pool_flag Flags = {}>
+using concurrent_mpsc_pool = concurrent_pool<
+  T,
+  BufT,
+  (Flags & ~concurrent_pool_flag::producer_consumer_mask) | concurrent_pool_flag::mpsc
+>;
 
 }  // namespace yk
 

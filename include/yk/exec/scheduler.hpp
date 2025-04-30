@@ -89,6 +89,7 @@ public:
     , producer_inputs_(std::forward<R>(producer_inputs))
     , last_producer_input_it_(std::ranges::begin(producer_inputs_))
     , stats_(producer_inputs_)
+    , queue_(20 * 1024)
   {
   }
 
@@ -164,9 +165,9 @@ public:
 
   // not thread-safe
   [[nodiscard]]
-  const std::shared_ptr<scheduler_stats_tracker>& get_stats_tracker() const noexcept
+  const scheduler_stats_tracker* get_stats_tracker() const noexcept
   {
-    return stats_tracker_;
+    return stats_tracker_.get();
   }
 
   // not thread-safe
@@ -240,8 +241,9 @@ public:
       }
     }
 
-    queue_.set_capacity(queue_capacity_);
-    queue_.reserve_capacity();
+    // FIXME: lockfree migration
+    //queue_.set_capacity(queue_capacity_);
+    //queue_.reserve_capacity();
 
     launch_stats_tracker();
 
@@ -299,7 +301,7 @@ public:
       std::println("wait_for_all_tasks: stop requested");
 #endif
 
-      queue_.close();
+      //queue_.close(); // FIXME: lockfree migration
       worker_pool_->set_rethrow_exceptions_on_exit(false);
       worker_pool_->rethrow_exceptions();
       return;
@@ -309,17 +311,19 @@ public:
       std::println("wait_for_all_tasks: task completed");
 #endif
 
-      auto const remaining_tasks = queue_.size();
-      if (remaining_tasks != 0) {
-        throwt<std::logic_error>("wait_for_all_tasks: queue is not empty ({})", remaining_tasks);
-      }
+      // FIXME: lockfree migration
+      //auto const remaining_tasks = queue_.size();
+      //if (remaining_tasks != 0) {
+      //  throwt<std::logic_error>("wait_for_all_tasks: queue is not empty ({})", remaining_tasks);
+      //}
     }
   }
 
   // thread-safe, but must be called from the master thread
   void abort()
   {
-    queue_.close();
+    // FIXME: lockfree migration
+    //queue_.close();
     worker_pool_->halt_and_clear();
 
     stats_tracker_thread_.request_stop();
@@ -331,7 +335,7 @@ public:
 private:
   template<bool NeedInfo>
   [[nodiscard]]
-  std::conditional_t<NeedInfo, concurrent_pool_access_result, bool>
+  std::conditional_t<NeedInfo, std::pair<bool, long long>, bool>
   do_worker_producer(const thread_id_t worker_id)
   {
     producer_input_iterator it_first, it_last;
@@ -344,7 +348,7 @@ private:
 
       it_first = last_producer_input_it_;
       if (it_first == producer_input_end) {
-        return {false}; // all producer done; need to switch to consumer
+        return {}; // all producer done; need to switch to consumer
       }
 
       it_last = it_first;
@@ -381,6 +385,9 @@ private:
 
     // ===== end producer =====
 
+    thread_local scheduler_stats last_stats{};
+    long long throughput_delta;
+
     {
       std::unique_lock lock{stats_mtx_};
 
@@ -406,19 +413,26 @@ private:
       // (reversed pattern; consumer outpaced our process)
       if (stats_.is_all_task_done()) {
         task_done_cv_.notify_all();
-        return {false}; // need to switch to consumer
+        return {}; // need to switch to consumer
       }
 
       if (stats_.is_producer_input_consumed_all()) {
-        return {false}; // need to switch to consumer
+        return {}; // need to switch to consumer
       }
+
+
+      long long const producer_output_delta = stats_.producer_output - last_stats.producer_output;
+      long long const consumer_process_delta = stats_.consumer_input_processed - last_stats.consumer_input_processed;
+      throughput_delta = producer_output_delta - consumer_process_delta;
+
+      last_stats = stats_;
     }
 
     //
     // producer is still required...
     //
     if constexpr (NeedInfo) {
-      return {true, gate.last_pool_size()};
+      return {true, throughput_delta};
 
     } else {
       return true;
@@ -427,7 +441,7 @@ private:
 
   template<bool NeedInfo>
   [[nodiscard]]
-  std::conditional_t<NeedInfo, concurrent_pool_access_result, bool>
+  std::conditional_t<NeedInfo, std::pair<bool, long long>, bool>
   do_worker_consumer(const thread_id_t worker_id)
   {
     // ===== begin consumer =====
@@ -446,6 +460,9 @@ private:
 
     // ===== end consumer =====
 
+    thread_local scheduler_stats last_stats{};
+    long long throughput_delta;
+
     {
       std::unique_lock lock{stats_mtx_};
 
@@ -462,15 +479,22 @@ private:
 
       if (stats_.is_all_task_done()) {
         task_done_cv_.notify_all();
-        return {false}; // need to switch to consumer
+        return {}; // need to switch to consumer
       }
+
+
+      long long const producer_output_delta = stats_.producer_output - last_stats.producer_output;
+      long long const consumer_process_delta = stats_.consumer_input_processed - last_stats.consumer_input_processed;
+      throughput_delta = producer_output_delta - consumer_process_delta;
+
+      last_stats = stats_;
     }
 
     //
     // consumer is still required...
     //
     if constexpr (NeedInfo) {
-      return {true, gate.last_pool_size()};
+      return {true, throughput_delta};
 
     } else {
       return true;
@@ -508,23 +532,27 @@ private:
   {
     while (!stop_token.stop_requested()) {
       if (worker_mode == detail::worker_mode_t::producer) {
-        const auto [ok, size] = do_worker_producer<true>(worker_id);
+        const auto [ok, throughput_delta] = do_worker_producer<true>(worker_id);
         if (!ok) {
           //std::println("worker[{:2}] producer -> consumer", worker_id);
           worker_mode = detail::worker_mode_t::consumer;
           continue;
         }
 
-        if (size >= queue_capacity_ * 0.9) {
+        //std::println("throughput_delta: {}", throughput_delta);
+
+        if (throughput_delta > 0) {
           //std::println("worker[{:2}] producer -> consumer", worker_id);
           worker_mode = detail::worker_mode_t::consumer;
         }
 
       } else {  // Consumer
-        const auto [ok, size] = do_worker_consumer<true>(worker_id);
+        const auto [ok, throughput_delta] = do_worker_consumer<true>(worker_id);
         if (!ok) return;
 
-        if (size <= queue_capacity_ * 0.1) {
+        //std::println("throughput_delta: {}", throughput_delta);
+
+        if (throughput_delta <= 0) {
           //std::println("worker[{:2}] consumer -> producer", worker_id);
           worker_mode = detail::worker_mode_t::producer;
         }
@@ -534,7 +562,7 @@ private:
 
   std::shared_ptr<worker_pool> worker_pool_;
   queue_type queue_;
-  typename queue_type::size_type queue_capacity_ = 20 * 1024;
+  typename queue_type::size_type queue_capacity_ = 1024;
 
   // -----------------------------
 

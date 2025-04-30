@@ -27,14 +27,12 @@ using concurrent_pool_gate_store_counter_type = long long;
 enum struct concurrent_pool_gate_flags : unsigned {
   not_counted = 0b0,
   counted     = 0b1,
-
-  need_info   = 0b10,
 };
 
 } // detail
 
 template<>
-struct ::yk::bitops_enabled<detail::concurrent_pool_gate_flags> : std::true_type {};
+struct bitops_enabled<detail::concurrent_pool_gate_flags> : std::true_type {};
 
 
 namespace detail {
@@ -43,9 +41,12 @@ template <class PoolT, concurrent_pool_gate_flags flags>
 struct concurrent_pool_gate_store_base
 {
   static constexpr bool is_counted = contains(flags, concurrent_pool_gate_flags::counted);
-  static constexpr bool need_info  = contains(flags, concurrent_pool_gate_flags::need_info);
 
-  using access_result_type = std::conditional_t<need_info, concurrent_pool_access_result, bool>;
+  static constexpr bool is_lock_free = requires(PoolT& pool) {
+    typename PoolT::value_type;
+    { pool.is_lock_free() } -> std::convertible_to<bool>;
+    { pool.push(std::declval<typename PoolT::value_type&>()) } -> std::convertible_to<bool>;
+  };
 
   template <class Derived>
   concurrent_pool_gate_store_counter_type count(this const Derived& self) noexcept
@@ -86,15 +87,6 @@ struct concurrent_pool_gate_store_base
     = delete; // gate.discard() on a counted gate has no effect
 
   // -----------------------------------------
-
-  [[nodiscard]]
-  concurrent_pool_size_type last_pool_size(this const auto& self) noexcept requires (need_info)
-  {
-    return self.last_pool_size_;
-  }
-
-  concurrent_pool_size_type last_pool_size(this const auto& self) noexcept requires (!need_info)
-    = delete;
 
 #if YK_EXEC_DEBUG
   [[nodiscard]] std::chrono::nanoseconds elapsed_time() const noexcept { return elapsed_time_; }
@@ -140,27 +132,6 @@ struct concurrent_pool_gate_store<PoolT, concurrent_pool_gate_flags::counted>
 {
   PoolT* pool_ = nullptr;
   concurrent_pool_gate_store_counter_type count_ = 0;
-};
-
-template <class PoolT>
-struct concurrent_pool_gate_store<PoolT, concurrent_pool_gate_flags::need_info>
-  : concurrent_pool_gate_store_base<PoolT, concurrent_pool_gate_flags::need_info>
-{
-  PoolT* pool_ = nullptr;
-  concurrent_pool_size_type last_pool_size_ = 0;
-
-#ifndef NDEBUG
-  bool already_accessed_ = false;
-#endif
-};
-
-template <class PoolT>
-struct concurrent_pool_gate_store<PoolT, concurrent_pool_gate_flags::counted | concurrent_pool_gate_flags::need_info>
-  : concurrent_pool_gate_store_base<PoolT, concurrent_pool_gate_flags::counted | concurrent_pool_gate_flags::need_info>
-{
-  PoolT* pool_ = nullptr;
-  concurrent_pool_gate_store_counter_type count_ = 0;
-  concurrent_pool_size_type last_pool_size_ = 0;
 };
 
 }  // namespace detail
@@ -212,14 +183,7 @@ struct producer_gate
 #endif
     }
 
-    if constexpr (base_type::need_info) {
-      const auto result = this->pool_->push_wait_info(std::move(stop_token), std::forward<Args>(args)...);
-      this->last_pool_size_ = result.size;
-      return result.ok;
-
-    } else {
-      return this->pool_->push_wait(std::move(stop_token), std::forward<Args>(args)...);
-    }
+    return this->pool_->push_wait(std::move(stop_token), std::forward<Args>(args)...);
   }
 #endif
 
@@ -247,10 +211,11 @@ struct producer_gate
 #endif
     }
 
-    if constexpr (base_type::need_info) {
-      const auto result = this->pool_->push_wait_info(std::forward<Args>(args)...);
-      this->last_pool_size_ = result.size;
-      return result.ok;
+    if constexpr (base_type::is_lock_free) {
+      while (!this->pool_->bounded_push(std::forward<Args>(args)...)) {
+        //std::this_thread::yield();
+      }
+      return true;
 
     } else {
       return this->pool_->push_wait(std::forward<Args>(args)...);
@@ -260,12 +225,6 @@ struct producer_gate
 
 template <class PoolT>
 using counted_producer_gate = producer_gate<PoolT, detail::concurrent_pool_gate_flags::counted>;
-
-template <class PoolT>
-using info_producer_gate = producer_gate<PoolT, detail::concurrent_pool_gate_flags::need_info>;
-
-template <class PoolT>
-using counted_info_producer_gate = producer_gate<PoolT, detail::concurrent_pool_gate_flags::counted | detail::concurrent_pool_gate_flags::need_info>;
 
 
 template <class PoolT, detail::concurrent_pool_gate_flags flags = detail::concurrent_pool_gate_flags::not_counted>
@@ -277,7 +236,7 @@ struct consumer_gate
   using value_type = typename PoolT::value_type;
 
   /*explicit*/ consumer_gate(PoolT* pool) noexcept
-      : base_type{.pool_ = pool}
+    : base_type{.pool_ = pool}
   {
     BOOST_ASSERT(pool != nullptr);
   }
@@ -313,14 +272,7 @@ struct consumer_gate
 #endif
     }
 
-    if constexpr (base_type::need_info) {
-      const auto result = this->pool_->pop_wait_info(std::move(stop_token), value);
-      this->last_pool_size_ = result.size;
-      return result.ok;
-
-    } else {
-      return this->pool_->pop_wait(std::move(stop_token), value);
-    }
+    return this->pool_->pop_wait(std::move(stop_token), value);
   }
 #endif
 
@@ -347,10 +299,11 @@ struct consumer_gate
 #endif
     }
 
-    if constexpr (base_type::need_info) {
-      const auto result = this->pool_->pop_wait_info(value);
-      this->last_pool_size_ = result.size;
-      return result.ok;
+    if constexpr (base_type::is_lock_free) {
+      while (!this->pool_->pop(value)) {
+        //std::this_thread::yield();
+      }
+      return true;
 
     } else {
       return this->pool_->pop_wait(value);
@@ -360,12 +313,6 @@ struct consumer_gate
 
 template <class PoolT>
 using counted_consumer_gate = consumer_gate<PoolT, detail::concurrent_pool_gate_flags::counted>;
-
-template <class PoolT>
-using info_consumer_gate = consumer_gate<PoolT, detail::concurrent_pool_gate_flags::need_info>;
-
-template <class PoolT>
-using counted_info_consumer_gate = consumer_gate<PoolT, detail::concurrent_pool_gate_flags::counted | detail::concurrent_pool_gate_flags::need_info>;
 
 }  // namespace yk
 
