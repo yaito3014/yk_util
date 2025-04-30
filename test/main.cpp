@@ -71,10 +71,55 @@ BOOST_AUTO_TEST_CASE(Stack) {
 
 BOOST_AUTO_TEST_CASE(Concat) {
   using namespace std::literals;
+  // non-const test
   {
     auto rng = yk::views::concat("foo"sv, "bar"sv, "baz"sv);
     static_assert(std::ranges::random_access_range<decltype(rng)>);
     static_assert(std::ranges::view<decltype(rng)>);
+    std::random_access_iterator auto iter = std::ranges::begin(rng);
+    std::random_access_iterator auto sent = std::ranges::end(rng);
+    BOOST_TEST((iter != sent));
+    BOOST_TEST((sent - iter) == 9);
+    BOOST_TEST((iter == iter));
+    BOOST_TEST((iter - iter) == 0);
+    BOOST_TEST((std::default_sentinel - iter) == 9);
+    BOOST_TEST((iter - std::default_sentinel) == -9);
+    BOOST_TEST(*(iter + 4) == 'a');
+    BOOST_TEST(((iter + 1 + 1 + 1) - 3 == iter));
+    BOOST_TEST(iter[2] == 'o');
+    BOOST_TEST(iter[3] == 'b');
+    BOOST_TEST(iter[4] == 'a');
+    BOOST_TEST(rng[2] == 'o');
+    BOOST_TEST(rng[3] == 'b');
+    BOOST_TEST(rng[4] == 'a');
+    BOOST_TEST(std::ranges::size(rng) == rng.size());
+    BOOST_TEST(std::ranges::size(rng) == 9);
+    BOOST_TEST(std::ranges::equal(rng, "foobarbaz"sv));
+    {
+      auto i = iter, j = iter;
+      BOOST_TEST((++j == i + 1));
+      BOOST_TEST((--j == i));
+
+      BOOST_TEST((j++ == i));
+      BOOST_TEST((j == i + 1));
+
+      BOOST_TEST((j-- == i + 1));
+      BOOST_TEST((j == i));
+
+      BOOST_TEST(((j += 3) == i + 3));
+      BOOST_TEST(((j -= 2) == i + 1));
+
+      BOOST_TEST((i < j));
+      BOOST_TEST((i <= j));
+      BOOST_TEST((j > i));
+      BOOST_TEST((j >= i));
+      BOOST_TEST(((i <=> j) < 0));
+    }
+  }
+  // const test
+  {
+    const auto rng = yk::views::concat("foo"sv, "bar"sv, "baz"sv);
+    static_assert(std::ranges::random_access_range<decltype(rng)>);
     std::random_access_iterator auto iter = std::ranges::begin(rng);
     std::random_access_iterator auto sent = std::ranges::end(rng);
     BOOST_TEST((iter != sent));
