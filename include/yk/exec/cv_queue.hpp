@@ -2,6 +2,7 @@
 #define YK_EXEC_CV_QUEUE_HPP
 
 #include "yk/exec/cv_queue_types.hpp"
+#include "yk/exec/queue_traits.hpp"
 
 #include "yk/allocator/default_init_allocator.hpp"
 #include "yk/util/to_underlying.hpp"
@@ -496,6 +497,32 @@ using mpsc_cv_queue = cv_queue<
   T, BufT,
   (Flags & ~cv_queue_flag::producer_consumer_mask) | cv_queue_flag::mpsc
 >;
+
+
+template <class T, class BufT, cv_queue_flag Flags>
+struct queue_traits<cv_queue<T, BufT, Flags>>
+{
+  static constexpr bool need_stop_token_for_cancel = false;
+};
+
+template <class T, class BufT, cv_queue_flag Flags>
+struct queue_access<cv_queue<T, BufT, Flags>>
+{
+  using queue_type = cv_queue<T, BufT, Flags>;
+
+  template <class... Args>
+  [[nodiscard]]
+  static bool cancelable_push(queue_type& queue, Args&&... args)
+  {
+    return queue.push_wait(std::forward<Args>(args)...);
+  }
+
+  [[nodiscard]]
+  static bool cancelable_pop(queue_type& queue, T& value)
+  {
+    return queue.pop_wait(value);
+  }
+};
 
 }  // yk::exec
 

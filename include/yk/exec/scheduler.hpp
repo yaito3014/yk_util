@@ -17,7 +17,8 @@
 #include "yk/exec/scheduler_stats.hpp"
 #include "yk/exec/scheduler_stats_tracker.hpp"
 #include "yk/exec/worker_pool.hpp"
-#include "yk/exec/concurrent_gate.hpp"
+#include "yk/exec/queue_gate.hpp"
+#include "yk/exec/queue_traits.hpp"
 
 #include "yk/throwt.hpp"
 
@@ -40,6 +41,55 @@
 
 namespace yk::exec {
 
+namespace detail {
+
+template <class TraitsT, bool need_stop_token_for_cancel>
+struct scheduler_base
+{
+  using queue_type         = typename TraitsT::queue_type;
+  using producer_gate_type = typename TraitsT::producer_gate_type;
+  using consumer_gate_type = typename TraitsT::consumer_gate_type;
+
+protected:
+  [[nodiscard]]
+  producer_gate_type make_producer_gate(queue_type* queue) noexcept
+  {
+    return producer_gate_type{queue};
+  }
+
+  [[nodiscard]]
+  consumer_gate_type make_consumer_gate(queue_type* queue) noexcept
+  {
+    return consumer_gate_type{queue};
+  }
+};
+
+template <class TraitsT>
+struct scheduler_base<TraitsT, true>
+{
+  using queue_type         = typename TraitsT::queue_type;
+  using producer_gate_type = typename TraitsT::producer_gate_type;
+  using consumer_gate_type = typename TraitsT::consumer_gate_type;
+
+protected:
+  [[nodiscard]]
+  producer_gate_type make_producer_gate(queue_type* queue) noexcept
+  {
+    return producer_gate_type{queue, queue_stop_source_.get_token()};
+  }
+
+  [[nodiscard]]
+  consumer_gate_type make_consumer_gate(queue_type* queue) noexcept
+  {
+    return consumer_gate_type{queue, queue_stop_source_.get_token()};
+  }
+
+  std::stop_source queue_stop_source_;
+};
+
+} // detail
+
+
 template <
   producer_kind ProducerKind,
   consumer_kind ConsumerKind,
@@ -49,13 +99,15 @@ template <
   class ConsumerF,
   class TraitsT = scheduler_traits<ProducerKind, ConsumerKind, ProducerInputRangeT, QueueT>
 >
-class scheduler
+class scheduler : detail::scheduler_base<TraitsT, queue_traits<QueueT>::need_stop_token_for_cancel>
 {
+  using base_type = detail::scheduler_base<TraitsT, queue_traits<QueueT>::need_stop_token_for_cancel>;
+
 public:
   using queue_type         = QueueT;
   using traits_type        = TraitsT;
-  using producer_gate_type = typename traits_type::producer_gate_type;
-  using consumer_gate_type = typename traits_type::consumer_gate_type;
+  using producer_gate_type = typename base_type::producer_gate_type;
+  using consumer_gate_type = typename base_type::consumer_gate_type;
 
   using producer_input_iterator = typename traits_type::producer_input_iterator;
 
@@ -261,7 +313,7 @@ public:
     });
 
     worker_pool_->launch_rest([this](const thread_index_t worker_id, std::stop_token stop_token) {
-      this->dynamic_worker(worker_id, std::move(stop_token), detail::worker_mode_t::producer);
+      this->dynamic_worker(worker_id, std::move(stop_token), worker_mode_t::producer);
     });
   }
 
@@ -340,7 +392,7 @@ public:
   [[nodiscard]] queue_type& queue() noexcept { return queue_; }
 
 private:
-  template<bool NeedInfo>
+  template <bool NeedInfo>
   [[nodiscard]]
   std::conditional_t<NeedInfo, std::pair<bool, long long>, bool>
   do_worker_producer(const thread_index_t worker_id)
@@ -372,7 +424,7 @@ private:
     }
 
     // ===== begin producer =====
-    producer_gate_type gate{&queue_};
+    auto gate = this->make_producer_gate(&queue_);
 
 #if YK_EXEC_DEBUG
     std::chrono::nanoseconds process_time{};
@@ -446,14 +498,14 @@ private:
     }
   }
 
-  template<bool NeedInfo>
+  template <bool NeedInfo>
   [[nodiscard]]
   std::conditional_t<NeedInfo, std::pair<bool, long long>, bool>
   do_worker_consumer(const thread_index_t worker_id)
   {
     // ===== begin consumer =====
 
-    consumer_gate_type gate{&queue_};
+    auto gate = this->make_consumer_gate(&queue_);
 
 #if YK_EXEC_DEBUG
     auto const start_time = std::chrono::steady_clock::now();
@@ -535,14 +587,14 @@ private:
     }
   }
 
-  void dynamic_worker(const thread_index_t worker_id, std::stop_token stop_token, detail::worker_mode_t worker_mode)
+  void dynamic_worker(const thread_index_t worker_id, std::stop_token stop_token, worker_mode_t worker_mode)
   {
     while (!stop_token.stop_requested()) {
-      if (worker_mode == detail::worker_mode_t::producer) {
+      if (worker_mode == worker_mode_t::producer) {
         const auto [ok, throughput_delta] = do_worker_producer<true>(worker_id);
         if (!ok) {
           //std::println("worker[{:2}] producer -> consumer", worker_id);
-          worker_mode = detail::worker_mode_t::consumer;
+          worker_mode = worker_mode_t::consumer;
           continue;
         }
 
@@ -550,7 +602,7 @@ private:
 
         if (throughput_delta > 0) {
           //std::println("worker[{:2}] producer -> consumer", worker_id);
-          worker_mode = detail::worker_mode_t::consumer;
+          worker_mode = worker_mode_t::consumer;
         }
 
       } else {  // Consumer
@@ -561,7 +613,7 @@ private:
 
         if (throughput_delta <= 0) {
           //std::println("worker[{:2}] consumer -> producer", worker_id);
-          worker_mode = detail::worker_mode_t::producer;
+          worker_mode = worker_mode_t::producer;
         }
       }
     }
