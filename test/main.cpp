@@ -339,7 +339,7 @@ BOOST_AUTO_TEST_CASE(Throwt) {
   try {
     try {
       throw std::runtime_error("foo");
-    } catch (const std::exception& e) {
+    } catch (const std::exception&) {
       std::throw_with_nested(std::runtime_error("bar"));
     }
   } catch (const std::exception& e) {
