@@ -42,7 +42,7 @@ YK_THROWT_NORETURN void throwt() {
 }
 
 template <class E, class Arg, class... Rest>
-  requires std::is_constructible_v<E, Arg, Rest...> && (!detail::StringLike<Arg>)
+  requires std::is_constructible_v<E, Arg, Rest...>
 YK_THROWT_NORETURN void throwt(Arg&& arg, Rest&&... rest) {
   static_assert(std::is_base_of_v<std::exception, E>);
   YK_THROWT_THROW(

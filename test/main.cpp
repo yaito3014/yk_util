@@ -326,7 +326,7 @@ BOOST_AUTO_TEST_CASE(Throwt) {
   BOOST_REQUIRE_THROW(
       {
         try {
-          yk::throwt<std::runtime_error>("foobar");
+          yk::testing::throw_runtime_error("foobar");
         } catch (const std::runtime_error& e) {
           BOOST_TEST(e.what() == std::string_view{"foobar"});
           throw;
@@ -339,8 +339,7 @@ BOOST_AUTO_TEST_CASE(Throwt) {
   BOOST_REQUIRE_THROW(
       {
         try {
-          yk::throwt<std::runtime_error>("{} - {}", 33, 4);
-
+          yk::testing::throw_runtime_error(std::format("{} - {}", 33, 4).c_str());
         } catch (const std::runtime_error& e) {
           BOOST_TEST(e.what() == std::string_view{"33 - 4"});
           throw;
@@ -352,7 +351,7 @@ BOOST_AUTO_TEST_CASE(Throwt) {
   BOOST_REQUIRE_THROW(
       {
         try {
-          yk::throwt<std::system_error>(std::make_error_code(std::errc::invalid_argument), "{}", 42);
+          yk::testing::throw_system_error(std::make_error_code(std::errc::invalid_argument), std::format("{}", 42).c_str());
         } catch (const std::system_error& e) {
           BOOST_TEST(e.code() == std::make_error_code(std::errc::invalid_argument));
           throw;
@@ -364,7 +363,7 @@ BOOST_AUTO_TEST_CASE(Throwt) {
   BOOST_REQUIRE_THROW(
       {
         try {
-          yk::throwt<std::system_error>(33 - 4, std::generic_category(), "{}", 42);
+          yk::testing::throw_system_error(33 - 4, std::generic_category(), std::format("{}", 42).c_str());
         } catch (const std::system_error& e) {
           BOOST_TEST((e.code() == std::error_code{33 - 4, std::generic_category()}));
           throw;
