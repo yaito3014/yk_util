@@ -319,7 +319,7 @@ BOOST_AUTO_TEST_CASE(Concat) {
 }
 
 BOOST_AUTO_TEST_CASE(Throwt) {
-  class my_exception : std::runtime_error {
+  class my_exception : public std::runtime_error {
   public:
     my_exception(const std::string& name, const std::string& message) : runtime_error(name + ": " + message) {}
   };
