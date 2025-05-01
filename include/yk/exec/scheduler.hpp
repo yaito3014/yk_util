@@ -107,6 +107,7 @@ class scheduler : detail::scheduler_base<TraitsT, queue_traits<QueueT>::need_sto
 
 public:
   using queue_type         = QueueT;
+  using queue_traits_type  = queue_traits<QueueT>;
   using traits_type        = TraitsT;
   using producer_gate_type = typename base_type::producer_gate_type;
   using consumer_gate_type = typename base_type::consumer_gate_type;
@@ -118,13 +119,15 @@ public:
 
   // ----------------------------------------
 
+  // lazy producer input
   template <class ProducerF_, class ConsumerF_, class... QueueArgs>
+    requires std::is_default_constructible_v<ProducerInputRangeT> && std::constructible_from<QueueT, QueueArgs...>
   scheduler(
     const std::shared_ptr<worker_pool>& worker_pool,
     ProducerF_&& producer_func,
     ConsumerF_&& consumer_func,
     QueueArgs&&... queue_args
-  ) requires std::is_default_constructible_v<ProducerInputRangeT>
+  )
     : worker_pool_(worker_pool)
     , producer_func_(std::forward<ProducerF_>(producer_func))
     , consumer_func_(std::forward<ConsumerF_>(consumer_func))
@@ -132,7 +135,9 @@ public:
   {
   }
 
+  // initialize with producer input
   template <class ProducerF_, class ConsumerF_, class R, class... QueueArgs>
+    requires std::constructible_from<ProducerInputRangeT, R> && std::constructible_from<QueueT, QueueArgs...>
   scheduler(
     const std::shared_ptr<worker_pool>& worker_pool,
     ProducerF_&& producer_func,
@@ -297,10 +302,6 @@ public:
         throwt<std::invalid_argument>("Cannot start the scheduler after a successful iteration. If this is your intended action, call: reset_same_inputs_for_next_execution()");
       }
     }
-
-    // FIXME: lockfree migration
-    //queue_.set_capacity(queue_capacity_);
-    //queue_.reserve_capacity();
 
     launch_stats_tracker();
 
@@ -481,7 +482,9 @@ private:
         return {}; // need to switch to consumer
       }
 
-      p_c_ratio = scheduler_delta_stats::calc_producer_consumer_ratio(prev_stats, stats_);
+      p_c_ratio = stats_.consumer_input_processed == 0 ? 0.0
+        : double(stats_.producer_output) / stats_.consumer_input_processed;
+
       prev_stats = stats_;
     }
 
@@ -538,7 +541,9 @@ private:
         return {}; // need to switch to consumer
       }
 
-      p_c_ratio = scheduler_delta_stats::calc_producer_consumer_ratio(prev_stats, stats_);
+      p_c_ratio = stats_.consumer_input_processed == 0 ? 0.0
+        : double(stats_.producer_output) / stats_.consumer_input_processed;
+
       prev_stats = stats_;
     }
 
@@ -593,7 +598,7 @@ private:
 
         //std::println("p_c_ratio: {}", p_c_ratio);
 
-        if (p_c_ratio >= 1.1) {
+        if (p_c_ratio >= 1.0) {
           //std::println("worker[{:2}] producer -> consumer", worker_id);
           worker_mode = worker_mode_t::consumer;
         }
@@ -604,7 +609,7 @@ private:
 
         //std::println("p_c_ratio: {}", p_c_ratio);
 
-        if (p_c_ratio <= 0.9) {
+        if (p_c_ratio < 1.0) {
           //std::println("worker[{:2}] consumer -> producer", worker_id);
           worker_mode = worker_mode_t::producer;
         }
@@ -620,7 +625,6 @@ YK_FORCEALIGN_BEGIN
   // -----------------------------
 
   alignas(yk::hardware_destructive_interference_size) queue_type queue_;
-  typename queue_type::size_type queue_capacity_ = 1024; // FIXME: lockfree migration
 
   // -----------------------------
 

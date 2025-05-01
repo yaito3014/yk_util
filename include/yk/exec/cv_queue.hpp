@@ -254,6 +254,31 @@ public:
 
   // -------------------------------------------
 
+  // constructs with `traits_type::default_capacity`
+  cv_queue() = default;
+
+  explicit cv_queue(size_type initial_capacity)
+    : capacity_(initial_capacity)
+  {
+    if (initial_capacity < 0) {
+      throwt<std::length_error>("initial capacity must be non-negative");
+    }
+    if (static_cast<typename BufT::size_type>(initial_capacity) > buf_.max_size()) {
+      throwt<std::length_error>("initial capacity ({}) exceeds underlying buffer's max_size ({})", initial_capacity, buf_.max_size());
+    }
+
+    if constexpr (traits_type::has_reserve) {
+      buf_.reserve(initial_capacity);
+    }
+  }
+
+  cv_queue(cv_queue const&) = delete;
+  cv_queue(cv_queue&&) = delete;
+  cv_queue& operator=(cv_queue const&) = delete;
+  cv_queue& operator=(cv_queue&&) = delete;
+
+  // -------------------------------------------
+
   [[nodiscard]]
   size_type capacity() const
   {
@@ -516,7 +541,7 @@ struct queue_access<cv_queue<T, BufT, Flags>>
 
   template <class... Args>
   [[nodiscard]]
-  static bool cancelable_push(queue_type& queue, Args&&... args)
+  static bool cancelable_bounded_push(queue_type& queue, Args&&... args)
   {
     return queue.push_wait(std::forward<Args>(args)...);
   }

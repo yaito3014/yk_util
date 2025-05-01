@@ -17,18 +17,6 @@ struct scheduler_delta_stats
   using clock_type = std::chrono::steady_clock;
   using delta_type = clock_type::duration;
 
-  static double calc_producer_consumer_ratio(const scheduler_stats& prev_stats, const scheduler_stats& stats) noexcept
-  {
-    long long const producer_output_delta = stats.producer_output - prev_stats.producer_output;
-    long long const consumer_process_delta = stats.consumer_input_processed - prev_stats.consumer_input_processed;
-
-    if (consumer_process_delta == 0) {
-      return std::numeric_limits<double>::infinity();
-    } else {
-      return double(producer_output_delta) / consumer_process_delta;
-    }
-  }
-
   scheduler_delta_stats() noexcept = default;
 
   scheduler_delta_stats(delta_type delta, const scheduler_stats& prev_stats, const scheduler_stats& stats) noexcept

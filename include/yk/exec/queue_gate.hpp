@@ -205,10 +205,10 @@ public:
     this->mark_access();
 
     if constexpr (traits_type::need_stop_token_for_cancel) {
-      return access::cancelable_push(this->stop_token_, *this->queue_, std::forward<Args>(args)...);
+      return access::cancelable_bounded_push(this->stop_token_, *this->queue_, std::forward<Args>(args)...);
 
     } else {
-      return access::cancelable_push(*this->queue_, std::forward<Args>(args)...);
+      return access::cancelable_bounded_push(*this->queue_, std::forward<Args>(args)...);
     }
   }
 
