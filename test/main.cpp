@@ -1,10 +1,8 @@
 ﻿#include "yk/allocator/default_init_allocator.hpp"
 #include "yk/ranges/concat.hpp"
+#include "yk/printt.hpp"
 #include "yk/stack.hpp"
 #include "yk/throwt.hpp"
-#include "yk/printt.hpp"
-
-#include "test_utility.hpp"
 
 #define BOOST_TEST_MODULE yk_util_test
 #if YK_BUILD_UNIT_TEST_FRAMEWORK
@@ -17,11 +15,11 @@
 #include <compare>
 #include <forward_list>
 #include <functional>
-#include <sstream>
 #include <iterator>
 #include <list>
 #include <memory>
 #include <ranges>
+#include <sstream>
 #include <string_view>
 #include <utility>
 #include <vector>
@@ -318,40 +316,64 @@ BOOST_AUTO_TEST_CASE(Concat) {
   }
 }
 
+#define YK_CHECK_THROWT(expected, E, ...)   \
+  BOOST_REQUIRE_THROW(                      \
+      {                                     \
+        try {                               \
+          yk::throwt<E>(__VA_ARGS__);       \
+        } catch (const std::exception& e) { \
+          BOOST_TEST(e.what() == expected); \
+          throw;                            \
+        }                                   \
+      },                                    \
+      E                                     \
+  )
+
+#ifdef _MSC_VER
+#pragma warning(push)
+#pragma warning(disable: 4702)
+#endif
+
 BOOST_AUTO_TEST_CASE(Throwt) {
+  class my_exception : public std::runtime_error {
+  public:
+    my_exception(const std::string& name, const std::string& message) : runtime_error(name + ": " + message) {}
+  };
+
+  YK_CHECK_THROWT("foo", std::runtime_error, "foo");
+  YK_CHECK_THROWT("foo", std::runtime_error, std::string{"foo"});
+  YK_CHECK_THROWT("foo", std::runtime_error, std::string{"foo"}.c_str());
+  YK_CHECK_THROWT("foo", std::runtime_error, std::string_view{"foo"});
+  YK_CHECK_THROWT("{}", std::runtime_error, "{}");
+  YK_CHECK_THROWT("42", std::runtime_error, "{}", 42);
+  YK_CHECK_THROWT("foo", std::runtime_error, "{}", "foo");
+  YK_CHECK_THROWT("foo", std::runtime_error, "{}", std::string{"foo"});
+  YK_CHECK_THROWT("foo", std::runtime_error, "{}", std::string{"foo"}.c_str());
+  YK_CHECK_THROWT("foo", std::runtime_error, "{}", std::string_view{"foo"});
+
+  YK_CHECK_THROWT("{}: bar", my_exception, "{}", "bar");
+  YK_CHECK_THROWT("foo: bar", my_exception, "foo", "bar");
+  
+  // YK_CHECK_THROWT("foo: bar", my_exception, "foo", "{}", "bar");   // must be error
+  // YK_CHECK_THROWT("{}: foo",  my_exception, "{}", "foo", "bar");   // must be error
+  // YK_CHECK_THROWT("foo: bar", my_exception, "foo", "bar", "baz");  // must be error
+
+  // yk::throwt<std::runtime_error>(std::runtime_error("foo"));  // must be error
+
+
   // default constructible
-  BOOST_REQUIRE_THROW(yk::testing::throw_std_exception(), std::exception);
+  BOOST_REQUIRE_THROW(yk::throwt<std::exception>(), std::exception);
 
   // constructible with argument
-  BOOST_REQUIRE_THROW(
-      {
-        try {
-          yk::testing::throw_runtime_error("foobar");
-        } catch (const std::runtime_error& e) {
-          BOOST_TEST(e.what() == std::string_view{"foobar"});
-          throw;
-        }
-      },
-      std::runtime_error
-  );
+  YK_CHECK_THROWT("foobar", std::runtime_error, "foobar");
 
   // constructible with format string
-  BOOST_REQUIRE_THROW(
-      {
-        try {
-          yk::testing::throw_runtime_error(std::format("{} - {}", 33, 4).c_str());
-        } catch (const std::runtime_error& e) {
-          BOOST_TEST(e.what() == std::string_view{"33 - 4"});
-          throw;
-        }
-      },
-      std::runtime_error
-  );
+  YK_CHECK_THROWT("33 - 4", std::runtime_error, "{} - {}", 33, 4);
 
   BOOST_REQUIRE_THROW(
       {
         try {
-          yk::testing::throw_system_error(std::make_error_code(std::errc::invalid_argument), std::format("{}", 42).c_str());
+          yk::throwt<std::system_error>(std::make_error_code(std::errc::invalid_argument), "{}", 42);
         } catch (const std::system_error& e) {
           BOOST_TEST(e.code() == std::make_error_code(std::errc::invalid_argument));
           throw;
@@ -363,7 +385,7 @@ BOOST_AUTO_TEST_CASE(Throwt) {
   BOOST_REQUIRE_THROW(
       {
         try {
-          yk::testing::throw_system_error(33 - 4, std::generic_category(), std::format("{}", 42).c_str());
+          yk::throwt<std::system_error>(33 - 4, std::generic_category(), "{}", 42);
         } catch (const std::system_error& e) {
           BOOST_TEST((e.code() == std::error_code{33 - 4, std::generic_category()}));
           throw;
@@ -397,5 +419,9 @@ BOOST_AUTO_TEST_CASE(Throwt) {
 #endif
 
 }
+
+#ifdef _MSC_VER
+#pragma warning(pop)
+#endif
 
 BOOST_AUTO_TEST_SUITE_END()  // yk_util
