@@ -273,12 +273,23 @@ public:
     capacity_ = new_capacity;
   }
 
-  void reserve_capacity() requires (!traits_type::has_reserve)
-  {}
-
   void reserve_capacity() requires traits_type::has_reserve
   {
     std::unique_lock lock{mtx_};
+    buf_.reserve(static_cast<typename decltype(buf_)::size_type>(capacity_));
+  }
+
+  void set_capacity_and_reserve(size_type new_capacity) requires traits_type::has_reserve
+  {
+    if (new_capacity < 0) {
+      throwt<std::length_error>("new capacity must be non-negative");
+    }
+    std::unique_lock lock{mtx_};
+    if (static_cast<typename BufT::size_type>(new_capacity) > buf_.max_size()) {
+      throwt<std::length_error>("new capacity ({}) exceeds underlying buffer's max_size ({})", new_capacity, buf_.max_size());
+    }
+    capacity_ = new_capacity;
+
     buf_.reserve(static_cast<typename decltype(buf_)::size_type>(capacity_));
   }
 
@@ -456,17 +467,10 @@ private:
     return closed_;
   }
 
-#if _MSC_VER
-# pragma warning(push)
-# pragma warning(disable: 4324)
-#endif
-
+YK_FORCEALIGN_BEGIN
   alignas(yk::hardware_destructive_interference_size) mutable std::mutex mtx_;
   alignas(yk::hardware_destructive_interference_size) condition_variable_type cv_not_full_, cv_not_empty_;
-
-#if _MSC_VER
-# pragma warning(pop)
-#endif
+YK_FORCEALIGN_END
 
   buf_type buf_;
   size_type capacity_ = traits_type::default_capacity;

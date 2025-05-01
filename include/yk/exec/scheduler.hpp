@@ -21,6 +21,7 @@
 #include "yk/exec/queue_gate.hpp"
 #include "yk/exec/queue_traits.hpp"
 
+#include "yk/arch.hpp"
 #include "yk/throwt.hpp"
 
 #if YK_EXEC_DEBUG
@@ -611,34 +612,36 @@ private:
     }
   }
 
+YK_FORCEALIGN_BEGIN
   std::shared_ptr<worker_pool> worker_pool_;
-  queue_type queue_;
-  typename queue_type::size_type queue_capacity_ = 1024; // FIXME: lockfree migration
-
-  // -----------------------------
-
   ProducerF producer_func_;
   ConsumerF consumer_func_;
 
   // -----------------------------
 
-  mutable std::mutex producer_input_mtx_;
+  alignas(yk::hardware_destructive_interference_size) queue_type queue_;
+  typename queue_type::size_type queue_capacity_ = 1024; // FIXME: lockfree migration
+
+  // -----------------------------
+
+  alignas(yk::hardware_destructive_interference_size) mutable std::mutex producer_input_mtx_;
   ProducerInputRangeT producer_inputs_{};
   producer_input_iterator last_producer_input_it_ = std::ranges::end(producer_inputs_);
   long long producer_chunk_size_ = 0;
 
   // -----------------------------
 
-  mutable std::mutex stats_mtx_;
-  std::condition_variable_any task_done_cv_;
-  scheduler_stats stats_{producer_inputs_};
+  alignas(yk::hardware_destructive_interference_size) mutable std::mutex stats_mtx_;
+  alignas(yk::hardware_destructive_interference_size) std::condition_variable_any task_done_cv_;
+  alignas(yk::hardware_destructive_interference_size) scheduler_stats stats_{producer_inputs_};
 
   // -----------------------------
 
   std::unique_ptr<scheduler_stats_tracker> stats_tracker_;
-  std::condition_variable_any stats_tracker_cv_;
+  alignas(yk::hardware_destructive_interference_size) std::condition_variable_any stats_tracker_cv_;
   std::jthread stats_tracker_thread_;
   std::exception_ptr stats_tracker_exception_;
+YK_FORCEALIGN_END
 };
 
 
