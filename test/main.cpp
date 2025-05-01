@@ -331,7 +331,7 @@ BOOST_AUTO_TEST_CASE(Concat) {
 
 #ifdef _MSC_VER
 #pragma warning(push)
-#pragma warning(disable: 4702)
+#pragma warning(disable : 4702)
 #endif
 
 BOOST_AUTO_TEST_CASE(Throwt) {
@@ -353,13 +353,12 @@ BOOST_AUTO_TEST_CASE(Throwt) {
 
   YK_CHECK_THROWT("{}: bar", my_exception, "{}", "bar");
   YK_CHECK_THROWT("foo: bar", my_exception, "foo", "bar");
-  
+
   // YK_CHECK_THROWT("foo: bar", my_exception, "foo", "{}", "bar");   // must be error
   // YK_CHECK_THROWT("{}: foo",  my_exception, "{}", "foo", "bar");   // must be error
   // YK_CHECK_THROWT("foo: bar", my_exception, "foo", "bar", "baz");  // must be error
 
   // yk::throwt<std::runtime_error>(std::runtime_error("foo"));  // must be error
-
 
   // default constructible
   BOOST_REQUIRE_THROW(yk::throwt<std::exception>(), std::exception);
