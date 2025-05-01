@@ -92,7 +92,6 @@ BOOST_AUTO_TEST_CASE(ConcurrentVector) {
           static_cast<void>(vec.pop_wait(value));
           result.push_back(value);
         }
-        return result;
       };
 
       CV vec;
@@ -119,7 +118,6 @@ BOOST_AUTO_TEST_CASE(ConcurrentVector) {
           static_cast<void>(vec.pop_wait(value));
           result.push_back(value);
         }
-        return result;
       };
 
       CV vec;
@@ -156,7 +154,6 @@ BOOST_AUTO_TEST_CASE(ConcurrentVector) {
           std::lock_guard lock(mtx);
           result.push_back(value);
         }
-        return result;
       };
       CV vec;
       std::thread producer_thread(producer, std::ref(vec));
@@ -192,7 +189,6 @@ BOOST_AUTO_TEST_CASE(ConcurrentVector) {
           std::lock_guard lock(mtx);
           result.push_back(value);
         }
-        return result;
       };
       CV vec;
       std::thread producer_thread1(producer, std::ref(vec), 0);
@@ -238,7 +234,6 @@ BOOST_AUTO_TEST_CASE(ConcurrentVector) {
           }
           result.push_back(value);
         }
-        return result;
       };
       CV vec;
       std::thread producer_thread(producer, std::ref(vec));
@@ -282,7 +277,6 @@ BOOST_AUTO_TEST_CASE(ConcurrentDeque) {
           static_cast<void>(vec.pop_wait(value));
           result.push_back(value);
         }
-        return result;
       };
 
       CV vec;
@@ -309,7 +303,6 @@ BOOST_AUTO_TEST_CASE(ConcurrentDeque) {
           static_cast<void>(vec.pop_wait(value));
           result.push_back(value);
         }
-        return result;
       };
 
       CV vec;
@@ -346,7 +339,6 @@ BOOST_AUTO_TEST_CASE(ConcurrentDeque) {
           std::lock_guard lock(mtx);
           result.push_back(value);
         }
-        return result;
       };
       CV vec;
       std::thread producer_thread(producer, std::ref(vec));
@@ -382,7 +374,6 @@ BOOST_AUTO_TEST_CASE(ConcurrentDeque) {
           std::lock_guard lock(mtx);
           result.push_back(value);
         }
-        return result;
       };
       CV vec;
       std::thread producer_thread1(producer, std::ref(vec), 0);
@@ -430,7 +421,6 @@ BOOST_AUTO_TEST_CASE(ConcurrentDeque) {
           }
           result.push_back(value);
         }
-        return result;
       };
       CV vec;
       std::stop_source ssource;
@@ -472,7 +462,6 @@ BOOST_AUTO_TEST_CASE(ConcurrentDeque) {
           static_cast<void>(vec.pop_wait(value));
           result.push_back(value);
         }
-        return result;
       };
 
       CV vec;
@@ -499,7 +488,6 @@ BOOST_AUTO_TEST_CASE(ConcurrentDeque) {
           static_cast<void>(vec.pop_wait(value));
           result.push_back(value);
         }
-        return result;
       };
 
       CV vec;
@@ -536,7 +524,6 @@ BOOST_AUTO_TEST_CASE(ConcurrentDeque) {
           std::lock_guard lock(mtx);
           result.push_back(value);
         }
-        return result;
       };
       CV vec;
       std::thread producer_thread(producer, std::ref(vec));
@@ -572,7 +559,6 @@ BOOST_AUTO_TEST_CASE(ConcurrentDeque) {
           std::lock_guard lock(mtx);
           result.push_back(value);
         }
-        return result;
       };
       CV vec;
       std::thread producer_thread1(producer, std::ref(vec), 0);
@@ -618,7 +604,6 @@ BOOST_AUTO_TEST_CASE(ConcurrentDeque) {
           }
           result.push_back(value);
         }
-        return result;
       };
       CV vec;
       std::thread producer_thread(producer, std::ref(vec));
