@@ -16,7 +16,7 @@ if(BUILD_TESTING)
   set(YK_COMMON_FLAG
     $<$<CXX_COMPILER_ID:GNU>:-fsanitize=address,undefined>
     $<$<CXX_COMPILER_ID:Clang>:-fsanitize=address,undefined>
-    $<$<CXX_COMPILER_ID:MSVC>:/fsanitize=address>
+    $<$<CXX_COMPILER_ID:MSVC>:/fsanitize=address /fno-sanitize-address-vcasan-lib /fsanitize-address-asan-compat-lib>
     $<$<CXX_COMPILER_ID:Clang>:-stdlib=libc++>
   )
   target_compile_definitions(
