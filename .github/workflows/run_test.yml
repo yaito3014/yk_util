@@ -138,7 +138,6 @@ jobs:
       - name: Configure
         run: >
           cmake -B ${{ github.workspace }}/build
-          -GNinja
           -DCMAKE_CXX_COMPILER=${{ matrix.compiler.executable }}
           -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
           -DCMAKE_CXX_STANDARD=${{ matrix.cpp_version }}
