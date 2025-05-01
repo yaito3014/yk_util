@@ -1,6 +1,8 @@
 #ifndef YK_EXEC_THREAD_INDEX_HPP
 #define YK_EXEC_THREAD_INDEX_HPP
 
+#include "yk/exec/debug.hpp"// for ODR violation safety
+
 #include <cstddef>
 
 

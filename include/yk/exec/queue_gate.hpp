@@ -1,6 +1,7 @@
 #ifndef YK_EXEC_QUEUE_GATE_HPP
 #define YK_EXEC_QUEUE_GATE_HPP
 
+#include "yk/exec/debug.hpp"
 #include "yk/exec/worker_types.hpp"
 #include "yk/exec/queue_traits.hpp"
 

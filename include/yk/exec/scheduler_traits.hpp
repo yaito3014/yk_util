@@ -1,6 +1,7 @@
 #ifndef YK_EXEC_SCHEDULER_TRAITS_HPP
 #define YK_EXEC_SCHEDULER_TRAITS_HPP
 
+#include "yk/exec/debug.hpp"// for ODR violation safety
 #include "yk/exec/worker_types.hpp"
 #include "yk/exec/queue_gate.hpp"
 

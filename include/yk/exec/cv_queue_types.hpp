@@ -1,6 +1,8 @@
 #ifndef YK_EXEC_CV_QUEUE_TYPES_HPP
 #define YK_EXEC_CV_QUEUE_TYPES_HPP
 
+#include "yk/exec/debug.hpp" // for ODR violation safety
+
 #include <type_traits>
 
 #include <cstddef>

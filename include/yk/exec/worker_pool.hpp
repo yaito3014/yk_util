@@ -1,6 +1,7 @@
 ﻿#ifndef YK_EXEC_WORKER_POOL_HPP
 #define YK_EXEC_WORKER_POOL_HPP
 
+#include "yk/exec/debug.hpp"// for ODR violation safety
 #include "yk/exec/thread_index.hpp"
 
 #include "yk/interrupt_exception.hpp"
