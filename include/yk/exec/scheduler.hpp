@@ -15,6 +15,7 @@
 #include "yk/exec/debug.hpp"
 #include "yk/exec/scheduler_traits.hpp"
 #include "yk/exec/scheduler_stats.hpp"
+#include "yk/exec/scheduler_delta_stats.hpp"
 #include "yk/exec/scheduler_stats_tracker.hpp"
 #include "yk/exec/worker_pool.hpp"
 #include "yk/exec/queue_gate.hpp"
@@ -320,7 +321,7 @@ public:
   // thread-safe, but must be called from the main thread
   void wait_for_all_tasks()
   {
-    scheduler_stats last_stats;
+    scheduler_stats prev_stats;
 
     {
       std::unique_lock lock{stats_mtx_};
@@ -328,7 +329,7 @@ public:
         return stats_.is_all_task_done();
       });
 
-      last_stats = stats_;
+      prev_stats = stats_;
     }
 
 #if YK_EXEC_DEBUG
@@ -348,7 +349,7 @@ public:
       }
 
       // always print tick at the end
-      stats_tracker_->tick(last_stats);
+      stats_tracker_->tick(prev_stats);
     }
 
     if (worker_pool_->stop_requested()) {
@@ -394,7 +395,7 @@ public:
 private:
   template <bool NeedInfo>
   [[nodiscard]]
-  std::conditional_t<NeedInfo, std::pair<bool, long long>, bool>
+  std::conditional_t<NeedInfo, std::pair<bool, double>, bool>
   do_worker_producer(const thread_index_t worker_id)
   {
     producer_input_iterator it_first, it_last;
@@ -444,8 +445,8 @@ private:
 
     // ===== end producer =====
 
-    thread_local scheduler_stats last_stats{};
-    long long throughput_delta;
+    thread_local scheduler_stats prev_stats{};
+    double p_c_ratio;
 
     {
       std::unique_lock lock{stats_mtx_};
@@ -479,20 +480,15 @@ private:
         return {}; // need to switch to consumer
       }
 
-
-      long long const producer_output_delta = stats_.producer_output - last_stats.producer_output;
-      long long const consumer_process_delta = stats_.consumer_input_processed - last_stats.consumer_input_processed;
-      throughput_delta = producer_output_delta - consumer_process_delta;
-
-      last_stats = stats_;
+      p_c_ratio = scheduler_delta_stats::calc_producer_consumer_ratio(prev_stats, stats_);
+      prev_stats = stats_;
     }
 
     //
     // producer is still required...
     //
     if constexpr (NeedInfo) {
-      return {true, throughput_delta};
-
+      return {true, p_c_ratio};
     } else {
       return true;
     }
@@ -500,7 +496,7 @@ private:
 
   template <bool NeedInfo>
   [[nodiscard]]
-  std::conditional_t<NeedInfo, std::pair<bool, long long>, bool>
+  std::conditional_t<NeedInfo, std::pair<bool, double>, bool>
   do_worker_consumer(const thread_index_t worker_id)
   {
     // ===== begin consumer =====
@@ -519,8 +515,8 @@ private:
 
     // ===== end consumer =====
 
-    thread_local scheduler_stats last_stats{};
-    long long throughput_delta;
+    thread_local scheduler_stats prev_stats{};
+    double p_c_ratio;
 
     {
       std::unique_lock lock{stats_mtx_};
@@ -541,19 +537,15 @@ private:
         return {}; // need to switch to consumer
       }
 
-
-      long long const producer_output_delta = stats_.producer_output - last_stats.producer_output;
-      long long const consumer_process_delta = stats_.consumer_input_processed - last_stats.consumer_input_processed;
-      throughput_delta = producer_output_delta - consumer_process_delta;
-
-      last_stats = stats_;
+      p_c_ratio = scheduler_delta_stats::calc_producer_consumer_ratio(prev_stats, stats_);
+      prev_stats = stats_;
     }
 
     //
     // consumer is still required...
     //
     if constexpr (NeedInfo) {
-      return {true, throughput_delta};
+      return {true, p_c_ratio};
 
     } else {
       return true;
@@ -591,27 +583,27 @@ private:
   {
     while (!stop_token.stop_requested()) {
       if (worker_mode == worker_mode_t::producer) {
-        const auto [ok, throughput_delta] = do_worker_producer<true>(worker_id);
+        const auto [ok, p_c_ratio] = do_worker_producer<true>(worker_id);
         if (!ok) {
           //std::println("worker[{:2}] producer -> consumer", worker_id);
           worker_mode = worker_mode_t::consumer;
           continue;
         }
 
-        //std::println("throughput_delta: {}", throughput_delta);
+        //std::println("p_c_ratio: {}", p_c_ratio);
 
-        if (throughput_delta > 0) {
+        if (p_c_ratio >= 1.1) {
           //std::println("worker[{:2}] producer -> consumer", worker_id);
           worker_mode = worker_mode_t::consumer;
         }
 
       } else {  // Consumer
-        const auto [ok, throughput_delta] = do_worker_consumer<true>(worker_id);
+        const auto [ok, p_c_ratio] = do_worker_consumer<true>(worker_id);
         if (!ok) return;
 
-        //std::println("throughput_delta: {}", throughput_delta);
+        //std::println("p_c_ratio: {}", p_c_ratio);
 
-        if (throughput_delta <= 0) {
+        if (p_c_ratio <= 0.9) {
           //std::println("worker[{:2}] consumer -> producer", worker_id);
           worker_mode = worker_mode_t::producer;
         }

@@ -1,7 +1,7 @@
 ﻿#ifndef YK_EXEC_SCHEDULER_STATS_HPP
 #define YK_EXEC_SCHEDULER_STATS_HPP
 
-#include "yk/exec/debug.hpp"// for ODR violation safety
+#include "yk/exec/debug.hpp" // for ODR violation safety
 #include "yk/exec/scheduler_traits.hpp"
 #include "yk/throwt.hpp"
 

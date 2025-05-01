@@ -3,17 +3,20 @@
 
 #include "yk/exec/debug.hpp"// for ODR violation safety
 #include "yk/exec/scheduler_stats.hpp"
+#include "yk/exec/scheduler_delta_stats.hpp"
 
 #include <chrono>
 #include <functional>
 #include <concepts>
 
+
 namespace yk::exec {
 
-class scheduler_stats_tracker {
+class scheduler_stats_tracker
+{
 public:
-  using callback_type = std::move_only_function<void(const scheduler_stats_tracker&)>;
-  using clock_type = std::chrono::steady_clock;
+  using callback_type = std::move_only_function<void (const scheduler_stats_tracker&)>;
+  using clock_type = scheduler_delta_stats::clock_type;
 
   scheduler_stats_tracker() noexcept = default;
 
@@ -49,26 +52,34 @@ public:
   [[nodiscard]] clock_type::time_point last_tick() const noexcept { return last_tick_; }
 
   [[nodiscard]] clock_type::time_point first_tick() const noexcept { return first_tick_; }
-  void reset_first_tick() noexcept { first_tick_ = clock_type::now(); }
+
+  void reset_first_tick() noexcept
+  {
+    first_tick_ = clock_type::now();
+    delta_stats_ = {};
+  }
 
   template <class Duration = std::chrono::duration<double>>
-  [[nodiscard]]
-  Duration total_time() const noexcept { return std::chrono::duration_cast<Duration>(tick_ - first_tick_); }
+  [[nodiscard]] Duration total_time() const noexcept { return std::chrono::duration_cast<Duration>(tick_ - first_tick_); }
 
   template <class Duration = std::chrono::duration<double>>
-  [[nodiscard]]
-  Duration delta_time() const noexcept { return std::chrono::duration_cast<Duration>(tick_ - last_tick_); }
+  [[nodiscard]] Duration delta_time() const noexcept { return std::chrono::duration_cast<Duration>(tick_ - last_tick_); }
 
-  [[nodiscard]]
-  const scheduler_stats& stats() const noexcept { return stats_; }
+  [[nodiscard]] const scheduler_stats& stats() const noexcept { return stats_; }
+  [[nodiscard]] const scheduler_stats& prev_stats() const noexcept { return prev_stats_; }
+  [[nodiscard]] const scheduler_delta_stats& delta_stats() const noexcept { return delta_stats_; }
 
-  [[nodiscard]]
-  const scheduler_stats& last_stats() const noexcept { return last_stats_; }
+  [[nodiscard]] double boost_times() const noexcept
+  {
+    return
+      (delta_stats_.process_time() / delta_time<std::chrono::duration<double, std::nano>>())
+      * (1.0 - delta_stats_.queue_overhead())
+    ;
+  }
 
   // ------------------------------------------------------
 
-  [[nodiscard]]
-  bool interval_elapsed() const noexcept
+  [[nodiscard]] bool interval_elapsed() const noexcept
   {
     return clock_type::now() - last_tick_ >= interval_;
   }
@@ -78,12 +89,13 @@ public:
     tick_ = clock_type::now();
     stats_ = stats;
 
-    if (callback_ && stats_.count_updated(last_stats_)) {
+    if (callback_ && stats_.count_updated(prev_stats_)) {
+      delta_stats_ = scheduler_delta_stats{tick_ - last_tick_, prev_stats_, stats_};
       callback_(*this);
     }
 
     last_tick_ = tick_;
-    last_stats_ = stats_;
+    prev_stats_ = stats_;
   }
 
 private:
@@ -91,7 +103,8 @@ private:
   callback_type callback_;
   clock_type::time_point first_tick_{}, tick_{}, last_tick_{};
 
-  scheduler_stats stats_{}, last_stats_{};
+  scheduler_stats stats_{}, prev_stats_{};
+  scheduler_delta_stats delta_stats_{};
 };
 
 } // yk::exec
