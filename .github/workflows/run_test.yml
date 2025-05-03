@@ -41,6 +41,9 @@ jobs:
           - name: GCC
             version: 14
             executable: g++-14
+          - name: GCC
+            version: 15
+            executable: g++-15
           - name: Clang
             version: 19
             executable: clang++-19
@@ -84,7 +87,10 @@ jobs:
 
       - name: Setup GCC
         if: matrix.compiler.name == 'GCC'
-        run: sudo apt-get update && sudo apt-get install -y g++-${{ matrix.compiler.version }}
+        run: |
+          sudo add-apt-repository ppa:ubuntu-toolchain-r/test
+          sudo apt-get update
+          sudo apt-get install -y g++-${{ matrix.compiler.version }}
 
       - name: Install Dependencies
         if: matrix.os.name == 'ubuntu'
