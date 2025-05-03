@@ -18,7 +18,7 @@ if(BUILD_TESTING)
   set(YK_COMMON_FLAG
     $<$<CXX_COMPILER_ID:GNU>:-fsanitize=address,undefined>
     $<$<CXX_COMPILER_ID:Clang>:-fsanitize=address,undefined>
-    $<$<CXX_COMPILER_ID:Clang>:-stdlib=libc++>
+    $<$<CXX_COMPILER_ID:Clang>:-stdlib=libc++ -fexperimental-library>
   )
   target_compile_definitions(
     yk_util_test
