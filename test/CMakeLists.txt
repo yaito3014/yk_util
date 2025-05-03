@@ -3,12 +3,13 @@ cmake_minimum_required(VERSION 3.24)
 include(CTest)
 if(BUILD_TESTING)
   add_executable(yk_util_test
-    atomic_queue.cpp
-    concurrency.cpp
     enum_bitops.cpp
     hash.cpp
     meta.cpp
     util.cpp
+    atomic_queue.cpp
+    concurrency.cpp
+    scheduler.cpp
     main.cpp
   )
   target_compile_features(yk_util_test PUBLIC cxx_std_20)

@@ -64,6 +64,11 @@ protected:
   {
     return consumer_gate_type{queue};
   }
+
+  void close_queue(queue_type& queue)
+  {
+    queue.close();
+  }
 };
 
 template <class TraitsT>
@@ -86,6 +91,12 @@ protected:
     return consumer_gate_type{queue, queue_stop_source_.get_token()};
   }
 
+  void close_queue(queue_type& /*queue*/)
+  {
+    queue_stop_source_.request_stop();
+  }
+
+private:
   std::stop_source queue_stop_source_;
 };
 
@@ -148,10 +159,10 @@ public:
     : worker_pool_(worker_pool)
     , producer_func_(std::forward<ProducerF_>(producer_func))
     , consumer_func_(std::forward<ConsumerF_>(consumer_func))
+    , queue_(std::forward<QueueArgs>(queue_args)...)
     , producer_inputs_(std::forward<R>(producer_inputs))
     , last_producer_input_it_(std::ranges::begin(producer_inputs_))
     , stats_(producer_inputs_)
-    , queue_(std::forward<QueueArgs>(queue_args)...)
   {
   }
 
@@ -359,7 +370,7 @@ public:
       std::println("wait_for_all_tasks: stop requested");
 #endif
 
-      //queue_.close(); // FIXME: lockfree migration
+      this->close_queue(queue_);
       worker_pool_->set_rethrow_exceptions_on_exit(false);
       worker_pool_->rethrow_exceptions();
       return;
@@ -369,7 +380,7 @@ public:
       std::println("wait_for_all_tasks: task completed");
 #endif
 
-      // FIXME: lockfree migration
+      // TODO: report this
       //auto const remaining_tasks = queue_.size();
       //if (remaining_tasks != 0) {
       //  throwt<std::logic_error>("wait_for_all_tasks: queue is not empty ({})", remaining_tasks);
@@ -380,8 +391,7 @@ public:
   // thread-safe, but must be called from the master thread
   void abort()
   {
-    // FIXME: lockfree migration
-    //queue_.close();
+    this->close_queue(queue_);
     worker_pool_->halt_and_clear();
 
     stats_tracker_thread_.request_stop();
