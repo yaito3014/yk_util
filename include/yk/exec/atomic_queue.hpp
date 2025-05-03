@@ -145,6 +145,8 @@ public:
     : capacity_(capacity)
     , slot_allocator_(allocator)
   {
+    static_assert(sizeof(atomic_queue_store_dynamic) == sizeof(capacity_) + sizeof(slots_));
+
     if (capacity_ < 1) {
       throw std::bad_alloc{};
     }
@@ -203,6 +205,8 @@ public:
   explicit atomic_queue_store_static(const Alloc& allocator = {}) noexcept
     : slot_allocator_{allocator}
   {
+    static_assert(sizeof(atomic_queue_store_static) == alignof(slot_type) * ((sizeof(slots_) + alignof(slot_type) - 1) / alignof(slot_type)));
+
     for (size_type i = 0; i < N; ++i) {
       std::allocator_traits<slot_allocator_type>::construct(
         slot_allocator_, /*std::launder(*/ reinterpret_cast<T*>(&slots_[sizeof(slot_type) * i]) /*)*/
@@ -214,6 +218,8 @@ public:
   explicit atomic_queue_store_static(const size_type capacity, const Alloc& allocator = {})
     : slot_allocator_{allocator}
   {
+    static_assert(sizeof(atomic_queue_store_static) == alignof(slot_type) * ((sizeof(slots_) + alignof(slot_type) - 1) / alignof(slot_type)));
+
     if (N < capacity) {
       throw std::bad_alloc{};
     }
@@ -386,7 +392,7 @@ public:
 };
 
 template <class T, std::size_t N, class Alloc = std::allocator<T>>
-class alignas(64) static_atomic_queue : public detail::atomic_queue_impl<detail::atomic_queue_store_static<T, N, Alloc>, T, Alloc>
+class static_atomic_queue : public detail::atomic_queue_impl<detail::atomic_queue_store_static<T, N, Alloc>, T, Alloc>
 {
 public:
   using static_atomic_queue::atomic_queue_impl::atomic_queue_impl;
