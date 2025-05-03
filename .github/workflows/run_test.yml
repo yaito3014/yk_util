@@ -72,8 +72,8 @@ jobs:
       - name: Initialize Ubuntu
         if: matrix.os.name == 'ubuntu'
         run: |
-          echo "set man-db/auto-update false" | debconf-communicate
-          dpkg-reconfigure man-db
+          sudo echo "set man-db/auto-update false" | sudo debconf-communicate
+          sudo dpkg-reconfigure man-db
 
       - name: Setup Clang
         if: matrix.compiler.name == 'Clang'
