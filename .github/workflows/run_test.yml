@@ -39,9 +39,6 @@ jobs:
         boost_version: [1.86.0]
         compiler:
           - name: GCC
-            version: 13
-            executable: g++-13
-          - name: GCC
             version: 14
             executable: g++-14
           - name: Clang
@@ -56,10 +53,6 @@ jobs:
             version: v142
             executable: cl
         exclude:
-          - compiler:
-              name: GCC
-              version: 13
-            cpp_version: 26
           - os:
               name: windows
             compiler:
