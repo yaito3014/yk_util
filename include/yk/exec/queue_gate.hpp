@@ -75,8 +75,6 @@ template <class QueueT, queue_gate_flag flags>
 struct queue_gate_store_base
   : queue_gate_store_base_impl<QueueT, queue_traits<QueueT>::need_stop_token_for_cancel>
 {
-  using traits_type = queue_traits<QueueT>;
-
   static constexpr bool is_counted = contains(flags, queue_gate_flag::counted);
 
   // -----------------------------------------
@@ -179,10 +177,8 @@ private:
 
 public:
   using queue_type = QueueT;
-  using value_type = typename queue_traits<QueueT>::value_type;
-  using traits_type = typename base_type::traits_type;
-
-  using access = queue_access<QueueT>;
+  using traits_type = queue_traits<QueueT>;
+  using value_type = typename traits_type::value_type;
 
   using base_type::base_type;
 
@@ -205,10 +201,10 @@ public:
     this->mark_access();
 
     if constexpr (traits_type::need_stop_token_for_cancel) {
-      return access::cancelable_bounded_push(this->stop_token_, *this->queue_, std::forward<Args>(args)...);
+      return traits_type::cancelable_bounded_push(this->stop_token_, *this->queue_, std::forward<Args>(args)...);
 
     } else {
-      return access::cancelable_bounded_push(*this->queue_, std::forward<Args>(args)...);
+      return traits_type::cancelable_bounded_push(*this->queue_, std::forward<Args>(args)...);
     }
   }
 
@@ -223,10 +219,10 @@ public:
     this->mark_access();
 
     if constexpr (traits_type::need_stop_token_for_cancel) {
-      return access::cancelable_pop(this->stop_token_, *this->queue_, std::forward<Args>(args)...);
+      return traits_type::cancelable_pop(this->stop_token_, *this->queue_, std::forward<Args>(args)...);
 
     } else {
-      return access::cancelable_pop(*this->queue_, std::forward<Args>(args)...);
+      return traits_type::cancelable_pop(*this->queue_, std::forward<Args>(args)...);
     }
   }
 

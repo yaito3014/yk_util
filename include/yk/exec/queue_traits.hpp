@@ -11,18 +11,27 @@ struct queue_traits
   using queue_type = QueueT;
   using value_type = typename QueueT::value_type;
 
-  // TODO: auto detection
-};
+  // You need to provide this
+  // static constexpr bool need_stop_token_for_cancel = true;
+
+  // [if need_stop_token_for_cancel is true]
+  // You need to provide this
+  template <class... Args>
+  [[nodiscard]] static bool cancelable_bounded_push(std::stop_token const& stop_token, queue_type& queue, Args&&... args) = delete;
+
+  // [if need_stop_token_for_cancel is true]
+  // You need to provide this
+  [[nodiscard]] static bool cancelable_pop(std::stop_token const& stop_token, queue_type& queue, value_type& value) = delete;
 
 
-template <class QueueT>
-struct queue_access
-{
-  using queue_type = QueueT;
-  using traits_type = queue_traits<QueueT>;
-  using value_type = typename traits_type::value_type;
+  // [if need_stop_token_for_cancel is false]
+  // You need to provide this
+  template <class... Args>
+  [[nodiscard]] static bool cancelable_bounded_push(queue_type& queue, Args&&... args) = delete;
 
-  // TODO: auto detection
+  // [if need_stop_token_for_cancel is false]
+  // You need to provide this
+  [[nodiscard]] static bool cancelable_pop(queue_type& queue, value_type& value) = delete;
 };
 
 } // yk::exec

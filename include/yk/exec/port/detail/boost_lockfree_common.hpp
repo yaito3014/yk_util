@@ -16,17 +16,10 @@ struct boost_lockfree_common_traits;
 template <template <class T, class... Options> class BoostLockfreeT, class T, class... Options>
 struct boost_lockfree_common_traits<BoostLockfreeT<T, Options...>>
 {
-  using value_type = T;
-  static constexpr bool need_stop_token_for_cancel = true;
-};
-
-template <class BoostLockfreeT>
-struct boost_lockfree_common_access;
-
-template <template <class T, class... Options> class BoostLockfreeT, class T, class... Options>
-struct boost_lockfree_common_access<BoostLockfreeT<T, Options...>>
-{
   using queue_type = BoostLockfreeT<T, Options...>;
+  using value_type = T;
+
+  static constexpr bool need_stop_token_for_cancel = true;
 
   template <class... Args>
   [[nodiscard]]
@@ -49,7 +42,7 @@ struct boost_lockfree_common_access<BoostLockfreeT<T, Options...>>
   }
 
   [[nodiscard]]
-  static bool cancelable_pop(std::stop_token const& stop_token, queue_type& queue, T& value)
+  static bool cancelable_pop(std::stop_token const& stop_token, queue_type& queue, value_type& value)
   {
     while (!stop_token.stop_requested()) {
       if (queue.pop(value)) return true;

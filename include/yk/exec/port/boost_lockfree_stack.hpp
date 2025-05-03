@@ -8,11 +8,6 @@
 namespace yk::exec {
 
 template <class T, class... Options>
-struct queue_access<boost::lockfree::stack<T, Options...>>
-  : detail::boost_lockfree_common_access<boost::lockfree::stack<T, Options...>>
-{};
-
-template <class T, class... Options>
 struct queue_traits<boost::lockfree::stack<T, Options...>>
   : detail::boost_lockfree_common_traits<boost::lockfree::stack<T, Options...>>
 {};

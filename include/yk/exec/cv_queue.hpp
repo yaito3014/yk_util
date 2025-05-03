@@ -531,13 +531,10 @@ using mpsc_cv_queue = cv_queue<
 template <class T, class BufT, cv_queue_flag Flags>
 struct queue_traits<cv_queue<T, BufT, Flags>>
 {
-  static constexpr bool need_stop_token_for_cancel = false;
-};
-
-template <class T, class BufT, cv_queue_flag Flags>
-struct queue_access<cv_queue<T, BufT, Flags>>
-{
   using queue_type = cv_queue<T, BufT, Flags>;
+  using value_type = T;
+
+  static constexpr bool need_stop_token_for_cancel = false;
 
   template <class... Args>
   [[nodiscard]]
@@ -547,7 +544,7 @@ struct queue_access<cv_queue<T, BufT, Flags>>
   }
 
   [[nodiscard]]
-  static bool cancelable_pop(queue_type& queue, T& value)
+  static bool cancelable_pop(queue_type& queue, value_type& value)
   {
     return queue.pop_wait(value);
   }

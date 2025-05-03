@@ -401,19 +401,15 @@ public:
 
 // ------------------------------------------
 
-template <class T, class Alloc>
-struct queue_traits<atomic_queue<T, Alloc>>
-{
-  using value_type = T;
-  static constexpr bool need_stop_token_for_cancel = true;
-};
-
 #if __cpp_lib_jthread >= 201911L
 
 template <class T, class Alloc>
-struct queue_access<atomic_queue<T, Alloc>>
+struct queue_traits<atomic_queue<T, Alloc>>
 {
   using queue_type = atomic_queue<T, Alloc>;
+  using value_type = T;
+
+  static constexpr bool need_stop_token_for_cancel = true;
 
   template <class... Args>
   [[nodiscard]]
@@ -435,23 +431,13 @@ struct queue_access<atomic_queue<T, Alloc>>
   }
 };
 
-#endif // stop_token
-
-// ------------------------------------------
-
 template <class T, std::size_t N, class Alloc>
 struct queue_traits<static_atomic_queue<T, N, Alloc>>
 {
-  using value_type = T;
-  static constexpr bool need_stop_token_for_cancel = true;
-};
-
-#if __cpp_lib_jthread >= 201911L
-
-template <class T, std::size_t N, class Alloc>
-struct queue_access<static_atomic_queue<T, N, Alloc>>
-{
   using queue_type = static_atomic_queue<T, N, Alloc>;
+  using value_type = T;
+
+  static constexpr bool need_stop_token_for_cancel = true;
 
   template <class... Args>
   [[nodiscard]]

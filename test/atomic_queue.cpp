@@ -422,63 +422,63 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(non_blocking, Alloc, allocators_t)
   // capacity = 1
   {
     atomic_queue_t<int, Alloc> q(1);
-    BOOST_TEST(q.capacity() == 1);
-    BOOST_TEST(q.size() == 0);
+    BOOST_REQUIRE(q.capacity() == 1);
+    BOOST_REQUIRE(q.size() == 0);
 
     int val = 0;
-    BOOST_TEST(q.try_pop(val) == false);
+    BOOST_REQUIRE(q.try_pop(val) == false);
 
-    BOOST_TEST(q.try_push(42) == true);
-    BOOST_TEST(q.size() == 1);
-    BOOST_TEST(q.try_push(43) == false);
-    BOOST_TEST(q.size() == 1);
+    BOOST_REQUIRE(q.try_push(42) == true);
+    BOOST_REQUIRE(q.size() == 1);
+    BOOST_REQUIRE(q.try_push(43) == false);
+    BOOST_REQUIRE(q.size() == 1);
 
-    BOOST_TEST(q.try_pop(val) == true);
-    BOOST_TEST(val == 42);
-    BOOST_TEST(q.size() == 0);
+    BOOST_REQUIRE(q.try_pop(val) == true);
+    BOOST_REQUIRE(val == 42);
+    BOOST_REQUIRE(q.size() == 0);
 
-    BOOST_TEST(q.try_pop(val) == false);
+    BOOST_REQUIRE(q.try_pop(val) == false);
   }
 
   // capacity = 2
   {
     atomic_queue_t<int, Alloc> q(2);
-    BOOST_TEST(q.capacity() == 2);
-    BOOST_TEST(q.size() == 0);
+    BOOST_REQUIRE(q.capacity() == 2);
+    BOOST_REQUIRE(q.size() == 0);
 
     int val = 0;
-    BOOST_TEST(q.try_pop(val) == false);
+    BOOST_REQUIRE(q.try_pop(val) == false);
 
-    BOOST_TEST(q.try_push(42) == true);
-    BOOST_TEST(q.size() == 1);
+    BOOST_REQUIRE(q.try_push(42) == true);
+    BOOST_REQUIRE(q.size() == 1);
 
-    BOOST_TEST(q.try_pop(val) == true);
-    BOOST_TEST(val == 42);
-    BOOST_TEST(q.size() == 0);
+    BOOST_REQUIRE(q.try_pop(val) == true);
+    BOOST_REQUIRE(val == 42);
+    BOOST_REQUIRE(q.size() == 0);
 
-    BOOST_TEST(q.try_pop(val) == false);
+    BOOST_REQUIRE(q.try_pop(val) == false);
 
     // --------------------------------
 
-    BOOST_TEST(q.try_push(42) == true);
-    BOOST_TEST(q.size() == 1);
-    BOOST_TEST(q.try_push(43) == true);
-    BOOST_TEST(q.size() == 2);
-    BOOST_TEST(q.try_push(44) == false);
-    BOOST_TEST(q.size() == 2);
+    BOOST_REQUIRE(q.try_push(42) == true);
+    BOOST_REQUIRE(q.size() == 1);
+    BOOST_REQUIRE(q.try_push(43) == true);
+    BOOST_REQUIRE(q.size() == 2);
+    BOOST_REQUIRE(q.try_push(44) == false);
+    BOOST_REQUIRE(q.size() == 2);
 
     val = 0;
-    BOOST_TEST(q.try_pop(val) == true);
-    BOOST_TEST(q.size() == 1);
-    BOOST_TEST(val == 42);
+    BOOST_REQUIRE(q.try_pop(val) == true);
+    BOOST_REQUIRE(q.size() == 1);
+    BOOST_REQUIRE(val == 42);
 
     val = 0;
-    BOOST_TEST(q.try_pop(val) == true);
-    BOOST_TEST(q.size() == 0);
-    BOOST_TEST(val == 43);
+    BOOST_REQUIRE(q.try_pop(val) == true);
+    BOOST_REQUIRE(q.size() == 0);
+    BOOST_REQUIRE(val == 43);
 
     val = 0;
-    BOOST_TEST(q.try_pop(val) == false);
+    BOOST_REQUIRE(q.try_pop(val) == false);
   }
 }
 
@@ -487,63 +487,63 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(blocking, Alloc, allocators_t)
   // capacity = 1
   {
     atomic_queue_t<int, Alloc> q(1);
-    BOOST_TEST(q.capacity() == 1);
-    BOOST_TEST(q.size() == 0);
+    BOOST_REQUIRE(q.capacity() == 1);
+    BOOST_REQUIRE(q.size() == 0);
 
     int val = 0;
-    BOOST_TEST(q.try_pop(val) == false);
+    BOOST_REQUIRE(q.try_pop(val) == false);
 
     BOOST_REQUIRE_NO_THROW(q.push(42));
-    BOOST_TEST(q.size() == 1);
-    BOOST_TEST(q.try_push(43) == false);
-    BOOST_TEST(q.size() == 1);
+    BOOST_REQUIRE(q.size() == 1);
+    BOOST_REQUIRE(q.try_push(43) == false);
+    BOOST_REQUIRE(q.size() == 1);
 
     BOOST_REQUIRE_NO_THROW(q.pop(val));
-    BOOST_TEST(val == 42);
-    BOOST_TEST(q.size() == 0);
+    BOOST_REQUIRE(val == 42);
+    BOOST_REQUIRE(q.size() == 0);
 
-    BOOST_TEST(q.try_pop(val) == false);
+    BOOST_REQUIRE(q.try_pop(val) == false);
   }
 
   // capacity = 2
   {
     atomic_queue_t<int, Alloc> q(2);
-    BOOST_TEST(q.capacity() == 2);
-    BOOST_TEST(q.size() == 0);
+    BOOST_REQUIRE(q.capacity() == 2);
+    BOOST_REQUIRE(q.size() == 0);
 
     int val = 0;
-    BOOST_TEST(q.try_pop(val) == false);
+    BOOST_REQUIRE(q.try_pop(val) == false);
 
     BOOST_REQUIRE_NO_THROW(q.push(42));
-    BOOST_TEST(q.size() == 1);
+    BOOST_REQUIRE(q.size() == 1);
 
     BOOST_REQUIRE_NO_THROW(q.pop(val));
-    BOOST_TEST(val == 42);
-    BOOST_TEST(q.size() == 0);
+    BOOST_REQUIRE(val == 42);
+    BOOST_REQUIRE(q.size() == 0);
 
-    BOOST_TEST(q.try_pop(val) == false);
+    BOOST_REQUIRE(q.try_pop(val) == false);
 
     // --------------------------------
 
     BOOST_REQUIRE_NO_THROW(q.push(42));
-    BOOST_TEST(q.size() == 1);
+    BOOST_REQUIRE(q.size() == 1);
     BOOST_REQUIRE_NO_THROW(q.push(43));
-    BOOST_TEST(q.size() == 2);
-    BOOST_TEST(q.try_push(44) == false);
-    BOOST_TEST(q.size() == 2);
+    BOOST_REQUIRE(q.size() == 2);
+    BOOST_REQUIRE(q.try_push(44) == false);
+    BOOST_REQUIRE(q.size() == 2);
 
     val = 0;
     BOOST_REQUIRE_NO_THROW(q.pop(val));
-    BOOST_TEST(q.size() == 1);
-    BOOST_TEST(val == 42);
+    BOOST_REQUIRE(q.size() == 1);
+    BOOST_REQUIRE(val == 42);
 
     val = 0;
     BOOST_REQUIRE_NO_THROW(q.pop(val));
-    BOOST_TEST(q.size() == 0);
-    BOOST_TEST(val == 43);
+    BOOST_REQUIRE(q.size() == 0);
+    BOOST_REQUIRE(val == 43);
 
     val = 0;
-    BOOST_TEST(q.try_pop(val) == false);
+    BOOST_REQUIRE(q.try_pop(val) == false);
   }
 }
 
@@ -575,63 +575,63 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(non_blocking, Alloc, allocators_t)
   // capacity = 1
   {
     static_atomic_queue_t<int, 1, Alloc> q;
-    BOOST_TEST(q.capacity() == 1);
-    BOOST_TEST(q.size() == 0);
+    BOOST_REQUIRE(q.capacity() == 1);
+    BOOST_REQUIRE(q.size() == 0);
 
     int val = 0;
-    BOOST_TEST(q.try_pop(val) == false);
+    BOOST_REQUIRE(q.try_pop(val) == false);
 
-    BOOST_TEST(q.try_push(42) == true);
-    BOOST_TEST(q.size() == 1);
-    BOOST_TEST(q.try_push(43) == false);
-    BOOST_TEST(q.size() == 1);
+    BOOST_REQUIRE(q.try_push(42) == true);
+    BOOST_REQUIRE(q.size() == 1);
+    BOOST_REQUIRE(q.try_push(43) == false);
+    BOOST_REQUIRE(q.size() == 1);
 
-    BOOST_TEST(q.try_pop(val) == true);
-    BOOST_TEST(val == 42);
-    BOOST_TEST(q.size() == 0);
+    BOOST_REQUIRE(q.try_pop(val) == true);
+    BOOST_REQUIRE(val == 42);
+    BOOST_REQUIRE(q.size() == 0);
 
-    BOOST_TEST(q.try_pop(val) == false);
+    BOOST_REQUIRE(q.try_pop(val) == false);
   }
 
   // capacity = 2
   {
     static_atomic_queue_t<int, 2, Alloc> q;
-    BOOST_TEST(q.capacity() == 2);
-    BOOST_TEST(q.size() == 0);
+    BOOST_REQUIRE(q.capacity() == 2);
+    BOOST_REQUIRE(q.size() == 0);
 
     int val = 0;
-    BOOST_TEST(q.try_pop(val) == false);
+    BOOST_REQUIRE(q.try_pop(val) == false);
 
-    BOOST_TEST(q.try_push(42) == true);
-    BOOST_TEST(q.size() == 1);
+    BOOST_REQUIRE(q.try_push(42) == true);
+    BOOST_REQUIRE(q.size() == 1);
 
-    BOOST_TEST(q.try_pop(val) == true);
-    BOOST_TEST(val == 42);
-    BOOST_TEST(q.size() == 0);
+    BOOST_REQUIRE(q.try_pop(val) == true);
+    BOOST_REQUIRE(val == 42);
+    BOOST_REQUIRE(q.size() == 0);
 
-    BOOST_TEST(q.try_pop(val) == false);
+    BOOST_REQUIRE(q.try_pop(val) == false);
 
     // --------------------------------
 
-    BOOST_TEST(q.try_push(42) == true);
-    BOOST_TEST(q.size() == 1);
-    BOOST_TEST(q.try_push(43) == true);
-    BOOST_TEST(q.size() == 2);
-    BOOST_TEST(q.try_push(44) == false);
-    BOOST_TEST(q.size() == 2);
+    BOOST_REQUIRE(q.try_push(42) == true);
+    BOOST_REQUIRE(q.size() == 1);
+    BOOST_REQUIRE(q.try_push(43) == true);
+    BOOST_REQUIRE(q.size() == 2);
+    BOOST_REQUIRE(q.try_push(44) == false);
+    BOOST_REQUIRE(q.size() == 2);
 
     val = 0;
-    BOOST_TEST(q.try_pop(val) == true);
-    BOOST_TEST(q.size() == 1);
-    BOOST_TEST(val == 42);
+    BOOST_REQUIRE(q.try_pop(val) == true);
+    BOOST_REQUIRE(q.size() == 1);
+    BOOST_REQUIRE(val == 42);
 
     val = 0;
-    BOOST_TEST(q.try_pop(val) == true);
-    BOOST_TEST(q.size() == 0);
-    BOOST_TEST(val == 43);
+    BOOST_REQUIRE(q.try_pop(val) == true);
+    BOOST_REQUIRE(q.size() == 0);
+    BOOST_REQUIRE(val == 43);
 
     val = 0;
-    BOOST_TEST(q.try_pop(val) == false);
+    BOOST_REQUIRE(q.try_pop(val) == false);
   }
 }
 
@@ -640,63 +640,63 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(blocking, Alloc, allocators_t)
   // capacity = 1
   {
     static_atomic_queue_t<int, 1, Alloc> q;
-    BOOST_TEST(q.capacity() == 1);
-    BOOST_TEST(q.size() == 0);
+    BOOST_REQUIRE(q.capacity() == 1);
+    BOOST_REQUIRE(q.size() == 0);
 
     int val = 0;
-    BOOST_TEST(q.try_pop(val) == false);
+    BOOST_REQUIRE(q.try_pop(val) == false);
 
     BOOST_REQUIRE_NO_THROW(q.push(42));
-    BOOST_TEST(q.size() == 1);
-    BOOST_TEST(q.try_push(43) == false);
-    BOOST_TEST(q.size() == 1);
+    BOOST_REQUIRE(q.size() == 1);
+    BOOST_REQUIRE(q.try_push(43) == false);
+    BOOST_REQUIRE(q.size() == 1);
 
     BOOST_REQUIRE_NO_THROW(q.pop(val));
-    BOOST_TEST(val == 42);
-    BOOST_TEST(q.size() == 0);
+    BOOST_REQUIRE(val == 42);
+    BOOST_REQUIRE(q.size() == 0);
 
-    BOOST_TEST(q.try_pop(val) == false);
+    BOOST_REQUIRE(q.try_pop(val) == false);
   }
 
   // capacity = 2
   {
     static_atomic_queue_t<int, 2, Alloc> q;
-    BOOST_TEST(q.capacity() == 2);
-    BOOST_TEST(q.size() == 0);
+    BOOST_REQUIRE(q.capacity() == 2);
+    BOOST_REQUIRE(q.size() == 0);
 
     int val = 0;
-    BOOST_TEST(q.try_pop(val) == false);
+    BOOST_REQUIRE(q.try_pop(val) == false);
 
     BOOST_REQUIRE_NO_THROW(q.push(42));
-    BOOST_TEST(q.size() == 1);
+    BOOST_REQUIRE(q.size() == 1);
 
     BOOST_REQUIRE_NO_THROW(q.pop(val));
-    BOOST_TEST(val == 42);
-    BOOST_TEST(q.size() == 0);
+    BOOST_REQUIRE(val == 42);
+    BOOST_REQUIRE(q.size() == 0);
 
-    BOOST_TEST(q.try_pop(val) == false);
+    BOOST_REQUIRE(q.try_pop(val) == false);
 
     // --------------------------------
 
     BOOST_REQUIRE_NO_THROW(q.push(42));
-    BOOST_TEST(q.size() == 1);
+    BOOST_REQUIRE(q.size() == 1);
     BOOST_REQUIRE_NO_THROW(q.push(43));
-    BOOST_TEST(q.size() == 2);
-    BOOST_TEST(q.try_push(44) == false);
-    BOOST_TEST(q.size() == 2);
+    BOOST_REQUIRE(q.size() == 2);
+    BOOST_REQUIRE(q.try_push(44) == false);
+    BOOST_REQUIRE(q.size() == 2);
 
     val = 0;
     BOOST_REQUIRE_NO_THROW(q.pop(val));
-    BOOST_TEST(q.size() == 1);
-    BOOST_TEST(val == 42);
+    BOOST_REQUIRE(q.size() == 1);
+    BOOST_REQUIRE(val == 42);
 
     val = 0;
     BOOST_REQUIRE_NO_THROW(q.pop(val));
-    BOOST_TEST(q.size() == 0);
-    BOOST_TEST(val == 43);
+    BOOST_REQUIRE(q.size() == 0);
+    BOOST_REQUIRE(val == 43);
 
     val = 0;
-    BOOST_TEST(q.try_pop(val) == false);
+    BOOST_REQUIRE(q.try_pop(val) == false);
   }
 }
 
