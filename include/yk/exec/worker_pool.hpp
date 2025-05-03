@@ -59,8 +59,9 @@ public:
         thread.join();
       }
       if (exception) {
-        std::rethrow_exception(exception);
+        auto ptr = exception;
         exception = {};
+        std::rethrow_exception(ptr);
       }
     }
   }

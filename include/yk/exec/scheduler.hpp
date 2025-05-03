@@ -346,8 +346,9 @@ public:
       }
 
       if (stats_tracker_exception_) {
-        std::rethrow_exception(stats_tracker_exception_);
+        auto ptr = stats_tracker_exception_;
         stats_tracker_exception_ = {};
+        std::rethrow_exception(ptr);
       }
 
       // always print tick at the end

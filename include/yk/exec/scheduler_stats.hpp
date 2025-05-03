@@ -137,40 +137,6 @@ struct scheduler_stats {
     return is_producer_input_processed_all() && is_consumer_input_processed_all();
   }
 
-  void validate_counter_consistency(const count_type producer_input_total) const
-  {
-#if YK_EXEC_DEBUG
-    if (producer_input_consumed > producer_input_total) {
-      throwt<std::logic_error>("producer overconsumption (input total: {}, consumed: {})", producer_input_total, producer_input_consumed);
-    }
-
-    if (producer_input_processed > producer_input_consumed) {
-      throwt<std::logic_error>("producer overprocess (consumed: {}, processed: {})", producer_input_consumed, producer_input_processed);
-    }
-#endif
-
-    if (producer_input_processed > producer_input_total) {
-      throwt<std::logic_error>("producer overprocess (input total: {}, processed: {})", producer_input_total, producer_input_processed);
-    }
-
-    if (consumer_input_processed > producer_output) {
-      throwt<std::logic_error>("consumer overprocess (producer output: {}, consumer processed: {})", producer_output, consumer_input_processed);
-    }
-
-    if (producer_input_total != UNPREDICTABLE) {
-      if (producer_input_processed_all_) {
-        if (producer_input_processed != producer_input_total) {
-          throwt<std::logic_error>("producer input has been completed, but processed count ({}) does not match the total input ({})", producer_input_processed, producer_input_total);
-        }
-
-      } else {
-        if (producer_input_processed == producer_input_total) {
-          throwt<std::logic_error>("producer input was marked as NOT completed, but processed count already fulfills the total input ({})", producer_input_processed);
-        }
-      }
-    }
-  }
-
 private:
   // TODO: this can be omitted when the input range is sized_range because
   //       in such cahses, this condition will be equivalent to
