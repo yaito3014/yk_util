@@ -1,6 +1,4 @@
 #include "yk/exec/scheduler.hpp"
-
-#if YK_HAS_EXEC_SCHEDULER
 #include "yk/exec/atomic_queue.hpp"
 
 #include <boost/test/unit_test.hpp>
@@ -74,5 +72,3 @@ BOOST_AUTO_TEST_CASE(example)
 }
 
 BOOST_AUTO_TEST_SUITE_END()
-
-#endif // YK_HAS_EXEC_SCHEDULER

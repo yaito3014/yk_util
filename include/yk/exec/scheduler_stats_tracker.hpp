@@ -5,6 +5,7 @@
 #include "yk/exec/scheduler_stats.hpp"
 #include "yk/exec/scheduler_delta_stats.hpp"
 
+#include <version>
 #include <chrono>
 #include <functional>
 #include <concepts>
@@ -15,7 +16,12 @@ namespace yk::exec {
 class scheduler_stats_tracker
 {
 public:
+#if __cpp_lib_move_only_function >= 202110L
   using callback_type = std::move_only_function<void (const scheduler_stats_tracker&)>;
+#else
+  using callback_type = std::function<void (const scheduler_stats_tracker&)>;
+#endif
+
   using clock_type = scheduler_delta_stats::clock_type;
 
   scheduler_stats_tracker() noexcept = default;

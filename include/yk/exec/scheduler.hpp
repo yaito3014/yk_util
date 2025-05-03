@@ -1,17 +1,6 @@
 ﻿#ifndef YK_EXEC_SCHEDULER_HPP
 #define YK_EXEC_SCHEDULER_HPP
 
-#include <version>
-
-// yk::exec::scheduler requires std::stop_token support
-#if __cpp_lib_jthread >= 201911L
-#define YK_HAS_EXEC_SCHEDULER 1
-#else
-#define YK_HAS_EXEC_SCHEDULER 0
-#endif
-
-#if YK_HAS_EXEC_SCHEDULER
-
 #include "yk/exec/debug.hpp"
 #include "yk/exec/scheduler_traits.hpp"
 #include "yk/exec/scheduler_stats.hpp"
@@ -761,7 +750,5 @@ auto make_scheduler(Args&&... args)
 }
 
 }  // yk::exec
-
-#endif  // YK_HAS_EXEC_SCHEDULER
 
 #endif
