@@ -25,69 +25,40 @@ namespace yk::exec {
 
 namespace detail {
 
-template <class T>
-struct atomic_queue_slot_spec;
-
-template <class T> requires (alignof(T) < yk::hardware_destructive_interference_size)
-struct atomic_queue_slot_spec<T>
-{
-  template <std::size_t sizeof_slot, std::size_t sizeof_turn, std::size_t offsetof_storage>
-  static consteval void validate()
-  {
-    constexpr std::size_t storage_ofs = std::max(alignof(T), sizeof_turn);
-    static_assert(offsetof_storage == storage_ofs);
-
-    constexpr std::size_t overlapped = yk::hardware_destructive_interference_size - storage_ofs;
-    static_assert(
-      sizeof_slot ==
-      yk::hardware_destructive_interference_size
-        * (1 + (sizeof(T) - overlapped + yk::hardware_destructive_interference_size - 1) / yk::hardware_destructive_interference_size)
-    );
-  }
-};
-
-template <class T> requires (alignof(T) == yk::hardware_destructive_interference_size)
-struct atomic_queue_slot_spec<T>
-{
-  template <std::size_t sizeof_slot, std::size_t sizeof_turn, std::size_t offsetof_storage>
-  static consteval void validate()
-  {
-    static_assert(offsetof_storage == yk::hardware_destructive_interference_size);
-
-    static_assert(
-      sizeof_slot ==
-      yk::hardware_destructive_interference_size
-        * (1 + (sizeof(T) + yk::hardware_destructive_interference_size - 1) / yk::hardware_destructive_interference_size)
-    );
-  }
-};
-
-template <class T> requires (alignof(T) > yk::hardware_destructive_interference_size)
-struct atomic_queue_slot_spec<T>
-{
-  template <std::size_t sizeof_slot, std::size_t sizeof_turn, std::size_t offsetof_storage>
-  static consteval void validate()
-  {
-    static_assert(offsetof_storage == alignof(T));
-
-    static_assert(
-      sizeof_slot ==
-      alignof(T) * (1 + (sizeof(T) + alignof(T) - 1) / alignof(T))
-    );
-  }
-};
-
 template <class T, class Alloc>
 struct atomic_queue_slot
 {
   explicit atomic_queue_slot(const Alloc& allocator = {}) noexcept
     : allocator_(allocator)
   {
-    atomic_queue_slot_spec<T>::template validate<
-      sizeof(atomic_queue_slot),
-      sizeof(turn),
-      offsetof(atomic_queue_slot, storage)
-    >();
+    if constexpr (alignof(T) < yk::hardware_destructive_interference_size) {
+      constexpr std::size_t storage_ofs = std::max(alignof(T), sizeof(turn));
+      static_assert(offsetof(atomic_queue_slot, storage) == storage_ofs);
+
+      constexpr std::size_t overlapped = yk::hardware_destructive_interference_size - storage_ofs;
+      static_assert(
+        sizeof(atomic_queue_slot) ==
+        yk::hardware_destructive_interference_size
+          * (1 + (sizeof(T) - overlapped + yk::hardware_destructive_interference_size - 1) / yk::hardware_destructive_interference_size)
+      );
+
+    } else if constexpr (alignof(T) == yk::hardware_destructive_interference_size) {
+      static_assert(offsetof(atomic_queue_slot, storage) == yk::hardware_destructive_interference_size);
+
+      static_assert(
+        sizeof(atomic_queue_slot) ==
+        yk::hardware_destructive_interference_size
+          * (1 + (sizeof(T) + yk::hardware_destructive_interference_size - 1) / yk::hardware_destructive_interference_size)
+      );
+
+    } else {
+      static_assert(offsetof(atomic_queue_slot, storage) == alignof(T));
+
+      static_assert(
+        sizeof(atomic_queue_slot) ==
+        alignof(T) * (1 + (sizeof(T) + alignof(T) - 1) / alignof(T))
+      );
+    }
   }
 
   ~atomic_queue_slot() noexcept(std::is_nothrow_destructible_v<T>)
