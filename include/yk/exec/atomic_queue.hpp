@@ -209,7 +209,7 @@ public:
 
     for (size_type i = 0; i < N; ++i) {
       std::allocator_traits<slot_allocator_type>::construct(
-        slot_allocator_, /*std::launder(*/ reinterpret_cast<T*>(&slots_[sizeof(slot_type) * i]) /*)*/
+        slot_allocator_, /*std::launder(*/ reinterpret_cast<slot_type*>(&slots_[sizeof(slot_type) * i]) /*)*/
       );
     }
   }
@@ -226,7 +226,7 @@ public:
 
     for (size_type i = 0; i < N; ++i) {
       std::allocator_traits<slot_allocator_type>::construct(
-        slot_allocator_, /*std::launder(*/ reinterpret_cast<T*>(&slots_[sizeof(slot_type) * i]) /*)*/
+        slot_allocator_, /*std::launder(*/ reinterpret_cast<slot_type*>(&slots_[sizeof(slot_type) * i]) /*)*/
       );
     }
   }
