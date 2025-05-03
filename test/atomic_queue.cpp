@@ -550,7 +550,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(blocking, Alloc, allocators_t)
 BOOST_AUTO_TEST_SUITE_END() // dynamic_atomic_queue
 
 
-BOOST_AUTO_TEST_SUITE(static_atomic_queue, *boost::unit_test::disabled())
+BOOST_AUTO_TEST_SUITE(static_atomic_queue)
 
 BOOST_AUTO_TEST_CASE_TEMPLATE(traits, Alloc, allocators_t)
 {
