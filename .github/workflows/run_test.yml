@@ -72,11 +72,8 @@ jobs:
       - name: Initialize Ubuntu
         if: matrix.os.name == 'ubuntu'
         run: |
-          `sudo tee /etc/dpkg/dpkg.cfg.d/01_nodoc > /dev/null << 'EOF'
-          path-exclude /usr/share/doc/*
-          path-exclude /usr/share/man/*
-          path-exclude /usr/share/info/*
-          EOF`
+          echo "set man-db/auto-update false" | debconf-communicate
+          dpkg-reconfigure man-db
 
       - name: Setup Clang
         if: matrix.compiler.name == 'Clang'
