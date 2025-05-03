@@ -669,21 +669,24 @@ using make_scheduler_t = scheduler<
 template <
   producer_kind ProducerKind, consumer_kind ConsumerKind,
   class QueueT,
-  class ProducerF_, class ConsumerF_, ProducerInputRange ProducerInputRangeT_
+  class ProducerF_, class ConsumerF_, ProducerInputRange ProducerInputRangeT_,
+  class... QueueArgs
 >
 [[nodiscard]]
 auto make_scheduler(
   const std::shared_ptr<yk::exec::worker_pool>& worker_pool,
   ProducerF_&& producer_func,
   ConsumerF_&& consumer_func,
-  ProducerInputRangeT_&& producer_inputs
+  ProducerInputRangeT_&& producer_inputs,
+  QueueArgs&&... queue_args
 )
 {
   return detail::make_scheduler_t<ProducerKind, ConsumerKind, ProducerInputRangeT_, QueueT, ProducerF_, ConsumerF_>{
     worker_pool,
     std::forward<ProducerF_>(producer_func),
     std::forward<ConsumerF_>(consumer_func),
-    std::forward<ProducerInputRangeT_>(producer_inputs)
+    std::forward<ProducerInputRangeT_>(producer_inputs),
+    std::forward<QueueArgs>(queue_args)...
   };
 }
 
@@ -691,18 +694,21 @@ template <
   producer_kind ProducerKind, consumer_kind ConsumerKind,
   ProducerInputRange ProducerInputRangeT, class QueueT,
   class TraitsT = scheduler_traits<ProducerKind, ConsumerKind, ProducerInputRangeT, QueueT>,
-  class ProducerF_, class ConsumerF_
+  class ProducerF_, class ConsumerF_,
+  class... QueueArgs
 >
 [[nodiscard]]
 auto make_scheduler(
   const std::shared_ptr<yk::exec::worker_pool>& worker_pool,
   ProducerF_&& producer_func,
-  ConsumerF_&& consumer_func
+  ConsumerF_&& consumer_func,
+  QueueArgs&&... queue_args
 ) {
   return detail::make_scheduler_t<ProducerKind, ConsumerKind, ProducerInputRangeT, QueueT, ProducerF_, ConsumerF_, TraitsT>{
     worker_pool,
     std::forward<ProducerF_>(producer_func),
-    std::forward<ConsumerF_>(consumer_func)
+    std::forward<ConsumerF_>(consumer_func),
+    std::forward<QueueArgs>(queue_args)...
   };
 }
 
@@ -717,18 +723,18 @@ template <
 >
 struct make_scheduler_with_traits_impl<scheduler_traits<ProducerKind, ConsumerKind, ProducerInputRangeT, QueueT>>
 {
-  template <class ProducerF_, class ConsumerF_, class... Args>
+  template <class ProducerF_, class ConsumerF_, class... QueueArgs>
   static auto apply(
       const std::shared_ptr<yk::exec::worker_pool>& worker_pool,
       ProducerF_&& producer_func,
       ConsumerF_&& consumer_func,
-      Args&&... args
+      QueueArgs&&... queue_args
   ) {
     return make_scheduler_t<ProducerKind, ConsumerKind, ProducerInputRangeT, QueueT, ProducerF_, ConsumerF_, scheduler_traits<ProducerKind, ConsumerKind, ProducerInputRangeT, QueueT>>{
       worker_pool,
       std::forward<ProducerF_>(producer_func),
       std::forward<ConsumerF_>(consumer_func),
-      std::forward<Args>(args)...
+      std::forward<QueueArgs>(queue_args)...
     };
   }
 };
