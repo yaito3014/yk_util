@@ -11,8 +11,12 @@ namespace yk::exec {
 namespace detail {
 
 template <class BoostLockfreeT>
-struct boost_lockfree_common_traits
+struct boost_lockfree_common_traits;
+
+template <template <class T, class... Options> class BoostLockfreeT, class T, class... Options>
+struct boost_lockfree_common_traits<BoostLockfreeT<T, Options...>>
 {
+  using value_type = T;
   static constexpr bool need_stop_token_for_cancel = true;
 };
 
@@ -23,7 +27,6 @@ template <template <class T, class... Options> class BoostLockfreeT, class T, cl
 struct boost_lockfree_common_access<BoostLockfreeT<T, Options...>>
 {
   using queue_type = BoostLockfreeT<T, Options...>;
-  using traits_type = queue_traits<queue_type>;
 
   template <class... Args>
   [[nodiscard]]

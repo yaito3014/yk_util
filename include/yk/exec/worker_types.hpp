@@ -27,13 +27,6 @@ enum struct consumer_kind : bool
   multi_pop,
 };
 
-// convenient access via `yk::exec::...`
-
-inline constexpr producer_kind single_push_producer = producer_kind::single_push;
-inline constexpr producer_kind multi_push_producer = producer_kind::multi_push;
-inline constexpr consumer_kind single_pop_consumer = consumer_kind::single_pop;
-inline constexpr consumer_kind multi_pop_consumer = consumer_kind::multi_pop;
-
 template <class R>
 concept ProducerInputRange = std::ranges::forward_range<R>;
 

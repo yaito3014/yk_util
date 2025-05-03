@@ -179,7 +179,7 @@ private:
 
 public:
   using queue_type = QueueT;
-  using value_type = typename QueueT::value_type;
+  using value_type = typename queue_traits<QueueT>::value_type;
   using traits_type = typename base_type::traits_type;
 
   using access = queue_access<QueueT>;

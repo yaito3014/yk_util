@@ -54,9 +54,24 @@ static_assert(InplaceVectorIsAllocatorAware<int, 1, std::allocator<int>> == YK_I
 
 
 #if YK_INPLACE_VECTOR_IS_ALLOCATOR_AWARE
-# include "sg14/aa_inplace_vector.h"
+#include "sg14/aa_inplace_vector.h"
+
+namespace yk {
+
+template <class T, std::size_t N, class Alloc = std::allocator<T>>
+using inplace_vector = ::sg14::inplace_vector<T, N, Alloc>;
+
+} // yk
+
 #else
-# include "sg14/inplace_vector.h"
+#include "sg14/inplace_vector.h"
+
+namespace yk {
+
+template <class T, std::size_t N>
+using inplace_vector = ::sg14::inplace_vector<T, N>;
+
+} // yk
 #endif
 
 #endif
