@@ -69,6 +69,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Initialize Ubuntu
+        if: matrix.os.name == 'ubuntu'
+        run: |
+          `sudo tee /etc/dpkg/dpkg.cfg.d/01_nodoc > /dev/null << 'EOF'
+          path-exclude /usr/share/doc/*
+          path-exclude /usr/share/man/*
+          path-exclude /usr/share/info/*
+          EOF`
+
       - name: Setup Clang
         if: matrix.compiler.name == 'Clang'
         run: |
@@ -78,11 +87,11 @@ jobs:
 
       - name: Setup GCC
         if: matrix.compiler.name == 'GCC'
-        run: sudo apt update && sudo apt install -y g++-${{ matrix.compiler.version }}
+        run: sudo apt-get update && sudo apt-get install -y g++-${{ matrix.compiler.version }}
 
       - name: Install Dependencies
         if: matrix.os.name == 'ubuntu'
-        run: sudo apt update && sudo apt install -y libtbb-dev
+        run: sudo apt-get update && sudo apt-get install -y libtbb-dev
 
       - name: Cache Boost
         uses: actions/cache@v4
