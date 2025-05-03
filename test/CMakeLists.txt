@@ -10,7 +10,7 @@ if(BUILD_TESTING)
     util.cpp
     main.cpp
   )
-  target_compile_features(yk_util_test PUBLIC cxx_std_20)
+  target_compile_features(yk_util_test PUBLIC cxx_std_23)
   set_target_properties(yk_util_test PROPERTIES CXX_EXTENSIONS OFF)
 
   set(YK_COMMON_FLAG
