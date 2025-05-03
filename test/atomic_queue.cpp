@@ -25,10 +25,10 @@ struct Empty {};
 using allocators_t = std::tuple<std::allocator<int>, yk::default_init_allocator<int>>;
 
 template <class T, class Alloc>
-using atomic_queue_t = yk::exec::atomic_queue<T, typename std::allocator_traits<Alloc>::rebind_alloc<T>>;
+using atomic_queue_t = yk::exec::atomic_queue<T, typename std::allocator_traits<Alloc>::template rebind_alloc<T>>;
 
 template <class T, std::size_t N, class Alloc>
-using static_atomic_queue_t = yk::exec::static_atomic_queue<T, N, typename std::allocator_traits<Alloc>::rebind_alloc<T>>;
+using static_atomic_queue_t = yk::exec::static_atomic_queue<T, N, typename std::allocator_traits<Alloc>::template rebind_alloc<T>>;
 
 } // anon
 
