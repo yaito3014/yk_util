@@ -116,9 +116,6 @@ struct atomic_queue_slot
     return static_cast<T&&>(*std::launder(reinterpret_cast<T*>(&storage)));
   }
 
-  // This MUST be placed at the end, see: https://developercommunity.visualstudio.com/t/msvc::no_unique_address-leads-to-ext/10898323
-  YK_NO_UNIQUE_ADDRESS Alloc allocator_;
-
 YK_FORCEALIGN_BEGIN
   alignas(yk::hardware_destructive_interference_size) std::atomic<std::size_t> turn = 0;
 
@@ -126,6 +123,9 @@ YK_FORCEALIGN_BEGIN
   // Our benchmark show this does not degrade the performance.
   alignas(T) std::byte storage[sizeof(T)];
 YK_FORCEALIGN_END
+
+  // This MUST be placed at the end, see: https://developercommunity.visualstudio.com/t/msvc::no_unique_address-leads-to-ext/10898323
+  YK_NO_UNIQUE_ADDRESS Alloc allocator_;
 };
 
 
