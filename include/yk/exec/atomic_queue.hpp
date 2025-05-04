@@ -90,7 +90,7 @@ struct atomic_queue_slot
 YK_FORCEALIGN_BEGIN
   alignas(yk::hardware_destructive_interference_size) std::atomic<std::size_t> turn = 0;
 
-  // Permit true sharing if alignas(T) is smaller than alignof(turn).
+  // Permit adjacent placement if alignas(T) is smaller than alignof(turn).
   // Our benchmark show this does not degrade the performance.
   alignas(T) std::byte storage[sizeof(T)];
 YK_FORCEALIGN_END
