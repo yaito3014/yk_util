@@ -2,6 +2,7 @@
 #define YK_VARIANT_VIEW_VARIANT_VIEW_HPP
 
 #include "yk/util/pack_indexing.hpp"
+#include "yk/lifetimebound.hpp"
 
 #include "yk/variant.hpp"
 #include "yk/variant/traits.hpp"
@@ -53,9 +54,9 @@ public:
   constexpr variant_view(const variant_view&) noexcept = default;
   constexpr variant_view(variant_view&&) noexcept = default;
 
-  explicit constexpr variant_view(Variant& variant) noexcept : base_(&variant) {}
+  explicit constexpr variant_view(Variant& variant YK_LIFETIMEBOUND) noexcept : base_(&variant) {}
 
-  explicit constexpr variant_view(variant_type&& variant) noexcept : base_(&variant) {}
+  explicit constexpr variant_view(variant_type&& variant YK_LIFETIMEBOUND) noexcept : base_(&variant) {}
 
   template <class V, class... Us>
     requires(std::is_const_v<Variant> || !std::is_const_v<V>)
@@ -72,21 +73,21 @@ public:
     return *this;
   }
 
-  [[nodiscard]] constexpr const variant_type& base() const noexcept {
+  [[nodiscard]] constexpr const variant_type& base() const noexcept YK_LIFETIMEBOUND {
     assert(base_ != nullptr);
     return *base_;
   }
-  [[nodiscard]] constexpr variant_type& base() const noexcept
+  [[nodiscard]] constexpr variant_type& base() const noexcept YK_LIFETIMEBOUND
     requires(!std::is_const_v<Variant>)
   {
     assert(base_ != nullptr);
     return *base_;
   }
 
-  [[nodiscard]] constexpr decltype(auto) operator*() const
+  [[nodiscard]] constexpr decltype(auto) operator*() const YK_LIFETIMEBOUND
     requires(sizeof...(Ts) == 1);
 
-  [[nodiscard]] constexpr auto operator->() const
+  [[nodiscard]] constexpr auto operator->() const YK_LIFETIMEBOUND
     requires(sizeof...(Ts) == 1);
 
   [[nodiscard]] explicit constexpr operator bool() const noexcept
@@ -147,7 +148,7 @@ private:
 };
 
 template <class... Ts, class Variant>
-[[nodiscard]] constexpr auto make_variant_view(Variant&& variant) noexcept {
+[[nodiscard]] constexpr auto make_variant_view(Variant&& variant YK_LIFETIMEBOUND) noexcept {
   return make_variant_view_result_t<std::remove_reference_t<Variant>, Ts...>{std::forward<Variant>(variant)};
 }
 
