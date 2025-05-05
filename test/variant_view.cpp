@@ -47,8 +47,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(Initialization, Variant, YK_VARIANT(int, double)) 
   }
   {
     static_assert(std::is_constructible_v<yk::variant_view<Variant, int, double>, Variant&&>);
-    auto view = yk::make_variant_view<int, double>(Variant{42});  // dangling view
-    static_assert(std::same_as<decltype(view), yk::variant_view<Variant, int, double>>);
+    static_assert(std::same_as<decltype(yk::make_variant_view<int, double>(Variant{42})), yk::variant_view<Variant, int, double>>);
   }
 
   // clang-format off
