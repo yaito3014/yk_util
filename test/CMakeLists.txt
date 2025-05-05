@@ -7,6 +7,7 @@ if(BUILD_TESTING)
     hash.cpp
     meta.cpp
     util.cpp
+    variant_view.cpp
     atomic_queue.cpp
     concurrency.cpp
     scheduler.cpp
