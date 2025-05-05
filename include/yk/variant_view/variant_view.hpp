@@ -32,7 +32,7 @@ struct compare_impl {
 
 }  // namespace detail
 
-class uninitialized_variant_view : std::logic_error {
+class uninitialized_variant_view : public std::logic_error {
 public:
   uninitialized_variant_view() : logic_error("accessing empty variant_view") {}
 };
