@@ -8,11 +8,13 @@
 
 #include "yk/variant_view/traits.hpp"
 
-#include <cassert>
 #include <compare>
-#include <cstddef>
+#include <stdexcept>
 #include <type_traits>
 #include <utility>
+
+#include <cassert>
+#include <cstddef>
 
 namespace yk {
 

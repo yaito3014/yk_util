@@ -7,10 +7,11 @@
 #include "yk/variant_view/traits.hpp"
 #include "yk/variant_view/variant_view.hpp"
 
-#include <cstddef>
 #include <type_traits>
 #include <utility>
 #include <variant>
+
+#include <cstddef>
 
 namespace yk {
 

@@ -12,13 +12,14 @@
 #include "yk/variant_view/traits.hpp"
 #include "yk/variant_view/variant_view.hpp"
 
+#include <boost/mpl/contains.hpp>
+#include <boost/variant/variant.hpp>
+
 #include <compare>
-#include <cstddef>
 #include <type_traits>
 #include <utility>
 
-#include <boost/mpl/contains.hpp>
-#include <boost/variant/variant.hpp>
+#include <cstddef>
 
 namespace yk {
 
