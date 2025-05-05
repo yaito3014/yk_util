@@ -8,6 +8,7 @@ if(BUILD_TESTING)
     hash.cpp
     meta.cpp
     util.cpp
+    variant_view.cpp
     main.cpp
   )
   target_compile_features(yk_util_test PUBLIC cxx_std_23)
