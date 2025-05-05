@@ -113,6 +113,7 @@ jobs:
           git submodule update --depth 1 --init tools/cmake
           git submodule update --depth 1 --init libs/stacktrace
           git submodule update --depth 1 --init libs/variant
+          git submodule update --depth 1 --init libs/type_index
           git submodule update --depth 1 --init libs/test
           python3 tools/boostdep/depinst/depinst.py -X test -g "--depth 1" stacktrace
           python3 tools/boostdep/depinst/depinst.py -X test -g "--depth 1" test
