@@ -148,7 +148,7 @@ private:
 };
 
 template <class... Ts, class Variant>
-[[nodiscard]] constexpr auto make_variant_view(Variant&& variant) noexcept {
+[[nodiscard]] constexpr auto make_variant_view(Variant&& variant YK_LIFETIMEBOUND) noexcept {
   return make_variant_view_result_t<std::remove_reference_t<Variant>, Ts...>{std::forward<Variant>(variant)};
 }
 
