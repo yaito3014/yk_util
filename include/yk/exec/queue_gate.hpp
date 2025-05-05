@@ -46,7 +46,7 @@ namespace detail {
 template <class QueueT, bool need_stop_token>
 struct queue_gate_store_base_impl
 {
-  /*explicit*/ queue_gate_store_base_impl(QueueT* queue) noexcept
+  explicit queue_gate_store_base_impl(QueueT* queue) noexcept
     : queue_(queue)
   {
     BOOST_ASSERT(queue != nullptr);
@@ -59,7 +59,7 @@ protected:
 template <class QueueT>
 struct queue_gate_store_base_impl<QueueT, true>
 {
-  /*explicit*/ queue_gate_store_base_impl(QueueT* queue, std::stop_token stop_token) noexcept
+  explicit queue_gate_store_base_impl(QueueT* queue, std::stop_token stop_token) noexcept
     : queue_(queue)
     , stop_token_(std::move(stop_token))
   {

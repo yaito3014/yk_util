@@ -185,6 +185,7 @@ public:
     stats_ = {producer_inputs_};
   }
 
+  // thread-safe
   [[nodiscard]]
   auto get_producer_input_count() const
   {
@@ -243,6 +244,9 @@ public:
     stats_tracker_ = std::move(tracker);
   }
 
+  // not thread-safe
+  // intended to be used directly from user
+  // note that start() calls this function by default
   void launch_stats_tracker()
   {
     stats_tracker_thread_.request_stop();
@@ -291,6 +295,7 @@ public:
   }
 
   // not thread-safe
+  // must be called from the master thread
   void start()
   {
     {
@@ -303,7 +308,14 @@ public:
       }
     }
 
-    launch_stats_tracker();
+    if (stats_tracker_) {
+      if (stats_tracker_thread_.joinable()) { // running?
+        // keep the running thread
+
+      } else {
+        launch_stats_tracker();
+      }
+    }
 
     worker_pool_->set_rethrow_exceptions_on_exit(true);
 
@@ -320,7 +332,8 @@ public:
     });
   }
 
-  // thread-safe, but must be called from the main thread
+  // thread-safe
+  // must be called from the main thread
   void wait_for_all_tasks()
   {
     scheduler_stats prev_stats;
@@ -631,7 +644,7 @@ YK_FORCEALIGN_BEGIN
   alignas(yk::hardware_destructive_interference_size) mutable std::mutex producer_input_mtx_;
   ProducerInputRangeT producer_inputs_{};
   producer_input_iterator last_producer_input_it_ = std::ranges::end(producer_inputs_);
-  long long producer_chunk_size_ = 0;
+  long long producer_chunk_size_ = 1;
 
   // -----------------------------
 
