@@ -69,35 +69,35 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Initialize Ubuntu
+      - name: initialize ubuntu
         if: matrix.os.name == 'ubuntu'
         run: |
           sudo echo "set man-db/auto-update false" | sudo debconf-communicate
           sudo dpkg-reconfigure man-db
 
-      - name: Setup Clang
+      - name: setup clang
         if: matrix.compiler.name == 'Clang'
         run: |
           wget https://apt.llvm.org/llvm.sh
           chmod +x ./llvm.sh
           sudo ./llvm.sh ${{ matrix.compiler.version }} all
 
-      - name: Setup GCC
+      - name: setup gcc
         if: matrix.compiler.name == 'GCC'
         run: sudo apt-get update && sudo apt-get install -y g++-${{ matrix.compiler.version }}
 
-      - name: Install Dependencies
+      - name: install dependencies
         if: matrix.os.name == 'ubuntu'
         run: sudo apt-get update && sudo apt-get install -y libtbb-dev
 
-      - name: Cache Boost
+      - name: cache boost
         uses: actions/cache@v4
         id: cache-boost
         with:
           path: ${{ github.workspace }}/boost/dist
           key: boost-${{ matrix.boost_version }}-${{ matrix.os.name }}-${{ matrix.compiler.executable }}-${{ matrix.cpp_version }}
 
-      - name: Clone Boost
+      - name: clone boost
         if: steps.cache-boost.outputs.cache-hit != 'true'
         uses: actions/checkout@v4
         with:
@@ -105,7 +105,7 @@ jobs:
           ref: boost-${{ matrix.boost_version }}
           path: boost
 
-      - name: Configure Boost
+      - name: configure boost
         if: steps.cache-boost.outputs.cache-hit != 'true'
         working-directory: ${{ github.workspace }}/boost
         run: |
@@ -118,7 +118,7 @@ jobs:
           python3 tools/boostdep/depinst/depinst.py -X test -g "--depth 1" stacktrace
           python3 tools/boostdep/depinst/depinst.py -X test -g "--depth 1" test
 
-      - name: Build Boost
+      - name: build boost
         if: steps.cache-boost.outputs.cache-hit != 'true'
         env:
           cmake_options: >-
@@ -136,7 +136,7 @@ jobs:
           cmake --build build -j --config Release
           cmake --install build --prefix dist --config Release
 
-      - name: Configure
+      - name: configure
         run: >
           cmake -B ${{ github.workspace }}/build
           -DCMAKE_CXX_COMPILER=${{ matrix.compiler.executable }}
@@ -145,22 +145,22 @@ jobs:
           -DCMAKE_PREFIX_PATH=${{ github.workspace }}/boost/dist
           -S ${{ github.workspace }}
 
-      - name: Build (Ubuntu)
+      - name: build (ubuntu)
         if: matrix.os.name == 'ubuntu'
         run: |
           cmake --build ${{ github.workspace }}/build --verbose --config ${{ matrix.build_type }} --target yk_util_test 2>&1 | tee -a compilation.log
 
-      - name: Build (Windows)
+      - name: build (windows)
         if: matrix.os.name == 'windows'
         run: |
           cmake --build ${{ github.workspace }}/build/test --verbose --config ${{ matrix.build_type }} --target yk_util_test 2>&1 | tee -a compilation.log
 
-      - name: Test (Ubuntu)
+      - name: test (ubuntu)
         if: matrix.os.name == 'ubuntu'
         working-directory: ${{ github.workspace }}/build/test
         run: ./yk_util_test --report_level=short
 
-      - name: Test (Windows)
+      - name: test (windows)
         if: matrix.os.name == 'windows'
         working-directory: ${{ github.workspace }}/build/test/${{ matrix.build_type }}
         run: |
