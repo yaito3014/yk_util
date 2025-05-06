@@ -1,4 +1,4 @@
-[![CI](https://github.com/yaito3014/yk_util/actions/workflows/run_test.yml/badge.svg?branch=main)](https://github.com/yaito3014/yk_util/actions/workflows/run_test.yml
+[![CI](https://github.com/yaito3014/yk_util/actions/workflows/run_test.yml/badge.svg?branch=main)](https://github.com/yaito3014/yk_util/actions/workflows/run_test.yml)
 
 # yk_util
 
