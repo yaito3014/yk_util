@@ -75,6 +75,9 @@ jobs:
           sudo echo "set man-db/auto-update false" | sudo debconf-communicate
           sudo dpkg-reconfigure man-db
 
+      - name: Dummy
+        run: echo "Hi, I'm dummy step"
+
       - name: Setup Clang
         if: matrix.compiler.name == 'Clang'
         run: |
