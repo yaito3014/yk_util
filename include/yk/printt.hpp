@@ -17,10 +17,10 @@
 
 namespace yk {
 
-void printt(std::ostream& os, const std::exception& e)
+inline void printt(std::ostream& os, const std::exception& e)
 {
   std::println(os, "{}", e.what());
-  
+
   if (const boost::stacktrace::stacktrace* const stacktrace = boost::get_error_info<detail::traced_type>(e)) {
     std::println(os, "{}", boost::stacktrace::to_string(*stacktrace));
   }
@@ -34,7 +34,7 @@ void printt(std::ostream& os, const std::exception& e)
   }
 }
 
-void printt(const std::exception& e)
+inline void printt(const std::exception& e)
 {
   printt(std::cout, e);
 }
