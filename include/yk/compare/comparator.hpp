@@ -22,7 +22,9 @@ struct then_closure {
   template <class AnotherComp>
   friend constexpr auto operator|(AnotherComp another, then_closure closure) noexcept
   {
-    return [=]<class T, class U>(T&& x, U&& y) {
+    return [=]<class T, class U>(T&& x, U&& y)
+      requires compare::comparator<Comp, T, U> && compare::comparator<AnotherComp, T, U>
+    {
       const compare::ordering auto res = std::invoke(another, std::forward<T>(x), std::forward<U>(y));
       if (res == 0) {
         return std::invoke(closure.comp, std::forward<T>(x), std::forward<U>(y));
