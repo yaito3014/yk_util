@@ -2,6 +2,7 @@
 #define YK_COMPARE_COMPARATOR
 
 #include "yk/compare/concepts.hpp"
+#include "yk/util/specialization_of.hpp"
 #include "yk/no_unique_address.hpp"
 
 #include <compare>
@@ -60,6 +61,14 @@ struct extract {
   )
   {
     return std::compare_three_way{}(std::invoke(func, std::forward<T>(x)), std::invoke(func, std::forward<U>(y)));
+  }
+
+  // short-hand syntax
+  template <class G>
+    requires(!specialization_of<G, detail::then_closure>)
+  friend constexpr auto operator|(extract e, G g) noexcept
+  {
+    return e | then(extract<G>{g});
   }
 };
 
