@@ -235,6 +235,12 @@ BOOST_AUTO_TEST_CASE(FunctionTraits)
     static_assert(std::is_same_v<yk::function_traits<F>::parameters, yk::type_list<float, double>>);
     static_assert(yk::is_binary_function_v<F>);
   }
+
+  {
+    const auto generic_lambda = [](auto) {};
+    using F = decltype(generic_lambda);
+    static_assert(yk::function_traits<F>::kind == yk::function_kind::unknown);
+  }
 }
 
 BOOST_AUTO_TEST_SUITE_END()

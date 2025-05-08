@@ -11,14 +11,14 @@ enum class function_kind {
   function,
   member_function,
   function_object,
-  unkown,
+  unknown,
 };
 
 namespace detail {
 
 template <class F, class = void>
 struct function_traits {
-  static constexpr function_kind kind = function_kind::unkown;
+  static constexpr function_kind kind = function_kind::unknown;
 };
 
 template <class R, class... Args>
@@ -68,12 +68,12 @@ struct is_nary_function_impl;
 
 template <std::size_t N, class F, class... Args>
 struct is_nary_function_impl<
-    N, F, type_list<Args...>, std::enable_if_t<function_traits<F>::kind != function_kind::unkown>>
+    N, F, type_list<Args...>, std::enable_if_t<function_traits<F>::kind != function_kind::unknown>>
     : std::bool_constant<N == sizeof...(Args)> {};
 
 // fallback to true if function type is unknown
 template <std::size_t N, class F, class TypeList>
-struct is_nary_function_impl<N, F, TypeList, std::enable_if_t<function_traits<F>::kind == function_kind::unkown>>
+struct is_nary_function_impl<N, F, TypeList, std::enable_if_t<function_traits<F>::kind == function_kind::unknown>>
     : std::true_type {};
 
 }  // namespace detail
