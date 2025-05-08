@@ -47,70 +47,78 @@ template <class C, class R>
 struct invocable_traits<R C::*> {
   static constexpr invocable_kind kind = invocable_kind::data_member;
   using return_type = R;
-  using parameters = type_list<>;
+  using parameters = type_list<C&>;
 };
 
 template <class C, class R, class... Args>
 struct invocable_traits<R (C::*)(Args...)> {
   static constexpr invocable_kind kind = invocable_kind::member_function;
   using return_type = R;
-  using parameters = type_list<Args...>;
+  using parameters = type_list<C&, Args...>;
 };
 
 template <class C, class R, class... Args>
 struct invocable_traits<R (C::*)(Args...) noexcept> {
   static constexpr invocable_kind kind = invocable_kind::member_function;
   using return_type = R;
-  using parameters = type_list<Args...>;
+  using parameters = type_list<C&, Args...>;
 };
 
 template <class C, class R, class... Args>
 struct invocable_traits<R (C::*)(Args...) const> {
   static constexpr invocable_kind kind = invocable_kind::member_function;
   using return_type = R;
-  using parameters = type_list<Args...>;
+  using parameters = type_list<const C&, Args...>;
 };
 
 template <class C, class R, class... Args>
 struct invocable_traits<R (C::*)(Args...) const noexcept> {
   static constexpr invocable_kind kind = invocable_kind::member_function;
   using return_type = R;
-  using parameters = type_list<Args...>;
+  using parameters = type_list<const C&, Args...>;
 };
 
 template <class C, class R, class... Args>
 struct invocable_traits<R (C::*)(Args...) volatile> {
   static constexpr invocable_kind kind = invocable_kind::member_function;
   using return_type = R;
-  using parameters = type_list<Args...>;
+  using parameters = type_list<volatile C&, Args...>;
 };
 
 template <class C, class R, class... Args>
 struct invocable_traits<R (C::*)(Args...) volatile noexcept> {
   static constexpr invocable_kind kind = invocable_kind::member_function;
   using return_type = R;
-  using parameters = type_list<Args...>;
+  using parameters = type_list<volatile C&, Args...>;
 };
 
 template <class C, class R, class... Args>
 struct invocable_traits<R (C::*)(Args...) const volatile> {
   static constexpr invocable_kind kind = invocable_kind::member_function;
   using return_type = R;
-  using parameters = type_list<Args...>;
+  using parameters = type_list<const volatile C&, Args...>;
 };
 
 template <class C, class R, class... Args>
 struct invocable_traits<R (C::*)(Args...) const volatile noexcept> {
   static constexpr invocable_kind kind = invocable_kind::member_function;
   using return_type = R;
-  using parameters = type_list<Args...>;
+  using parameters = type_list<const volatile C&, Args...>;
+};
+
+template <class TypeList>
+struct drop_head {};
+
+template <class T, class... Args>
+struct drop_head<type_list<T, Args...>> {
+  using type = type_list<Args...>;
 };
 
 template <class F>
 struct invocable_traits<F, std::void_t<decltype(&F::operator())>> {
   static constexpr invocable_kind kind = invocable_kind::function_object;
   using return_type = typename invocable_traits<decltype(&F::operator())>::return_type;
-  using parameters = typename invocable_traits<decltype(&F::operator())>::parameters;
+  using parameters = typename drop_head<typename invocable_traits<decltype(&F::operator())>::parameters>::type;
 };
 
 template <std::size_t N, class F, class TypeList>
