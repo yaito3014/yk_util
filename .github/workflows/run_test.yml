@@ -148,11 +148,13 @@ jobs:
       - name: Build (Ubuntu)
         if: matrix.os.name == 'ubuntu'
         run: |
+          set -o pipefail
           cmake --build ${{ github.workspace }}/build --verbose --config ${{ matrix.build_type }} --target yk_util_test 2>&1 | tee -a compilation.log
 
       - name: Build (Windows)
         if: matrix.os.name == 'windows'
         run: |
+          set -o pipefail
           cmake --build ${{ github.workspace }}/build/test --verbose --config ${{ matrix.build_type }} --target yk_util_test 2>&1 | tee -a compilation.log
 
       - name: Test (Ubuntu)
