@@ -16,8 +16,11 @@ concept ordering = requires(T x) {
   { x > 0 } -> boolean_testable;
 };
 
+template <class Comp>
+concept comparator = std::destructible<Comp>;
+
 template <class Comp, class T, class U>
-concept comparator = std::invocable<Comp, T, U> && ordering<std::invoke_result_t<Comp, T, U>>;
+concept comparator_for = comparator<Comp> && std::invocable<Comp, T, U> && ordering<std::invoke_result_t<Comp, T, U>>;
 
 }  // namespace compare
 

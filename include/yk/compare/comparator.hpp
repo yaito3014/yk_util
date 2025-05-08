@@ -15,15 +15,15 @@ namespace comparators {
 
 namespace detail {
 
-template <class Comp>
+template <compare::comparator Comp>
 struct then_closure {
   YK_NO_UNIQUE_ADDRESS Comp comp;
 
-  template <class AnotherComp>
+  template <compare::comparator AnotherComp>
   friend constexpr auto operator|(AnotherComp another, then_closure closure) noexcept
   {
     return [=]<class T, class U>(T&& x, U&& y)
-      requires compare::comparator<Comp, T, U> && compare::comparator<AnotherComp, T, U>
+      requires compare::comparator_for<Comp, T, U> && compare::comparator_for<AnotherComp, T, U>
     {
       const compare::ordering auto res = std::invoke(another, std::forward<T>(x), std::forward<U>(y));
       if (res == 0) {
@@ -36,13 +36,13 @@ struct then_closure {
 };
 
 struct then_impl {
-  template <class Comp>
+  template <compare::comparator Comp>
   constexpr then_closure<Comp> operator()(Comp comp) const noexcept
   {
     return {comp};
   }
 
-  template <class Comp1, class Comp2>
+  template <compare::comparator Comp1, compare::comparator Comp2>
   constexpr auto operator()(Comp1 comp1, Comp2 comp2) const noexcept
   {
     return comp1 | then_closure<Comp2>{comp2};
