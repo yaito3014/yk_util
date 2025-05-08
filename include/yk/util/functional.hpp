@@ -121,22 +121,22 @@ struct invocable_traits<F, std::void_t<decltype(&F::operator())>> {
   using parameters = typename drop_head<typename invocable_traits<decltype(&F::operator())>::parameters>::type;
 };
 
-template <std::size_t N, class F, class TypeList>
+template <class F, std::size_t N, class TypeList>
 struct is_n_ary_function_impl;
 
-template <std::size_t N, class F, class... Args>
-struct is_n_ary_function_impl<N, F, type_list<Args...>> : std::bool_constant<N == sizeof...(Args)> {};
+template <class F, std::size_t N, class... Args>
+struct is_n_ary_function_impl<F, N, type_list<Args...>> : std::bool_constant<N == sizeof...(Args)> {};
 
-template <std::size_t N, class F, class = void>
+template <class F, std::size_t N, class = void>
 struct is_n_ary_function;
 
-template <std::size_t N, class F>
-struct is_n_ary_function<N, F, std::enable_if_t<invocable_traits<F>::kind == invocable_kind::generic_function_object>>
+template <class F, std::size_t N>
+struct is_n_ary_function<F, N, std::enable_if_t<invocable_traits<F>::kind == invocable_kind::generic_function_object>>
     : std::true_type {};
 
-template <std::size_t N, class F>
-struct is_n_ary_function<N, F, std::enable_if_t<invocable_traits<F>::kind != invocable_kind::generic_function_object>>
-    : is_n_ary_function_impl<N, F, typename invocable_traits<F>::parameters> {};
+template <class F, std::size_t N>
+struct is_n_ary_function<F, N, std::enable_if_t<invocable_traits<F>::kind != invocable_kind::generic_function_object>>
+    : is_n_ary_function_impl<F, N, typename invocable_traits<F>::parameters> {};
 
 }  // namespace detail
 
@@ -146,23 +146,32 @@ struct invocable_traits : detail::invocable_traits<F> {};
 template <class F>
 struct invocable_traits<const F> : invocable_traits<F> {};
 
-template <std::size_t N, class F>
-struct is_n_ary_function : detail::is_n_ary_function<N, F> {};
+template <class F, std::size_t N>
+struct is_n_ary_function : detail::is_n_ary_function<F, N> {};
 
 template <class F>
-using is_unary_function = is_n_ary_function<1, F>;
+using is_unary_function = is_n_ary_function<F, 1>;
 
 template <class F>
-using is_binary_function = is_n_ary_function<2, F>;
+using is_binary_function = is_n_ary_function<F, 2>;
 
-template <std::size_t N, class F>
-inline constexpr bool is_n_ary_function_v = is_n_ary_function<N, F>::value;
+template <class F, std::size_t N>
+inline constexpr bool is_n_ary_function_v = is_n_ary_function<F, N>::value;
 
 template <class F>
 inline constexpr bool is_unary_function_v = is_unary_function<F>::value;
 
 template <class F>
 inline constexpr bool is_binary_function_v = is_binary_function<F>::value;
+
+template <class F, std::size_t N>
+concept n_ary_function = is_n_ary_function_v<F, N>;
+
+template <class F>
+concept unary_function = n_ary_function<F, 1>;
+
+template <class F>
+concept binary_function = n_ary_function<F, 2>;
 
 }  // namespace yk
 
