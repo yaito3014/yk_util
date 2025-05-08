@@ -53,11 +53,12 @@ struct then_impl {
 
 inline constexpr detail::then_impl then{};
 
-template <class F>
+template <compare::projection F>
 struct extract {
   YK_NO_UNIQUE_ADDRESS F func;
 
   template <class T, class U>
+    requires compare::projection_for<F, T> && compare::projection_for<F, U>
   constexpr auto operator()(T&& x, U&& y) const noexcept(
       noexcept(std::compare_three_way{}(std::invoke(func, std::forward<T>(x)), std::invoke(func, std::forward<U>(y))))
   )
@@ -66,7 +67,7 @@ struct extract {
   }
 
   // short-hand syntax
-  template <class G>
+  template <compare::projection G>
     requires(!specialization_of<G, detail::then_closure>)
   friend constexpr auto operator|(extract e, G g) noexcept
   {

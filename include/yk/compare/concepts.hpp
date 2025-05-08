@@ -16,6 +16,12 @@ concept ordering = requires(T x) {
   { x > 0 } -> boolean_testable;
 };
 
+template <class Proj>
+concept projection = std::destructible<Proj>;
+
+template <class Proj, class T>
+concept projection_for = std::invocable<Proj, T>;
+
 template <class Comp>
 concept comparator = std::destructible<Comp>;
 
