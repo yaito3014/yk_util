@@ -1,5 +1,5 @@
-#ifndef YK_PERFECT_FORWARD_AS_TUPLE_HPP
-#define YK_PERFECT_FORWARD_AS_TUPLE_HPP
+#ifndef YK_UTIL_PERFECT_FORWARD_AS_TUPLE_HPP
+#define YK_UTIL_PERFECT_FORWARD_AS_TUPLE_HPP
 
 #include <tuple>
 #include <utility>
@@ -16,4 +16,4 @@ constexpr std::tuple<Args...> perfect_forward_as_tuple(Args&&... args)
 
 }  // namespace yk
 
-#endif  // YK_PERFECT_FORWARD_AS_TUPLE_HPP
+#endif  // YK_UTIL_PERFECT_FORWARD_AS_TUPLE_HPP
