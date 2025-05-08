@@ -5,6 +5,7 @@
 #include "yk/no_unique_address.hpp"
 
 #include <compare>
+#include <functional>
 
 namespace yk {
 
@@ -50,7 +51,7 @@ struct then_with_closure {
   friend constexpr std::invoke_result_t<F> operator|(Lhs lhs, then_with_closure rhs) noexcept
   {
     if (lhs == 0) {
-      return rhs.func();
+      return std::invoke(rhs.func);
     } else {
       return lhs;
     }
