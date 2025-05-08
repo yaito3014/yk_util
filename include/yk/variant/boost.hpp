@@ -48,7 +48,7 @@ private:
 public:
   template <class Visitor, class Variant>
   static constexpr decltype(auto) apply_visit(Visitor&& vis, Variant&& variant) {
-    []<class... Us>(detail::type_list<Us...>) {
+    []<class... Us>(type_list<Us...>) {
       static_assert(core::is_all_same_v<std::invoke_result_t<Visitor, forward_like_t<Variant, Us>>...>,
                     "visitor must return same type for all possible parameters");
     }(detail::boost_variant_types_t<std::remove_cvref_t<Variant>>{});
@@ -70,7 +70,7 @@ public:
 
   template <std::size_t I, class BoostVariant>
   static constexpr decltype(auto) apply_get(BoostVariant&& variant) try {
-    return [&]<class... Vs>(detail::type_list<Vs...>) -> decltype(auto) {
+    return [&]<class... Vs>(type_list<Vs...>) -> decltype(auto) {
       return boost::get<pack_indexing_t<I, Vs...>>(std::forward<BoostVariant>(variant));
     }(detail::boost_variant_types_t<std::remove_cvref_t<BoostVariant>>{});
   } catch (const boost::bad_get&) {
@@ -84,7 +84,7 @@ public:
 
   template <std::size_t I, class BoostVariant>
   static constexpr auto apply_get(BoostVariant* variant) noexcept {
-    return [&]<class... Vs>(detail::type_list<Vs...>) {
+    return [&]<class... Vs>(type_list<Vs...>) {
       return boost::get<pack_indexing_t<I, Vs...>>(variant);
     }(detail::boost_variant_types_t<std::remove_cvref_t<BoostVariant>>{});
   }
@@ -94,7 +94,7 @@ public:
 
 template <class T, class... Ts>
 [[nodiscard]] /* constexpr */ bool holds_alternative(const boost::variant<Ts...>& v) noexcept {
-  return [&]<class... Us>(detail::type_list<Us...>) {
+  return [&]<class... Us>(type_list<Us...>) {
     static_assert(core::exactly_once_v<T, Us...>);
     return core::find_type_index_v<T, Us...> == v.which();
   }(detail::boost_variant_types_t<boost::variant<Ts...>>{});
