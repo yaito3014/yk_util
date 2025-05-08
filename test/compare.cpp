@@ -9,53 +9,55 @@ BOOST_AUTO_TEST_SUITE(Compare)
 
 BOOST_AUTO_TEST_CASE(compare_then)
 {
-  BOOST_TEST((yk::compare::then(1 <=> 2, 3 <=> 4) < 0));
-  BOOST_TEST((yk::compare::then(2 <=> 1, 3 <=> 4) > 0));
-  BOOST_TEST((yk::compare::then(1 <=> 1, 3 <=> 4) < 0));
+  using namespace yk::compare;
 
-  BOOST_TEST((yk::compare::then(1 <=> 2, 4 <=> 3) < 0));
-  BOOST_TEST((yk::compare::then(2 <=> 1, 4 <=> 3) > 0));
-  BOOST_TEST((yk::compare::then(1 <=> 1, 4 <=> 3) > 0));
+  BOOST_TEST((then(1 <=> 2, 3 <=> 4) < 0));
+  BOOST_TEST((then(2 <=> 1, 3 <=> 4) > 0));
+  BOOST_TEST((then(1 <=> 1, 3 <=> 4) < 0));
 
-  BOOST_TEST((yk::compare::then(1 <=> 2, 3 <=> 3) < 0));
-  BOOST_TEST((yk::compare::then(2 <=> 1, 3 <=> 3) > 0));
-  BOOST_TEST((yk::compare::then(1 <=> 1, 3 <=> 3) == 0));
+  BOOST_TEST((then(1 <=> 2, 4 <=> 3) < 0));
+  BOOST_TEST((then(2 <=> 1, 4 <=> 3) > 0));
+  BOOST_TEST((then(1 <=> 1, 4 <=> 3) > 0));
 
-  BOOST_TEST((((1 <=> 2) | yk::compare::then(3 <=> 4)) < 0));
-  BOOST_TEST((((2 <=> 1) | yk::compare::then(3 <=> 4)) > 0));
-  BOOST_TEST((((1 <=> 1) | yk::compare::then(3 <=> 4)) < 0));
+  BOOST_TEST((then(1 <=> 2, 3 <=> 3) < 0));
+  BOOST_TEST((then(2 <=> 1, 3 <=> 3) > 0));
+  BOOST_TEST((then(1 <=> 1, 3 <=> 3) == 0));
 
-  BOOST_TEST((((1 <=> 2) | yk::compare::then(4 <=> 3)) < 0));
-  BOOST_TEST((((2 <=> 1) | yk::compare::then(4 <=> 3)) > 0));
-  BOOST_TEST((((1 <=> 1) | yk::compare::then(4 <=> 3)) > 0));
+  BOOST_TEST((((1 <=> 2) | then(3 <=> 4)) < 0));
+  BOOST_TEST((((2 <=> 1) | then(3 <=> 4)) > 0));
+  BOOST_TEST((((1 <=> 1) | then(3 <=> 4)) < 0));
 
-  BOOST_TEST((((1 <=> 2) | yk::compare::then(3 <=> 3)) < 0));
-  BOOST_TEST((((2 <=> 1) | yk::compare::then(3 <=> 3)) > 0));
-  BOOST_TEST((((1 <=> 1) | yk::compare::then(3 <=> 3)) == 0));
+  BOOST_TEST((((1 <=> 2) | then(4 <=> 3)) < 0));
+  BOOST_TEST((((2 <=> 1) | then(4 <=> 3)) > 0));
+  BOOST_TEST((((1 <=> 1) | then(4 <=> 3)) > 0));
 
-  BOOST_TEST((yk::compare::then_with(1 <=> 2, [] { return 3 <=> 4; }) < 0));
-  BOOST_TEST((yk::compare::then_with(2 <=> 1, [] { return 3 <=> 4; }) > 0));
-  BOOST_TEST((yk::compare::then_with(1 <=> 1, [] { return 3 <=> 4; }) < 0));
+  BOOST_TEST((((1 <=> 2) | then(3 <=> 3)) < 0));
+  BOOST_TEST((((2 <=> 1) | then(3 <=> 3)) > 0));
+  BOOST_TEST((((1 <=> 1) | then(3 <=> 3)) == 0));
 
-  BOOST_TEST((yk::compare::then_with(1 <=> 2, [] { return 4 <=> 3; }) < 0));
-  BOOST_TEST((yk::compare::then_with(2 <=> 1, [] { return 4 <=> 3; }) > 0));
-  BOOST_TEST((yk::compare::then_with(1 <=> 1, [] { return 4 <=> 3; }) > 0));
+  BOOST_TEST((then_with(1 <=> 2, [] { return 3 <=> 4; }) < 0));
+  BOOST_TEST((then_with(2 <=> 1, [] { return 3 <=> 4; }) > 0));
+  BOOST_TEST((then_with(1 <=> 1, [] { return 3 <=> 4; }) < 0));
 
-  BOOST_TEST((yk::compare::then_with(1 <=> 2, [] { return 3 <=> 3; }) < 0));
-  BOOST_TEST((yk::compare::then_with(2 <=> 1, [] { return 3 <=> 3; }) > 0));
-  BOOST_TEST((yk::compare::then_with(1 <=> 1, [] { return 3 <=> 3; }) == 0));
+  BOOST_TEST((then_with(1 <=> 2, [] { return 4 <=> 3; }) < 0));
+  BOOST_TEST((then_with(2 <=> 1, [] { return 4 <=> 3; }) > 0));
+  BOOST_TEST((then_with(1 <=> 1, [] { return 4 <=> 3; }) > 0));
 
-  BOOST_TEST((((1 <=> 2) | yk::compare::then_with([] { return 3 <=> 4; })) < 0));
-  BOOST_TEST((((2 <=> 1) | yk::compare::then_with([] { return 3 <=> 4; })) > 0));
-  BOOST_TEST((((1 <=> 1) | yk::compare::then_with([] { return 3 <=> 4; })) < 0));
+  BOOST_TEST((then_with(1 <=> 2, [] { return 3 <=> 3; }) < 0));
+  BOOST_TEST((then_with(2 <=> 1, [] { return 3 <=> 3; }) > 0));
+  BOOST_TEST((then_with(1 <=> 1, [] { return 3 <=> 3; }) == 0));
 
-  BOOST_TEST((((1 <=> 2) | yk::compare::then_with([] { return 4 <=> 3; })) < 0));
-  BOOST_TEST((((2 <=> 1) | yk::compare::then_with([] { return 4 <=> 3; })) > 0));
-  BOOST_TEST((((1 <=> 1) | yk::compare::then_with([] { return 4 <=> 3; })) > 0));
+  BOOST_TEST((((1 <=> 2) | then_with([] { return 3 <=> 4; })) < 0));
+  BOOST_TEST((((2 <=> 1) | then_with([] { return 3 <=> 4; })) > 0));
+  BOOST_TEST((((1 <=> 1) | then_with([] { return 3 <=> 4; })) < 0));
 
-  BOOST_TEST((((1 <=> 2) | yk::compare::then_with([] { return 3 <=> 3; })) < 0));
-  BOOST_TEST((((2 <=> 1) | yk::compare::then_with([] { return 3 <=> 3; })) > 0));
-  BOOST_TEST((((1 <=> 1) | yk::compare::then_with([] { return 3 <=> 3; })) == 0));
+  BOOST_TEST((((1 <=> 2) | then_with([] { return 4 <=> 3; })) < 0));
+  BOOST_TEST((((2 <=> 1) | then_with([] { return 4 <=> 3; })) > 0));
+  BOOST_TEST((((1 <=> 1) | then_with([] { return 4 <=> 3; })) > 0));
+
+  BOOST_TEST((((1 <=> 2) | then_with([] { return 3 <=> 3; })) < 0));
+  BOOST_TEST((((2 <=> 1) | then_with([] { return 3 <=> 3; })) > 0));
+  BOOST_TEST((((1 <=> 1) | then_with([] { return 3 <=> 3; })) == 0));
 }
 
 BOOST_AUTO_TEST_CASE(comparator_then)
