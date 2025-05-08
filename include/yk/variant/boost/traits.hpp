@@ -1,7 +1,7 @@
 #ifndef YK_VARIANT_BOOST_TRAITS_HPP
 #define YK_VARIANT_BOOST_TRAITS_HPP
 
-#include "yk/detail/type_list.hpp"
+#include "yk/util/type_list.hpp"
 
 #include <boost/mpl/fold.hpp>
 #include <boost/mpl/placeholders.hpp>
