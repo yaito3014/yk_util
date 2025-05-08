@@ -8,7 +8,7 @@ namespace yk {
 namespace compare {
 
 template <class T>
-concept comparison = requires(T x) {
+concept ordering = requires(T x) {
   { x < 0 } -> std::same_as<bool>;
   { x == 0 } -> std::same_as<bool>;
   { x > 0 } -> std::same_as<bool>;
