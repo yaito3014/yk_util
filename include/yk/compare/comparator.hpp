@@ -1,22 +1,15 @@
 #ifndef YK_COMPARE_COMPARATOR
 #define YK_COMPARE_COMPARATOR
 
+#include "yk/compare/concepts.hpp"
+
 #include <compare>
 
 namespace yk {
 
 namespace compare {
 
-template <class F = std::compare_three_way>
-struct comparator {
-  F func;
 
-  template <class T, class U>
-  constexpr auto compare(const T6 x, const U& y) const
-  {
-    return func(x, y);
-  }
-};
 
 }  // namespace compare
 
