@@ -63,18 +63,21 @@ struct function_traits<F, std::void_t<decltype(&F::operator())>> {
   using parameters = typename function_traits<decltype(&F::operator())>::parameters;
 };
 
-template <std::size_t N, class F, class TypeList = typename function_traits<F>::parameters, class = void>
+template <std::size_t N, class F, class TypeList>
 struct is_nary_function_impl;
 
 template <std::size_t N, class F, class... Args>
-struct is_nary_function_impl<
-    N, F, type_list<Args...>, std::enable_if_t<function_traits<F>::kind != function_kind::unknown>>
-    : std::bool_constant<N == sizeof...(Args)> {};
+struct is_nary_function_impl<N, F, type_list<Args...>> : std::bool_constant<N == sizeof...(Args)> {};
 
-// fallback to true if function type is unknown
-template <std::size_t N, class F, class TypeList>
-struct is_nary_function_impl<N, F, TypeList, std::enable_if_t<function_traits<F>::kind == function_kind::unknown>>
-    : std::true_type {};
+template <std::size_t N, class F, class = void>
+struct is_nary_function;
+
+template <std::size_t N, class F>
+struct is_nary_function<N, F, std::enable_if_t<function_traits<F>::kind == function_kind::unknown>> : std::true_type {};
+
+template <std::size_t N, class F>
+struct is_nary_function<N, F, std::enable_if_t<function_traits<F>::kind != function_kind::unknown>>
+    : is_nary_function_impl<N, F, typename function_traits<F>::parameters> {};
 
 }  // namespace detail
 
@@ -85,7 +88,7 @@ template <class F>
 struct function_traits<const F> : function_traits<F> {};
 
 template <std::size_t N, class F>
-struct is_nary_function : detail::is_nary_function_impl<N, F> {};
+struct is_nary_function : detail::is_nary_function<N, F> {};
 
 template <class F>
 using is_unary_function = is_nary_function<1, F>;
