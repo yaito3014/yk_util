@@ -2,6 +2,7 @@
 #define YK_BOOLEAN_TESTABLE_HPP
 
 #include <concepts>
+#include <utility>
 
 namespace yk {
 
