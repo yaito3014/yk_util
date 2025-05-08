@@ -63,6 +63,19 @@ struct function_traits<F, std::void_t<decltype(&F::operator())>> {
   using parameters = typename function_traits<decltype(&F::operator())>::parameters;
 };
 
+template <std::size_t N, class F, class TypeList = typename function_traits<F>::parameters, class = void>
+struct is_nary_function_impl;
+
+template <std::size_t N, class F, class... Args>
+struct is_nary_function_impl<
+    N, F, type_list<Args...>, std::enable_if_t<function_traits<F>::kind != function_kind::unkown>>
+    : std::bool_constant<N == sizeof...(Args)> {};
+
+// fallback to true if function type is unknown
+template <std::size_t N, class F, class TypeList>
+struct is_nary_function_impl<N, F, TypeList, std::enable_if_t<function_traits<F>::kind == function_kind::unkown>>
+    : std::true_type {};
+
 }  // namespace detail
 
 template <class F>
@@ -70,6 +83,24 @@ struct function_traits : detail::function_traits<F> {};
 
 template <class F>
 struct function_traits<const F> : function_traits<F> {};
+
+template <std::size_t N, class F>
+struct is_nary_function : detail::is_nary_function_impl<N, F> {};
+
+template <class F>
+using is_unary_function = is_nary_function<1, F>;
+
+template <class F>
+using is_binary_function = is_nary_function<2, F>;
+
+template <std::size_t N, class F>
+inline constexpr bool is_nary_function_v = is_nary_function<N, F>::value;
+
+template <class F>
+inline constexpr bool is_unary_function_v = is_unary_function<F>::value;
+
+template <class F>
+inline constexpr bool is_binary_function_v = is_binary_function<F>::value;
 
 }  // namespace yk
 

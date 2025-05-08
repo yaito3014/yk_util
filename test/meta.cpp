@@ -201,18 +201,21 @@ BOOST_AUTO_TEST_CASE(FunctionTraits)
     static_assert(yk::function_traits<F>::kind == yk::function_kind::function);
     static_assert(std::is_same_v<yk::function_traits<F>::return_type, int>);
     static_assert(std::is_same_v<yk::function_traits<F>::parameters, yk::type_list<float, double>>);
+    static_assert(yk::is_binary_function_v<F>);
   }
   {
     using F = int (*)(float, double);
     static_assert(yk::function_traits<F>::kind == yk::function_kind::function);
     static_assert(std::is_same_v<yk::function_traits<F>::return_type, int>);
     static_assert(std::is_same_v<yk::function_traits<F>::parameters, yk::type_list<float, double>>);
+    static_assert(yk::is_binary_function_v<F>);
   }
   {
     using F = int (&)(float, double);
     static_assert(yk::function_traits<F>::kind == yk::function_kind::function);
     static_assert(std::is_same_v<yk::function_traits<F>::return_type, int>);
     static_assert(std::is_same_v<yk::function_traits<F>::parameters, yk::type_list<float, double>>);
+    static_assert(yk::is_binary_function_v<F>);
   }
 
   {
@@ -221,14 +224,16 @@ BOOST_AUTO_TEST_CASE(FunctionTraits)
     static_assert(yk::function_traits<F>::kind == yk::function_kind::member_function);
     static_assert(std::is_same_v<yk::function_traits<F>::return_type, int>);
     static_assert(std::is_same_v<yk::function_traits<F>::parameters, yk::type_list<float, double>>);
+    static_assert(yk::is_binary_function_v<F>);
   }
 
   {
     const auto lambda = [](float, double) -> int { return 42; };
     using F = decltype(lambda);
-    static_assert(yk::function_traits<F>::kind == yk::function_kind::function);
+    static_assert(yk::function_traits<F>::kind == yk::function_kind::function_object);
     static_assert(std::is_same_v<yk::function_traits<F>::return_type, int>);
     static_assert(std::is_same_v<yk::function_traits<F>::parameters, yk::type_list<float, double>>);
+    static_assert(yk::is_binary_function_v<F>);
   }
 }
 
