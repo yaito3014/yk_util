@@ -1,0 +1,10 @@
+:library-name: yk_util
+:cpp: C{plus}{plus}
+
+= {library-name}
+yaito3014 <ykakeyama3014@gmail.com>; saki7
+:toc:
+
+== Overview
+
+{library-name} is a set of {cpp} utilities for {cpp}23 or above.
