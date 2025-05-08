@@ -5,6 +5,7 @@
 #include "yk/no_unique_address.hpp"
 
 #include <compare>
+#include <functional>
 #include <utility>
 
 namespace yk {
