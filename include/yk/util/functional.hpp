@@ -148,7 +148,7 @@ template <class F>
 using is_binary_function = is_n_ary_function<2, F>;
 
 template <std::size_t N, class F>
-inline constexpr bool is_nary_function_v = is_n_ary_function<N, F>::value;
+inline constexpr bool is_n_ary_function_v = is_n_ary_function<N, F>::value;
 
 template <class F>
 inline constexpr bool is_unary_function_v = is_unary_function<F>::value;
