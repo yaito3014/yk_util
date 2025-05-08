@@ -72,7 +72,7 @@ BOOST_AUTO_TEST_CASE(extract_and_comparator_then)
   {
     const auto comp = extract{&my_data::id} | then(extract{&my_data::name});
 
-    static_assert(yk::compare::comparator<decltype(comp), my_data, my_data>);
+    static_assert(yk::compare::comparator_for<decltype(comp), my_data, my_data>);
 
     BOOST_TEST((comp(my_data{1, "foo"}, my_data{2, "bar"}) < 0));
     BOOST_TEST((comp(my_data{2, "foo"}, my_data{1, "bar"}) > 0));
@@ -91,7 +91,7 @@ BOOST_AUTO_TEST_CASE(extract_and_comparator_then)
   {
     const auto comp = extract{&my_data::id} | &my_data::name;
 
-    static_assert(yk::compare::comparator<decltype(comp), my_data, my_data>);
+    static_assert(yk::compare::comparator_for<decltype(comp), my_data, my_data>);
 
     BOOST_TEST((comp(my_data{1, "foo"}, my_data{2, "bar"}) < 0));
     BOOST_TEST((comp(my_data{2, "foo"}, my_data{1, "bar"}) > 0));
