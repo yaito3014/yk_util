@@ -1,0 +1,12 @@
+{
+  "devDependencies": {
+    "antora": "^3.1.10",
+    "vite": "^6.3.5"
+  },
+  "scripts": {
+    "antora-build": "antora antora-playbook.yml",
+    "dev": "vite build/site",
+    "build": "vite build build/site",
+    "preview": "vite preview build/site"
+  }
+}
