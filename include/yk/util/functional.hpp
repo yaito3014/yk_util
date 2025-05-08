@@ -12,14 +12,14 @@ enum class invocable_kind {
   member_function,
   data_member,
   function_object,
-  unknown,
+  generic_function_object,
 };
 
 namespace detail {
 
 template <class F, class = void>
 struct invocable_traits {
-  static constexpr invocable_kind kind = invocable_kind::unknown;
+  static constexpr invocable_kind kind = invocable_kind::generic_function_object;
 };
 
 template <class R, class... Args>
@@ -123,11 +123,11 @@ template <std::size_t N, class F, class = void>
 struct is_n_ary_function;
 
 template <std::size_t N, class F>
-struct is_n_ary_function<N, F, std::enable_if_t<invocable_traits<F>::kind == invocable_kind::unknown>>
+struct is_n_ary_function<N, F, std::enable_if_t<invocable_traits<F>::kind == invocable_kind::generic_function_object>>
     : std::true_type {};
 
 template <std::size_t N, class F>
-struct is_n_ary_function<N, F, std::enable_if_t<invocable_traits<F>::kind != invocable_kind::unknown>>
+struct is_n_ary_function<N, F, std::enable_if_t<invocable_traits<F>::kind != invocable_kind::generic_function_object>>
     : is_n_ary_function_impl<N, F, typename invocable_traits<F>::parameters> {};
 
 }  // namespace detail

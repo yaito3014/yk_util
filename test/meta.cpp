@@ -439,7 +439,7 @@ BOOST_AUTO_TEST_CASE(FunctionTraits)
   {
     const auto generic_lambda = [](auto) {};
     using F = decltype(generic_lambda);
-    static_assert(yk::invocable_traits<F>::kind == yk::invocable_kind::unknown);
+    static_assert(yk::invocable_traits<F>::kind == yk::invocable_kind::generic_function_object);
     static_assert(yk::is_unary_function_v<F>);   // fallback
     static_assert(yk::is_binary_function_v<F>);  // fallback
   }
@@ -447,7 +447,7 @@ BOOST_AUTO_TEST_CASE(FunctionTraits)
   {
     const auto generic_lambda = [](auto, auto) {};
     using F = decltype(generic_lambda);
-    static_assert(yk::invocable_traits<F>::kind == yk::invocable_kind::unknown);
+    static_assert(yk::invocable_traits<F>::kind == yk::invocable_kind::generic_function_object);
     static_assert(yk::is_unary_function_v<F>);   // fallback
     static_assert(yk::is_binary_function_v<F>);  // fallback
   }
