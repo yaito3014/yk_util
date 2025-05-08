@@ -11,11 +11,11 @@ namespace compare {
 
 namespace detail {
 
-template <comparison T>
+template <ordering T>
 struct then_closure {
   T value;
 
-  template <comparison Lhs>
+  template <ordering Lhs>
     requires std::convertible_to<Lhs, T>
   friend constexpr T operator|(Lhs lhs, then_closure rhs) noexcept
   {
@@ -28,13 +28,13 @@ struct then_closure {
 };
 
 struct then_impl {
-  template <comparison T>
+  template <ordering T>
   constexpr then_closure<T> operator()(T x) const noexcept
   {
     return {x};
   }
 
-  template <comparison T, comparison U>
+  template <ordering T, ordering U>
   constexpr auto operator()(T x, U y) const noexcept
   {
     return x | then_closure<U>{y};
@@ -45,7 +45,7 @@ template <std::invocable F>
 struct then_with_closure {
   F func;
 
-  template <comparison Lhs>
+  template <ordering Lhs>
   friend constexpr std::invoke_result_t<F> operator|(Lhs lhs, then_with_closure rhs) noexcept
   {
     if (lhs == 0) {
@@ -63,7 +63,7 @@ struct then_with_impl {
     return {x};
   }
 
-  template <comparison T, std::invocable F>
+  template <ordering T, std::invocable F>
   constexpr auto operator()(T x, F f) const noexcept
   {
     return x | then_with_closure<F>{f};
