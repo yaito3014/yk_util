@@ -1,18 +1,12 @@
 #ifndef YK_VARIANT_BOOST_TRAITS_HPP
 #define YK_VARIANT_BOOST_TRAITS_HPP
 
+#include "yk/util/type_list.hpp"
+
 #include <boost/mpl/fold.hpp>
 #include <boost/mpl/placeholders.hpp>
 
 namespace yk::detail {
-
-template <class... Ts>
-struct type_list {};
-
-template <class T, class... Ts>
-struct type_list<T, Ts...> {
-  using head = T;
-};
 
 template <class T, class R>
 struct to_type_list;
