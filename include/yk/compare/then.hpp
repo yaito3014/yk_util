@@ -2,6 +2,7 @@
 #define YK_THEN_COMPARE_HPP
 
 #include "yk/compare/concepts.hpp"
+#include "yk/no_unique_address.hpp"
 
 #include <compare>
 
@@ -43,7 +44,7 @@ struct then_impl {
 
 template <std::invocable F>
 struct then_with_closure {
-  F func;
+  YK_NO_UNIQUE_ADDRESS F func;
 
   template <ordering Lhs>
   friend constexpr std::invoke_result_t<F> operator|(Lhs lhs, then_with_closure rhs) noexcept
