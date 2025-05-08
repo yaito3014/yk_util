@@ -3,6 +3,7 @@ cmake_minimum_required(VERSION 3.24)
 include(CTest)
 if(BUILD_TESTING)
   add_executable(yk_util_test
+    compare.cpp
     enum_bitops.cpp
     hash.cpp
     meta.cpp
