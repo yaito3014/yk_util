@@ -194,10 +194,39 @@ BOOST_AUTO_TEST_CASE(ForwardLike)
   // clang-format on
 }
 
+namespace {
+
+int unary_normal_function(float) { return 42; }
+int binary_normal_function(float, double) { return 42; }
+
+struct S {
+  int data_member;
+
+  int unary_member_function(float) { return 42; }
+  int unary_member_function_c(float) const { return 42; }
+  int unary_member_function_v(float) volatile { return 42; }
+  int unary_member_function_cv(float) const volatile { return 42; }
+  int unary_member_function_n(float) noexcept { return 42; }
+  int unary_member_function_cn(float) const noexcept { return 42; }
+  int unary_member_function_vn(float) volatile noexcept { return 42; }
+  int unary_member_function_cvn(float) const volatile noexcept { return 42; }
+
+  int binary_member_function(float, double) { return 42; }
+  int binary_member_function_c(float, double) const { return 42; }
+  int binary_member_function_v(float, double) volatile { return 42; }
+  int binary_member_function_cv(float, double) const volatile { return 42; }
+  int binary_member_function_n(float, double) noexcept { return 42; }
+  int binary_member_function_cn(float, double) const noexcept { return 42; }
+  int binary_member_function_vn(float, double) volatile noexcept { return 42; }
+  int binary_member_function_cvn(float, double) const volatile noexcept { return 42; }
+};
+
+}  // namespace
+
 BOOST_AUTO_TEST_CASE(FunctionTraits)
 {
   {
-    using F = int(float);
+    using F = decltype(unary_normal_function);
     static_assert(yk::invocable_traits<F>::kind == yk::invocable_kind::function);
     static_assert(std::is_same_v<yk::invocable_traits<F>::return_type, int>);
     static_assert(std::is_same_v<yk::invocable_traits<F>::parameters, yk::type_list<float>>);
@@ -205,7 +234,7 @@ BOOST_AUTO_TEST_CASE(FunctionTraits)
     static_assert(!yk::is_binary_function_v<F>);
   }
   {
-    using F = int (*)(float);
+    using F = decltype(&unary_normal_function);
     static_assert(yk::invocable_traits<F>::kind == yk::invocable_kind::function);
     static_assert(std::is_same_v<yk::invocable_traits<F>::return_type, int>);
     static_assert(std::is_same_v<yk::invocable_traits<F>::parameters, yk::type_list<float>>);
@@ -213,7 +242,7 @@ BOOST_AUTO_TEST_CASE(FunctionTraits)
     static_assert(!yk::is_binary_function_v<F>);
   }
   {
-    using F = int (&)(float);
+    using F = decltype((unary_normal_function));
     static_assert(yk::invocable_traits<F>::kind == yk::invocable_kind::function);
     static_assert(std::is_same_v<yk::invocable_traits<F>::return_type, int>);
     static_assert(std::is_same_v<yk::invocable_traits<F>::parameters, yk::type_list<float>>);
@@ -222,7 +251,7 @@ BOOST_AUTO_TEST_CASE(FunctionTraits)
   }
 
   {
-    using F = int(float, double);
+    using F = decltype(binary_normal_function);
     static_assert(yk::invocable_traits<F>::kind == yk::invocable_kind::function);
     static_assert(std::is_same_v<yk::invocable_traits<F>::return_type, int>);
     static_assert(std::is_same_v<yk::invocable_traits<F>::parameters, yk::type_list<float, double>>);
@@ -230,7 +259,7 @@ BOOST_AUTO_TEST_CASE(FunctionTraits)
     static_assert(yk::is_binary_function_v<F>);
   }
   {
-    using F = int (*)(float, double);
+    using F = decltype(&binary_normal_function);
     static_assert(yk::invocable_traits<F>::kind == yk::invocable_kind::function);
     static_assert(std::is_same_v<yk::invocable_traits<F>::return_type, int>);
     static_assert(std::is_same_v<yk::invocable_traits<F>::parameters, yk::type_list<float, double>>);
@@ -238,7 +267,7 @@ BOOST_AUTO_TEST_CASE(FunctionTraits)
     static_assert(yk::is_binary_function_v<F>);
   }
   {
-    using F = int (&)(float, double);
+    using F = decltype((binary_normal_function));
     static_assert(yk::invocable_traits<F>::kind == yk::invocable_kind::function);
     static_assert(std::is_same_v<yk::invocable_traits<F>::return_type, int>);
     static_assert(std::is_same_v<yk::invocable_traits<F>::parameters, yk::type_list<float, double>>);
@@ -247,8 +276,7 @@ BOOST_AUTO_TEST_CASE(FunctionTraits)
   }
 
   {
-    struct S {};
-    using F = int (S::*)(float);
+    using F = decltype(&S::unary_member_function);
     static_assert(yk::invocable_traits<F>::kind == yk::invocable_kind::member_function);
     static_assert(std::is_same_v<yk::invocable_traits<F>::return_type, int>);
     static_assert(std::is_same_v<yk::invocable_traits<F>::parameters, yk::type_list<float>>);
@@ -256,8 +284,7 @@ BOOST_AUTO_TEST_CASE(FunctionTraits)
     static_assert(!yk::is_binary_function_v<F>);
   }
   {
-    struct S {};
-    using F = int (S::*)(float) const;
+    using F = decltype(&S::unary_member_function_c);
     static_assert(yk::invocable_traits<F>::kind == yk::invocable_kind::member_function);
     static_assert(std::is_same_v<yk::invocable_traits<F>::return_type, int>);
     static_assert(std::is_same_v<yk::invocable_traits<F>::parameters, yk::type_list<float>>);
@@ -265,8 +292,7 @@ BOOST_AUTO_TEST_CASE(FunctionTraits)
     static_assert(!yk::is_binary_function_v<F>);
   }
   {
-    struct S {};
-    using F = int (S::*)(float) volatile;
+    using F = decltype(&S::unary_member_function_v);
     static_assert(yk::invocable_traits<F>::kind == yk::invocable_kind::member_function);
     static_assert(std::is_same_v<yk::invocable_traits<F>::return_type, int>);
     static_assert(std::is_same_v<yk::invocable_traits<F>::parameters, yk::type_list<float>>);
@@ -274,8 +300,7 @@ BOOST_AUTO_TEST_CASE(FunctionTraits)
     static_assert(!yk::is_binary_function_v<F>);
   }
   {
-    struct S {};
-    using F = int (S::*)(float) const volatile;
+    using F = decltype(&S::unary_member_function_cv);
     static_assert(yk::invocable_traits<F>::kind == yk::invocable_kind::member_function);
     static_assert(std::is_same_v<yk::invocable_traits<F>::return_type, int>);
     static_assert(std::is_same_v<yk::invocable_traits<F>::parameters, yk::type_list<float>>);
@@ -283,8 +308,7 @@ BOOST_AUTO_TEST_CASE(FunctionTraits)
     static_assert(!yk::is_binary_function_v<F>);
   }
   {
-    struct S {};
-    using F = int (S::*)(float) noexcept;
+    using F = decltype(&S::unary_member_function_n);
     static_assert(yk::invocable_traits<F>::kind == yk::invocable_kind::member_function);
     static_assert(std::is_same_v<yk::invocable_traits<F>::return_type, int>);
     static_assert(std::is_same_v<yk::invocable_traits<F>::parameters, yk::type_list<float>>);
@@ -292,8 +316,7 @@ BOOST_AUTO_TEST_CASE(FunctionTraits)
     static_assert(!yk::is_binary_function_v<F>);
   }
   {
-    struct S {};
-    using F = int (S::*)(float) const noexcept;
+    using F = decltype(&S::unary_member_function_cn);
     static_assert(yk::invocable_traits<F>::kind == yk::invocable_kind::member_function);
     static_assert(std::is_same_v<yk::invocable_traits<F>::return_type, int>);
     static_assert(std::is_same_v<yk::invocable_traits<F>::parameters, yk::type_list<float>>);
@@ -301,8 +324,7 @@ BOOST_AUTO_TEST_CASE(FunctionTraits)
     static_assert(!yk::is_binary_function_v<F>);
   }
   {
-    struct S {};
-    using F = int (S::*)(float) volatile noexcept;
+    using F = decltype(&S::unary_member_function_vn);
     static_assert(yk::invocable_traits<F>::kind == yk::invocable_kind::member_function);
     static_assert(std::is_same_v<yk::invocable_traits<F>::return_type, int>);
     static_assert(std::is_same_v<yk::invocable_traits<F>::parameters, yk::type_list<float>>);
@@ -310,8 +332,7 @@ BOOST_AUTO_TEST_CASE(FunctionTraits)
     static_assert(!yk::is_binary_function_v<F>);
   }
   {
-    struct S {};
-    using F = int (S::*)(float) const volatile noexcept;
+    using F = decltype(&S::unary_member_function_cvn);
     static_assert(yk::invocable_traits<F>::kind == yk::invocable_kind::member_function);
     static_assert(std::is_same_v<yk::invocable_traits<F>::return_type, int>);
     static_assert(std::is_same_v<yk::invocable_traits<F>::parameters, yk::type_list<float>>);
@@ -320,7 +341,7 @@ BOOST_AUTO_TEST_CASE(FunctionTraits)
   }
 
   {
-    using F = int(float, double);
+    using F = decltype(binary_normal_function);
     static_assert(yk::invocable_traits<F>::kind == yk::invocable_kind::function);
     static_assert(std::is_same_v<yk::invocable_traits<F>::return_type, int>);
     static_assert(std::is_same_v<yk::invocable_traits<F>::parameters, yk::type_list<float, double>>);
@@ -328,7 +349,7 @@ BOOST_AUTO_TEST_CASE(FunctionTraits)
     static_assert(yk::is_binary_function_v<F>);
   }
   {
-    using F = int (*)(float, double);
+    using F = decltype(&binary_normal_function);
     static_assert(yk::invocable_traits<F>::kind == yk::invocable_kind::function);
     static_assert(std::is_same_v<yk::invocable_traits<F>::return_type, int>);
     static_assert(std::is_same_v<yk::invocable_traits<F>::parameters, yk::type_list<float, double>>);
@@ -336,7 +357,7 @@ BOOST_AUTO_TEST_CASE(FunctionTraits)
     static_assert(yk::is_binary_function_v<F>);
   }
   {
-    using F = int (&)(float, double);
+    using F = decltype((binary_normal_function));
     static_assert(yk::invocable_traits<F>::kind == yk::invocable_kind::function);
     static_assert(std::is_same_v<yk::invocable_traits<F>::return_type, int>);
     static_assert(std::is_same_v<yk::invocable_traits<F>::parameters, yk::type_list<float, double>>);
@@ -344,8 +365,7 @@ BOOST_AUTO_TEST_CASE(FunctionTraits)
     static_assert(yk::is_binary_function_v<F>);
   }
   {
-    struct S {};
-    using F = int (S::*)(float, double);
+    using F = decltype(&S::binary_member_function);
     static_assert(yk::invocable_traits<F>::kind == yk::invocable_kind::member_function);
     static_assert(std::is_same_v<yk::invocable_traits<F>::return_type, int>);
     static_assert(std::is_same_v<yk::invocable_traits<F>::parameters, yk::type_list<float, double>>);
@@ -353,8 +373,7 @@ BOOST_AUTO_TEST_CASE(FunctionTraits)
     static_assert(yk::is_binary_function_v<F>);
   }
   {
-    struct S {};
-    using F = int (S::*)(float, double) const;
+    using F = decltype(&S::binary_member_function_c);
     static_assert(yk::invocable_traits<F>::kind == yk::invocable_kind::member_function);
     static_assert(std::is_same_v<yk::invocable_traits<F>::return_type, int>);
     static_assert(std::is_same_v<yk::invocable_traits<F>::parameters, yk::type_list<float, double>>);
@@ -362,8 +381,7 @@ BOOST_AUTO_TEST_CASE(FunctionTraits)
     static_assert(yk::is_binary_function_v<F>);
   }
   {
-    struct S {};
-    using F = int (S::*)(float, double) volatile;
+    using F = decltype(&S::binary_member_function_v);
     static_assert(yk::invocable_traits<F>::kind == yk::invocable_kind::member_function);
     static_assert(std::is_same_v<yk::invocable_traits<F>::return_type, int>);
     static_assert(std::is_same_v<yk::invocable_traits<F>::parameters, yk::type_list<float, double>>);
@@ -371,8 +389,7 @@ BOOST_AUTO_TEST_CASE(FunctionTraits)
     static_assert(yk::is_binary_function_v<F>);
   }
   {
-    struct S {};
-    using F = int (S::*)(float, double) const volatile;
+    using F = decltype(&S::binary_member_function_cv);
     static_assert(yk::invocable_traits<F>::kind == yk::invocable_kind::member_function);
     static_assert(std::is_same_v<yk::invocable_traits<F>::return_type, int>);
     static_assert(std::is_same_v<yk::invocable_traits<F>::parameters, yk::type_list<float, double>>);
@@ -380,8 +397,7 @@ BOOST_AUTO_TEST_CASE(FunctionTraits)
     static_assert(yk::is_binary_function_v<F>);
   }
   {
-    struct S {};
-    using F = int (S::*)(float, double) noexcept;
+    using F = decltype(&S::binary_member_function_n);
     static_assert(yk::invocable_traits<F>::kind == yk::invocable_kind::member_function);
     static_assert(std::is_same_v<yk::invocable_traits<F>::return_type, int>);
     static_assert(std::is_same_v<yk::invocable_traits<F>::parameters, yk::type_list<float, double>>);
@@ -389,8 +405,7 @@ BOOST_AUTO_TEST_CASE(FunctionTraits)
     static_assert(yk::is_binary_function_v<F>);
   }
   {
-    struct S {};
-    using F = int (S::*)(float, double) const noexcept;
+    using F = decltype(&S::binary_member_function_cn);
     static_assert(yk::invocable_traits<F>::kind == yk::invocable_kind::member_function);
     static_assert(std::is_same_v<yk::invocable_traits<F>::return_type, int>);
     static_assert(std::is_same_v<yk::invocable_traits<F>::parameters, yk::type_list<float, double>>);
@@ -398,8 +413,7 @@ BOOST_AUTO_TEST_CASE(FunctionTraits)
     static_assert(yk::is_binary_function_v<F>);
   }
   {
-    struct S {};
-    using F = int (S::*)(float, double) volatile noexcept;
+    using F = decltype(&S::binary_member_function_vn);
     static_assert(yk::invocable_traits<F>::kind == yk::invocable_kind::member_function);
     static_assert(std::is_same_v<yk::invocable_traits<F>::return_type, int>);
     static_assert(std::is_same_v<yk::invocable_traits<F>::parameters, yk::type_list<float, double>>);
@@ -407,8 +421,7 @@ BOOST_AUTO_TEST_CASE(FunctionTraits)
     static_assert(yk::is_binary_function_v<F>);
   }
   {
-    struct S {};
-    using F = int (S::*)(float, double) const volatile noexcept;
+    using F = decltype(&S::binary_member_function_cvn);
     static_assert(yk::invocable_traits<F>::kind == yk::invocable_kind::member_function);
     static_assert(std::is_same_v<yk::invocable_traits<F>::return_type, int>);
     static_assert(std::is_same_v<yk::invocable_traits<F>::parameters, yk::type_list<float, double>>);
@@ -417,8 +430,7 @@ BOOST_AUTO_TEST_CASE(FunctionTraits)
   }
 
   {
-    struct S {};
-    using F = int S::*;
+    using F = decltype(&S::data_member);
     static_assert(yk::invocable_traits<F>::kind == yk::invocable_kind::data_member);
     static_assert(std::is_same_v<yk::invocable_traits<F>::return_type, int>);
     static_assert(std::is_same_v<yk::invocable_traits<F>::parameters, yk::type_list<>>);
