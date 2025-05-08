@@ -11,12 +11,15 @@ enum class function_kind {
   function,
   member_function,
   function_object,
+  unkown,
 };
 
 namespace detail {
 
 template <class F, class = void>
-struct function_traits {};
+struct function_traits {
+  static constexpr function_kind kind = function_kind::unkown;
+};
 
 template <class R, class... Args>
 struct function_traits<R(Args...)> {
