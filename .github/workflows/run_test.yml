@@ -154,9 +154,7 @@ jobs:
 
       - name: Build (Windows)
         if: matrix.os.name == 'windows'
-        shell: bash
         run: |
-          set -o pipefail
           cmake --build ${{ github.workspace }}/build/test --verbose --config ${{ matrix.build_type }} --target yk_util_test 2>&1 | tee -a compilation.log
 
       - name: Test (Ubuntu)
