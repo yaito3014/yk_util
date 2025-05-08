@@ -196,8 +196,8 @@ BOOST_AUTO_TEST_CASE(ForwardLike)
 
 namespace {
 
-int unary_normal_function(float) { return 42; }
-int binary_normal_function(float, double) { return 42; }
+[[maybe_unused]] int unary_normal_function(float) { return 42; }
+[[maybe_unused]] int binary_normal_function(float, double) { return 42; }
 
 struct S {
   int data_member;
