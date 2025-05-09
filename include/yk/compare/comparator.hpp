@@ -9,12 +9,31 @@
 #include <compare>
 #include <concepts>
 #include <functional>
+#include <ranges>
 #include <type_traits>
 #include <utility>
 
 namespace yk {
 
 namespace compare {
+
+namespace detail {
+
+// is there more better way to detect range adaptor closure? idk
+template <class T>
+inline constexpr bool is_range_adaptor_closure_v =
+#if defined(__GLIBCXX__)
+    std::views::__adaptor::__is_range_adaptor_closure<T>
+#elif defined(_LIBCPP_VERSION)
+    std::ranges::_RangeAdaptorClosure<T>
+#elif defined(_MSC_VER)
+    std::ranges::_Pipe::_Range_adaptor_closure_object<T>
+#else
+    false
+#endif
+    ;
+
+}  // namespace detail
 
 struct comparator_interface {};
 
@@ -170,6 +189,14 @@ struct extract_comparator : comparator_interface {
   {
     return std::compare_three_way{}(std::invoke(func, std::forward<T>(x)), std::invoke(func, std::forward<U>(y)));
   }
+
+  template <class RangeAdaptorClosure>
+    requires detail::is_range_adaptor_closure_v<RangeAdaptorClosure>
+  friend constexpr auto operator|(extract_comparator comp, RangeAdaptorClosure rac) noexcept
+  {
+    auto composed = yk::compose(rac, comp.func);
+    return extract_comparator<decltype(composed)>{std::move(composed)};
+  }
 };
 
 namespace detail {
@@ -192,7 +219,7 @@ inline constexpr detail::extract_fn extract{};
 
 // short-hand syntax
 template <comparator Comp, unary_function F>
-  requires(!std::derived_from<F, comparator_adaptor_closure>)
+  requires(!std::derived_from<F, comparator_adaptor_closure> && !detail::is_range_adaptor_closure_v<F>)
 constexpr auto operator|(Comp comp, F f) noexcept
 {
   return comparators::then(std::move(comp), comparators::extract(std::move(f)));
