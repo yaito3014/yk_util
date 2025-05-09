@@ -138,6 +138,24 @@ BOOST_AUTO_TEST_CASE(extract_and_comparator_then)
     BOOST_TEST((comp(S{1, "foo", 3.14}, S{1, "foo", 3.14}) == 0));
   }
 
+  // using lambda
+  {
+    const yk::compare::comparator auto comp =
+        extract(&S::id) | [](const S& s) { return s.name; } | [](const auto& s) { return s.height; };
+
+    BOOST_TEST((comp(S{1, "foo", 3.14}, S{2, "bar", 3.14}) < 0));
+    BOOST_TEST((comp(S{2, "foo", 3.14}, S{1, "bar", 3.14}) > 0));
+    BOOST_TEST((comp(S{1, "foo", 3.14}, S{1, "bar", 3.14}) > 0));
+
+    BOOST_TEST((comp(S{1, "bar", 3.14}, S{2, "foo", 3.14}) < 0));
+    BOOST_TEST((comp(S{2, "bar", 3.14}, S{1, "foo", 3.14}) > 0));
+    BOOST_TEST((comp(S{1, "bar", 3.14}, S{1, "foo", 3.14}) < 0));
+
+    BOOST_TEST((comp(S{1, "foo", 3.14}, S{2, "foo", 3.14}) < 0));
+    BOOST_TEST((comp(S{2, "foo", 3.14}, S{1, "foo", 3.14}) > 0));
+    BOOST_TEST((comp(S{1, "foo", 3.14}, S{1, "foo", 3.14}) == 0));
+  }
+
   {
     const auto comp = std::strong_order | then(std::strong_order);
     static_assert(std::is_same_v<std::invoke_result_t<decltype(comp), int, int>, std::strong_ordering>);
