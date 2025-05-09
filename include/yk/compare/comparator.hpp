@@ -1,7 +1,6 @@
 #ifndef YK_COMPARE_COMPARATOR
 #define YK_COMPARE_COMPARATOR
 
-#include "yk/compare/common_ordering.hpp"
 #include "yk/compare/concepts.hpp"
 #include "yk/util/functional.hpp"
 #include "yk/util/specialization_of.hpp"
@@ -107,7 +106,7 @@ struct then_comparator : comparator_interface {
   template <class T, class U>
   constexpr auto operator()(T&& x, U&& y) const noexcept(
       std::is_nothrow_invocable_v<Comp1, T, U> && std::is_nothrow_invocable_v<Comp2, T, U>
-  ) -> common_ordering_t<std::invoke_result_t<Comp1, T, U>, std::invoke_result_t<Comp2, T, U>>
+  ) -> typename std::common_comparison_category_t<std::invoke_result_t<Comp1, T, U>, std::invoke_result_t<Comp2, T, U>>
   {
     ordering auto res = std::invoke(comp1, std::forward<T>(x), std::forward<U>(y));
     if (res == 0) {
