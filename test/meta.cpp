@@ -473,4 +473,12 @@ BOOST_AUTO_TEST_CASE(FunctionTraits)
   }
 }
 
+BOOST_AUTO_TEST_CASE(Compose)
+{
+  const auto f = [](int x) -> std::string { return std::to_string(x); };
+  const auto g = [](std::string s) -> std::size_t { return s.size(); };
+
+  BOOST_TEST(yk::compose(g, f)(42) == 2);
+}
+
 BOOST_AUTO_TEST_SUITE_END()
