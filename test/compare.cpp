@@ -64,46 +64,48 @@ BOOST_AUTO_TEST_CASE(extract_and_comparator_then)
 {
   using namespace yk::comparators;
 
-  struct my_data {
-    int id;
-    std::string name;
-  };
-
   {
-    const auto comp = extract{&my_data::id} | then(extract{&my_data::name});
+    struct S {
+      int id;
+      std::string name;
+    };
+    const auto comp = extract(&S::id) | then(extract(&S::name));
 
-    static_assert(yk::compare::comparator_for<decltype(comp), my_data, my_data>);
+    BOOST_TEST((comp(S{1, "foo"}, S{2, "bar"}) < 0));
+    BOOST_TEST((comp(S{2, "foo"}, S{1, "bar"}) > 0));
+    BOOST_TEST((comp(S{1, "foo"}, S{1, "bar"}) > 0));
 
-    BOOST_TEST((comp(my_data{1, "foo"}, my_data{2, "bar"}) < 0));
-    BOOST_TEST((comp(my_data{2, "foo"}, my_data{1, "bar"}) > 0));
-    BOOST_TEST((comp(my_data{1, "foo"}, my_data{1, "bar"}) > 0));
+    BOOST_TEST((comp(S{1, "bar"}, S{2, "foo"}) < 0));
+    BOOST_TEST((comp(S{2, "bar"}, S{1, "foo"}) > 0));
+    BOOST_TEST((comp(S{1, "bar"}, S{1, "foo"}) < 0));
 
-    BOOST_TEST((comp(my_data{1, "bar"}, my_data{2, "foo"}) < 0));
-    BOOST_TEST((comp(my_data{2, "bar"}, my_data{1, "foo"}) > 0));
-    BOOST_TEST((comp(my_data{1, "bar"}, my_data{1, "foo"}) < 0));
-
-    BOOST_TEST((comp(my_data{1, "foo"}, my_data{2, "foo"}) < 0));
-    BOOST_TEST((comp(my_data{2, "foo"}, my_data{1, "foo"}) > 0));
-    BOOST_TEST((comp(my_data{1, "foo"}, my_data{1, "foo"}) == 0));
+    BOOST_TEST((comp(S{1, "foo"}, S{2, "foo"}) < 0));
+    BOOST_TEST((comp(S{2, "foo"}, S{1, "foo"}) > 0));
+    BOOST_TEST((comp(S{1, "foo"}, S{1, "foo"}) == 0));
   }
 
   // short-hand syntax
   {
-    const auto comp = extract{&my_data::id} | &my_data::name;
+    struct S {
+      int id;
+      std::string name;
+      double height;
+    };
+    const yk::compare::comparator auto comp1 = extract(&S::id);
+    const yk::compare::comparator auto comp2 = comp1 | &S::name;
+    const yk::compare::comparator auto comp3 = comp2 | &S::height;
 
-    static_assert(yk::compare::comparator_for<decltype(comp), my_data, my_data>);
+    BOOST_TEST((comp3(S{1, "foo", 3.14}, S{2, "bar", 3.14}) < 0));
+    BOOST_TEST((comp3(S{2, "foo", 3.14}, S{1, "bar", 3.14}) > 0));
+    BOOST_TEST((comp3(S{1, "foo", 3.14}, S{1, "bar", 3.14}) > 0));
 
-    BOOST_TEST((comp(my_data{1, "foo"}, my_data{2, "bar"}) < 0));
-    BOOST_TEST((comp(my_data{2, "foo"}, my_data{1, "bar"}) > 0));
-    BOOST_TEST((comp(my_data{1, "foo"}, my_data{1, "bar"}) > 0));
+    BOOST_TEST((comp3(S{1, "bar", 3.14}, S{2, "foo", 3.14}) < 0));
+    BOOST_TEST((comp3(S{2, "bar", 3.14}, S{1, "foo", 3.14}) > 0));
+    BOOST_TEST((comp3(S{1, "bar", 3.14}, S{1, "foo", 3.14}) < 0));
 
-    BOOST_TEST((comp(my_data{1, "bar"}, my_data{2, "foo"}) < 0));
-    BOOST_TEST((comp(my_data{2, "bar"}, my_data{1, "foo"}) > 0));
-    BOOST_TEST((comp(my_data{1, "bar"}, my_data{1, "foo"}) < 0));
-
-    BOOST_TEST((comp(my_data{1, "foo"}, my_data{2, "foo"}) < 0));
-    BOOST_TEST((comp(my_data{2, "foo"}, my_data{1, "foo"}) > 0));
-    BOOST_TEST((comp(my_data{1, "foo"}, my_data{1, "foo"}) == 0));
+    BOOST_TEST((comp3(S{1, "foo", 3.14}, S{2, "foo", 3.14}) < 0));
+    BOOST_TEST((comp3(S{2, "foo", 3.14}, S{1, "foo", 3.14}) > 0));
+    BOOST_TEST((comp3(S{1, "foo", 3.14}, S{1, "foo", 3.14}) == 0));
   }
 }
 

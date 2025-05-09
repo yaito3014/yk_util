@@ -17,18 +17,6 @@ concept ordering = requires(T x) {
   { x > 0 } -> boolean_testable;
 };
 
-template <class Proj>
-concept projection = std::destructible<Proj> && yk::unary_function<Proj>;
-
-template <class Proj, class T>
-concept projection_for = std::invocable<Proj, T>;
-
-template <class Comp>
-concept comparator = std::destructible<Comp> && yk::binary_function<Comp>;
-
-template <class Comp, class T, class U>
-concept comparator_for = comparator<Comp> && std::invocable<Comp, T, U> && ordering<std::invoke_result_t<Comp, T, U>>;
-
 }  // namespace compare
 
 }  // namespace yk
