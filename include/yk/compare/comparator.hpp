@@ -9,7 +9,6 @@
 #include <compare>
 #include <concepts>
 #include <functional>
-#include <ranges>
 #include <type_traits>
 #include <utility>
 
@@ -19,11 +18,16 @@ namespace compare {
 
 namespace detail {
 
+struct dummy_range {
+  int* begin();
+  int* end();
+};
+
 // is there more better way to detect range adaptor closure? idk
 template <class Closure>
 concept RangeAdaptorClosure = requires(Closure closure) {
-  closure(std::views::empty<int>);
-  std::views::empty<int> | closure;
+  closure(dummy_range{});
+  dummy_range{} | closure;
   closure | closure;
 };
 
@@ -160,14 +164,14 @@ struct comp_then_closure : comparator_adaptor_closure {
   {
     return then_comparator{std::forward<Comp1>(comp1), comp2};
   }
-  
+
   // if closure if non-const lvalue reference, pass reference
   template <class Comp1>
   constexpr auto operator()(Comp1&& comp1) & noexcept
   {
     return then_comparator{std::forward<Comp1>(comp1), comp2};
   }
-  
+
   // if closure if rvalue reference, move if Comp2 is not reference
   template <class Comp1>
   constexpr auto operator()(Comp1&& comp1) && noexcept
