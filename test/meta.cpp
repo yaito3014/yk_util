@@ -1,11 +1,13 @@
 #include "yk/util/forward_like.hpp"
 #include "yk/util/functional.hpp"
 #include "yk/util/pack_indexing.hpp"
+#include "yk/util/perfect_forward_as_tuple.hpp"
 #include "yk/util/specialization_of.hpp"
 
 #include <boost/test/unit_test.hpp>
 
 #include <string>
+#include <tuple>
 #include <type_traits>
 #include <utility>
 #include <vector>
@@ -192,6 +194,12 @@ BOOST_AUTO_TEST_CASE(ForwardLike)
   static_assert(std::is_same_v<yk::forward_like_t<const int&&, const float&&>, std_fwd_like_t<const int&&, const float&&>>);
 #endif
   // clang-format on
+}
+
+BOOST_AUTO_TEST_CASE(PerfectForwardAsTuple) {
+  int variable = 42;
+  const auto tuple = yk::perfect_forward_as_tuple(33, variable, 4);
+  static_assert(std::is_same_v<decltype(tuple), const std::tuple<int, int&, int>>);
 }
 
 namespace {
