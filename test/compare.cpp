@@ -72,7 +72,7 @@ BOOST_AUTO_TEST_CASE(extract_and_comparator_then)
 
   // using `then` comparator adaptor
   {
-    const auto comp = then(then(extract(&S::id), extract(&S::id)), extract(&S::height));
+    const auto comp = then(then(extract(&S::id), extract(&S::name)), extract(&S::height));
 
     BOOST_TEST((comp(S{1, "foo", 3.14}, S{2, "bar", 3.14}) < 0));
     BOOST_TEST((comp(S{2, "foo", 3.14}, S{1, "bar", 3.14}) > 0));
