@@ -194,7 +194,7 @@ struct extract_comparator : comparator_interface {
     requires detail::is_range_adaptor_closure_v<RangeAdaptorClosure>
   friend constexpr auto operator|(extract_comparator comp, RangeAdaptorClosure rac) noexcept
   {
-    auto composed = yk::compose(rac, comp.func);
+    auto composed = yk::compose(std::move(rac), std::move(comp.func));
     return extract_comparator<decltype(composed)>{std::move(composed)};
   }
 };
@@ -205,7 +205,7 @@ struct extract_fn {
   template <class F>
   constexpr auto operator()(F func) const noexcept
   {
-    return extract_comparator{func};
+    return extract_comparator{std::move(func)};
   }
 };
 
