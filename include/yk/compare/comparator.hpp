@@ -195,7 +195,7 @@ template <comparator Comp, unary_function F>
   requires(!std::derived_from<F, comparator_adaptor_closure>)
 constexpr auto operator|(Comp comp, F f) noexcept
 {
-  return comp | comparators::then(comparators::extract(f));
+  return comparators::then(std::move(comp), comparators::extract(std::move(f)));
 }
 
 }  // namespace compare
