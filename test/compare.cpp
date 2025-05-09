@@ -64,33 +64,47 @@ BOOST_AUTO_TEST_CASE(extract_and_comparator_then)
 {
   using namespace yk::comparators;
 
+  struct S {
+    int id;
+    std::string name;
+    double height;
+  };
+
   {
-    struct S {
-      int id;
-      std::string name;
-    };
-    const auto comp = extract(&S::id) | then(extract(&S::name));
+    const auto comp = extract(&S::id) | then(extract(&S::name)) | then(extract(&S::height));
 
-    BOOST_TEST((comp(S{1, "foo"}, S{2, "bar"}) < 0));
-    BOOST_TEST((comp(S{2, "foo"}, S{1, "bar"}) > 0));
-    BOOST_TEST((comp(S{1, "foo"}, S{1, "bar"}) > 0));
+    BOOST_TEST((comp(S{1, "foo", 3.14}, S{2, "bar", 3.14}) < 0));
+    BOOST_TEST((comp(S{2, "foo", 3.14}, S{1, "bar", 3.14}) > 0));
+    BOOST_TEST((comp(S{1, "foo", 3.14}, S{1, "bar", 3.14}) > 0));
 
-    BOOST_TEST((comp(S{1, "bar"}, S{2, "foo"}) < 0));
-    BOOST_TEST((comp(S{2, "bar"}, S{1, "foo"}) > 0));
-    BOOST_TEST((comp(S{1, "bar"}, S{1, "foo"}) < 0));
+    BOOST_TEST((comp(S{1, "bar", 3.14}, S{2, "foo", 3.14}) < 0));
+    BOOST_TEST((comp(S{2, "bar", 3.14}, S{1, "foo", 3.14}) > 0));
+    BOOST_TEST((comp(S{1, "bar", 3.14}, S{1, "foo", 3.14}) < 0));
 
-    BOOST_TEST((comp(S{1, "foo"}, S{2, "foo"}) < 0));
-    BOOST_TEST((comp(S{2, "foo"}, S{1, "foo"}) > 0));
-    BOOST_TEST((comp(S{1, "foo"}, S{1, "foo"}) == 0));
+    BOOST_TEST((comp(S{1, "foo", 3.14}, S{2, "foo", 3.14}) < 0));
+    BOOST_TEST((comp(S{2, "foo", 3.14}, S{1, "foo", 3.14}) > 0));
+    BOOST_TEST((comp(S{1, "foo", 3.14}, S{1, "foo", 3.14}) == 0));
+  }
+
+  // comparator adaptor closure is associative
+  {
+    const auto comp = extract(&S::id) | (then(extract(&S::name)) | then(extract(&S::height)));
+
+    BOOST_TEST((comp(S{1, "foo", 3.14}, S{2, "bar", 3.14}) < 0));
+    BOOST_TEST((comp(S{2, "foo", 3.14}, S{1, "bar", 3.14}) > 0));
+    BOOST_TEST((comp(S{1, "foo", 3.14}, S{1, "bar", 3.14}) > 0));
+
+    BOOST_TEST((comp(S{1, "bar", 3.14}, S{2, "foo", 3.14}) < 0));
+    BOOST_TEST((comp(S{2, "bar", 3.14}, S{1, "foo", 3.14}) > 0));
+    BOOST_TEST((comp(S{1, "bar", 3.14}, S{1, "foo", 3.14}) < 0));
+
+    BOOST_TEST((comp(S{1, "foo", 3.14}, S{2, "foo", 3.14}) < 0));
+    BOOST_TEST((comp(S{2, "foo", 3.14}, S{1, "foo", 3.14}) > 0));
+    BOOST_TEST((comp(S{1, "foo", 3.14}, S{1, "foo", 3.14}) == 0));
   }
 
   // short-hand syntax
   {
-    struct S {
-      int id;
-      std::string name;
-      double height;
-    };
     const yk::compare::comparator auto comp1 = extract(&S::id);
     const yk::compare::comparator auto comp2 = comp1 | &S::name;
     const yk::compare::comparator auto comp3 = comp2 | &S::height;

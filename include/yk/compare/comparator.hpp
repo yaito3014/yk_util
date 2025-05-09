@@ -2,9 +2,9 @@
 #define YK_COMPARE_COMPARATOR
 
 #include "yk/compare/concepts.hpp"
+#include "yk/no_unique_address.hpp"
 #include "yk/util/functional.hpp"
 #include "yk/util/specialization_of.hpp"
-#include "yk/no_unique_address.hpp"
 
 #include <compare>
 #include <concepts>
@@ -30,6 +30,30 @@ template <class Comp, std::derived_from<comparator_adaptor_closure> Closure>
 constexpr auto operator|(Comp comp, Closure closure) noexcept
 {
   return std::invoke(std::forward<Closure>(closure), std::move(comp));
+}
+
+namespace detail {
+
+template <class Lhs, class Rhs>
+struct pipe_closure : comparator_adaptor_closure {
+  YK_NO_UNIQUE_ADDRESS Lhs lhs;
+  YK_NO_UNIQUE_ADDRESS Rhs rhs;
+
+  constexpr pipe_closure(Lhs l, Rhs r) noexcept : lhs(std::move(l)), rhs(std::move(r)) {}
+
+  template <class Comp>
+  constexpr auto operator()(Comp comp) const noexcept
+  {
+    return std::invoke(rhs, std::invoke(lhs, comp));
+  }
+};
+
+}  // namespace detail
+
+template <std::derived_from<comparator_adaptor_closure> Lhs, std::derived_from<comparator_adaptor_closure> Rhs>
+constexpr auto operator|(Lhs lhs, Rhs rhs) noexcept
+{
+  return detail::pipe_closure{std::move(lhs), std::move(rhs)};
 }
 
 template <class Comp>
