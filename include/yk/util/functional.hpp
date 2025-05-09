@@ -198,10 +198,7 @@ struct compose_impl<F, G, Fs...> {
   YK_NO_UNIQUE_ADDRESS F func;
   YK_NO_UNIQUE_ADDRESS compose_impl<G, Fs...> composed;
 
-  constexpr compose_impl(F&& f, G&& g, Fs&&... fs) noexcept
-      : func(std::forward<F>(f)), composed(std::forward<G>(g), std::forward<Fs>(fs)...)
-  {
-  }
+  constexpr compose_impl(F f, G g, Fs... fs) noexcept : func(std::move(f)), composed(std::move(g), std::move(fs)...) {}
 
   template <class... Args>
   constexpr decltype(auto) operator()(Args&&... args) const noexcept(
@@ -212,12 +209,15 @@ struct compose_impl<F, G, Fs...> {
   }
 };
 
+template <class F, class... Fs>
+compose_impl(F, Fs...) -> compose_impl<F, Fs...>;
+
 }  // namespace detail
 
 template <class F, class... Fs>
 constexpr auto compose(F&& f, Fs&&... fs) noexcept
 {
-  return detail::compose_impl<F, Fs...>{std::forward<F>(f), std::forward<Fs>(fs)...};
+  return detail::compose_impl{std::forward<F>(f), std::forward<Fs>(fs)...};
 }
 
 }  // namespace yk

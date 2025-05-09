@@ -3,6 +3,8 @@
 #include <boost/test/unit_test.hpp>
 
 #include <compare>
+#include <ranges>
+#include <string>
 #include <type_traits>
 
 BOOST_AUTO_TEST_SUITE(Compare)
@@ -154,6 +156,13 @@ BOOST_AUTO_TEST_CASE(extract_and_comparator_then)
     BOOST_TEST((comp(S{1, "foo", 3.14}, S{2, "foo", 3.14}) < 0));
     BOOST_TEST((comp(S{2, "foo", 3.14}, S{1, "foo", 3.14}) > 0));
     BOOST_TEST((comp(S{1, "foo", 3.14}, S{1, "foo", 3.14}) == 0));
+  }
+
+  // composing range adaptor closure
+  {
+    const auto range_adaptor_closure = std::views::reverse | std::ranges::to<std::string>();
+    const auto comp = extract(&S::name) | range_adaptor_closure;
+    BOOST_TEST((comp(S{1, "foo", 3.14}, S{2, "bar", 1.41}) < 0));
   }
 
   {
