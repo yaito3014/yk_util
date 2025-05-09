@@ -23,7 +23,7 @@ template <class Comp>
 inline constexpr bool enable_comparator = std::derived_from<Comp, comparator_interface>;
 
 template <class Comp>
-concept comparator = yk::binary_function<Comp> && enable_comparator<Comp>;
+concept comparator = yk::binary_function<Comp> && std::movable<Comp> && enable_comparator<Comp>;
 
 struct comparator_adaptor_closure {};
 
