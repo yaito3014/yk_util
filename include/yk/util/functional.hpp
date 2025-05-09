@@ -2,8 +2,11 @@
 #define YK_UTIL_FUNCTIONAL_HPP
 
 #include "yk/util/type_list.hpp"
+#include "yk/no_unique_address.hpp"
 
+#include <functional>
 #include <type_traits>
+#include <utility>
 
 namespace yk {
 
@@ -172,6 +175,50 @@ concept unary_function = n_ary_function<F, 1>;
 
 template <class F>
 concept binary_function = n_ary_function<F, 2>;
+
+namespace detail {
+
+template <class F, class... Fs>
+struct compose_impl;
+template <class F>
+struct compose_impl<F> {
+  YK_NO_UNIQUE_ADDRESS F func;
+
+  constexpr compose_impl(F&& f) noexcept : func(std::forward<F>(f)) {}
+
+  template <class... Args>
+  constexpr decltype(auto) operator()(Args&&... args) const noexcept(noexcept(std::is_nothrow_invocable_v<F, Args...>))
+  {
+    return std::invoke(func, std::forward<Args>(args)...);
+  }
+};
+
+template <class F, class G, class... Fs>
+struct compose_impl<F, G, Fs...> {
+  YK_NO_UNIQUE_ADDRESS F func;
+  YK_NO_UNIQUE_ADDRESS compose_impl<G, Fs...> composed;
+
+  constexpr compose_impl(F&& f, G&& g, Fs&&... fs) noexcept
+      : func(std::forward<F>(f)), composed(std::forward<G>(g), std::forward<Fs>(fs)...)
+  {
+  }
+
+  template <class... Args>
+  constexpr decltype(auto) operator()(Args&&... args) const noexcept(
+      noexcept(std::invoke(func, std::invoke(composed, std::forward<Args>(args)...)))
+  )
+  {
+    return std::invoke(func, std::invoke(composed, std::forward<Args>(args)...));
+  }
+};
+
+}  // namespace detail
+
+template <class F, class... Fs>
+constexpr auto compose(F&& f, Fs&&... fs) noexcept
+{
+  return detail::compose_impl<F, Fs...>{std::forward<F>(f), std::forward<Fs>(fs)...};
+}
 
 }  // namespace yk
 
