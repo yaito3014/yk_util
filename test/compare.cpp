@@ -332,8 +332,8 @@ BOOST_AUTO_TEST_CASE(ClosureTypeTraits)
 
     auto comp = yk::comparators::wrap(&compare) | closure;
     static_assert(std::is_same_v<decltype(comp), yk::compare::then_comparator<
-      yk::compare::wrapper_comparator<const F*>,
-      yk::compare::wrapper_comparator<const F*&>
+      yk::compare::wrapper_comparator<F*>,
+      yk::compare::wrapper_comparator<F*&>
     >>);
   }
 
