@@ -2,9 +2,9 @@
 #define YK_COMPARE_COMPARATOR
 
 #include "yk/compare/concepts.hpp"
-#include "yk/no_unique_address.hpp"
 #include "yk/util/functional.hpp"
 #include "yk/util/specialization_of.hpp"
+#include "yk/no_unique_address.hpp"
 
 #include <compare>
 #include <concepts>
