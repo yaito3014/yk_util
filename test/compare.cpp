@@ -70,6 +70,24 @@ BOOST_AUTO_TEST_CASE(extract_and_comparator_then)
     double height;
   };
 
+  // using `then` comparator adaptor
+  {
+    const auto comp = then(then(extract(&S::id), extract(&S::id)), extract(&S::height));
+
+    BOOST_TEST((comp(S{1, "foo", 3.14}, S{2, "bar", 3.14}) < 0));
+    BOOST_TEST((comp(S{2, "foo", 3.14}, S{1, "bar", 3.14}) > 0));
+    BOOST_TEST((comp(S{1, "foo", 3.14}, S{1, "bar", 3.14}) > 0));
+
+    BOOST_TEST((comp(S{1, "bar", 3.14}, S{2, "foo", 3.14}) < 0));
+    BOOST_TEST((comp(S{2, "bar", 3.14}, S{1, "foo", 3.14}) > 0));
+    BOOST_TEST((comp(S{1, "bar", 3.14}, S{1, "foo", 3.14}) < 0));
+
+    BOOST_TEST((comp(S{1, "foo", 3.14}, S{2, "foo", 3.14}) < 0));
+    BOOST_TEST((comp(S{2, "foo", 3.14}, S{1, "foo", 3.14}) > 0));
+    BOOST_TEST((comp(S{1, "foo", 3.14}, S{1, "foo", 3.14}) == 0));
+  }
+
+  // comparator adaptor is pipeable
   {
     const auto comp = extract(&S::id) | then(extract(&S::name)) | then(extract(&S::height));
 
