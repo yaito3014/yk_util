@@ -20,18 +20,12 @@ namespace compare {
 namespace detail {
 
 // is there more better way to detect range adaptor closure? idk
-template <class T>
-inline constexpr bool is_range_adaptor_closure_v =
-#if defined(__GLIBCXX__)
-    std::views::__adaptor::__is_range_adaptor_closure<T>
-#elif defined(_LIBCPP_VERSION)
-    std::ranges::_RangeAdaptorClosure<T>
-#elif defined(_MSC_VER)
-    std::ranges::_Pipe::_Range_adaptor_closure_object<T>
-#else
-    false
-#endif
-    ;
+template <class Closure>
+concept RangeAdaptorClosure = requires(Closure closure) {
+  closure(std::views::empty<int>);
+  std::views::empty<int> | closure;
+  closure | closure;
+};
 
 }  // namespace detail
 
@@ -41,14 +35,15 @@ template <class Comp>
 inline constexpr bool enable_comparator = std::derived_from<Comp, comparator_interface>;
 
 template <class Comp>
-concept comparator = yk::binary_function<Comp> && std::movable<Comp> && enable_comparator<Comp>;
+concept comparator = yk::binary_function<Comp> && enable_comparator<Comp>;
 
 struct comparator_adaptor_closure {};
 
-template <class Comp, std::derived_from<comparator_adaptor_closure> Closure>
-constexpr auto operator|(Comp comp, Closure closure) noexcept
+template <class Comp, class Closure>
+  requires std::derived_from<std::remove_cvref_t<Closure>, comparator_adaptor_closure>
+constexpr auto operator|(Comp&& comp, Closure&& closure) noexcept
 {
-  return std::invoke(std::forward<Closure>(closure), std::move(comp));
+  return std::invoke(std::forward<Closure>(closure), std::forward<Comp>(comp));
 }
 
 namespace detail {
@@ -61,25 +56,29 @@ struct pipe_closure : comparator_adaptor_closure {
   constexpr pipe_closure(Lhs l, Rhs r) noexcept : lhs(std::move(l)), rhs(std::move(r)) {}
 
   template <class Comp>
-  constexpr auto operator()(Comp comp) const noexcept
+  constexpr auto operator()(Comp&& comp) const noexcept(
+      noexcept(std::invoke(rhs, std::invoke(lhs, std::forward<Comp>(comp))))
+  )
   {
-    return std::invoke(rhs, std::invoke(lhs, comp));
+    return std::invoke(rhs, std::invoke(lhs, std::forward<Comp>(comp)));
   }
 };
 
 }  // namespace detail
 
-template <std::derived_from<comparator_adaptor_closure> Lhs, std::derived_from<comparator_adaptor_closure> Rhs>
-constexpr auto operator|(Lhs lhs, Rhs rhs) noexcept
+template <class Lhs, class Rhs>
+  requires std::derived_from<std::remove_cvref_t<Lhs>, comparator_adaptor_closure>
+           && std::derived_from<std::remove_cvref_t<Rhs>, comparator_adaptor_closure>
+constexpr auto operator|(Lhs&& lhs, Rhs&& rhs) noexcept
 {
-  return detail::pipe_closure{std::move(lhs), std::move(rhs)};
+  return detail::pipe_closure{std::forward<Lhs>(lhs), std::forward<Rhs>(rhs)};
 }
 
 template <class Comp>
 struct wrapper_comparator : comparator_interface {
   YK_NO_UNIQUE_ADDRESS Comp comp;
 
-  constexpr wrapper_comparator(Comp c) noexcept : comp(std::move(c)) {}
+  constexpr wrapper_comparator(Comp&& c) noexcept : comp(std::forward<Comp>(c)) {}
 
   template <class T, class U>
   constexpr auto operator()(T&& x, U&& y) const noexcept(noexcept(std::is_nothrow_invocable_v<Comp, T, U>))
@@ -88,19 +87,24 @@ struct wrapper_comparator : comparator_interface {
   }
 };
 
+template <class Comp>
+wrapper_comparator(Comp&&) -> wrapper_comparator<Comp>;
+
 namespace detail {
 
 struct wrap_fn {
-  template <binary_function Comp>
-  constexpr auto operator()(Comp comp) const noexcept
+  template <class Comp>
+    requires binary_function<std::remove_cvref_t<Comp>>
+  constexpr auto operator()(Comp&& comp) const noexcept
   {
-    return wrapper_comparator{std::move(comp)};
+    return wrapper_comparator{std::forward<Comp>(comp)};
   }
 
-  template <comparator Comp>
-  constexpr auto operator()(Comp comp) const noexcept
+  template <class Comp>
+    requires comparator<std::remove_cvref_t<Comp>>
+  constexpr auto operator()(Comp&& comp) const noexcept
   {
-    return comp;
+    return std::forward<Comp>(comp);
   }
 };
 
@@ -120,7 +124,10 @@ struct then_comparator : comparator_interface {
   YK_NO_UNIQUE_ADDRESS Comp1 comp1;
   YK_NO_UNIQUE_ADDRESS Comp2 comp2;
 
-  constexpr then_comparator(Comp1 c1, Comp2 c2) noexcept : comp1(std::move(c1)), comp2(std::move(c2)) {}
+  template <class T, class U>
+  constexpr then_comparator(T&& c1, U&& c2) noexcept : comp1(std::forward<T>(c1)), comp2(std::forward<U>(c2))
+  {
+  }
 
   template <class T, class U>
   constexpr auto operator()(T&& x, U&& y) const noexcept(
@@ -137,7 +144,7 @@ struct then_comparator : comparator_interface {
 };
 
 template <class Comp1, class Comp2>
-then_comparator(Comp1, Comp2) -> then_comparator<wrap_t<Comp1>, wrap_t<Comp2>>;
+then_comparator(Comp1&&, Comp2&&) -> then_comparator<wrap_t<Comp1>, wrap_t<Comp2>>;
 
 namespace detail {
 
@@ -145,26 +152,50 @@ template <class Comp2>
 struct comp_then_closure : comparator_adaptor_closure {
   YK_NO_UNIQUE_ADDRESS Comp2 comp2;
 
-  constexpr comp_then_closure(Comp2 c2) noexcept : comp2(c2) {}
+  constexpr comp_then_closure(Comp2&& c2) noexcept : comp2(std::forward<Comp2>(c2)) {}
 
+  // if closure if const lvalue reference, pass reference
   template <class Comp1>
-  constexpr auto operator()(Comp1 comp1) const noexcept
+  constexpr auto operator()(Comp1&& comp1) const& noexcept
   {
-    return then_comparator{std::move(comp1), std::move(comp2)};
+    return then_comparator{std::forward<Comp1>(comp1), comp2};
   }
+  
+  // if closure if non-const lvalue reference, pass reference
+  template <class Comp1>
+  constexpr auto operator()(Comp1&& comp1) & noexcept
+  {
+    return then_comparator{std::forward<Comp1>(comp1), comp2};
+  }
+  
+  // if closure if rvalue reference, move if Comp2 is not reference
+  template <class Comp1>
+  constexpr auto operator()(Comp1&& comp1) && noexcept
+  {
+    return then_comparator{std::forward<Comp1>(comp1), std::forward<Comp2>(comp2)};
+  }
+
+  // template <class Self, class Comp1>
+  // constexpr auto operator()(this Self&& self, Comp1&& comp1) noexcept
+  // {
+  //   return then_comparator{std::forward<Comp1>(comp1), move_if_both_rvalue<Self>(std::forward<Self>(self).comp2)};
+  // }
 };
+
+template <class Comp2>
+comp_then_closure(Comp2&&) -> comp_then_closure<Comp2>;
 
 struct comp_then_fn {
   template <class Comp1, class Comp2>
-  constexpr auto operator()(Comp1 comp1, Comp2 comp2) const noexcept
+  constexpr auto operator()(Comp1&& comp1, Comp2&& comp2) const noexcept
   {
-    return then_comparator{std::move(comp1), std::move(comp2)};
+    return then_comparator{std::forward<Comp1>(comp1), std::forward<Comp2>(comp2)};
   }
 
   template <class Comp2>
-  constexpr auto operator()(Comp2 comp2) const noexcept
+  constexpr auto operator()(Comp2&& comp2) const noexcept
   {
-    return comp_then_closure{std::move(comp2)};
+    return comp_then_closure{std::forward<Comp2>(comp2)};
   }
 };
 
@@ -189,23 +220,23 @@ struct extract_comparator : comparator_interface {
   {
     return std::compare_three_way{}(std::invoke(func, std::forward<T>(x)), std::invoke(func, std::forward<U>(y)));
   }
-
-  template <class RangeAdaptorClosure>
-    requires detail::is_range_adaptor_closure_v<RangeAdaptorClosure>
-  friend constexpr auto operator|(extract_comparator comp, RangeAdaptorClosure rac) noexcept
-  {
-    auto composed = yk::compose(std::move(rac), std::move(comp.func));
-    return extract_comparator<decltype(composed)>{std::move(composed)};
-  }
 };
+
+// template <class Self, class RAC>
+//   requires specialization_of<std::remove_cvref_t<Self>, extract_comparator>
+//            && detail::RangeAdaptorClosure<std::remove_cvref_t<RAC>>
+// constexpr auto operator|(Self&& comp, RAC&& rac) noexcept
+// {
+//   return extract_comparator{yk::compose(std::forward<RAC>(rac), std::forward<Self>(comp).func)};
+// }
 
 namespace detail {
 
 struct extract_fn {
   template <class F>
-  constexpr auto operator()(F func) const noexcept
+  constexpr auto operator()(F&& func) const noexcept
   {
-    return extract_comparator{std::move(func)};
+    return extract_comparator{std::forward<F>(func)};
   }
 };
 
@@ -218,11 +249,13 @@ inline constexpr detail::extract_fn extract{};
 }  // namespace comparators
 
 // short-hand syntax
-template <comparator Comp, unary_function F>
-  requires(!std::derived_from<F, comparator_adaptor_closure> && !detail::is_range_adaptor_closure_v<F>)
-constexpr auto operator|(Comp comp, F f) noexcept
+template <class Comp, class F>
+  requires comparator<std::decay_t<Comp>> && unary_function<std::decay_t<F>>
+           && (!std::derived_from<std::decay_t<F>, comparator_adaptor_closure>)
+           && (!detail::RangeAdaptorClosure<std::decay_t<F>>)
+constexpr auto operator|(Comp&& comp, F&& f) noexcept
 {
-  return comparators::then(std::move(comp), comparators::extract(std::move(f)));
+  return comparators::then(std::forward<Comp>(comp), comparators::extract(std::forward<F>(f)));
 }
 
 }  // namespace compare

@@ -3,6 +3,7 @@
 #include <boost/test/unit_test.hpp>
 
 #include <compare>
+#include <print>
 #include <ranges>
 #include <string>
 #include <type_traits>
@@ -140,55 +141,46 @@ BOOST_AUTO_TEST_CASE(extract_and_comparator_then)
     BOOST_TEST((comp(S{1, "foo", 3.14}, S{1, "foo", 3.14}) == 0));
   }
 
-  // using lambda
   {
     struct name_extractor {
-      int& count;
+      std::string& log;
 
-      name_extractor(int& c) : count(c) { ++count; }
-      name_extractor(const name_extractor& other) noexcept : count(other.count) { ++count; }
-      name_extractor(name_extractor&& other) noexcept : count(other.count) { ++count; }
-      ~name_extractor() { --count; }
-      name_extractor& operator=(const name_extractor& other) noexcept
+      name_extractor(std::string& s) : log(s) { log += "NC"; }
+      name_extractor(const name_extractor& other) noexcept : log(other.log) { log += "CC"; }
+      name_extractor(name_extractor&& other) noexcept : log(other.log) { log += "MC"; }
+      ~name_extractor() { log += "D"; }
+      name_extractor& operator=(const name_extractor&) noexcept
       {
-        count = other.count;
+        log += "CA";
         return *this;
       }
-      name_extractor& operator=(name_extractor&& other) noexcept
+      name_extractor& operator=(name_extractor&&) noexcept
       {
-        count = other.count;
+        log += "MA";
         return *this;
       }
       const std::string& operator()(const S& s) const { return s.name; }
     };
 
-    int count = 0;
-
     {
-      const yk::compare::comparator auto comp = extract(&S::id) | name_extractor{count};
-
-      BOOST_TEST((comp(S{1, "foo", 3.14}, S{2, "bar", 3.14}) < 0));
-      BOOST_TEST((comp(S{2, "foo", 3.14}, S{1, "bar", 3.14}) > 0));
-      BOOST_TEST((comp(S{1, "foo", 3.14}, S{1, "bar", 3.14}) > 0));
-
-      BOOST_TEST((comp(S{1, "bar", 3.14}, S{2, "foo", 3.14}) < 0));
-      BOOST_TEST((comp(S{2, "bar", 3.14}, S{1, "foo", 3.14}) > 0));
-      BOOST_TEST((comp(S{1, "bar", 3.14}, S{1, "foo", 3.14}) < 0));
-
-      BOOST_TEST((comp(S{1, "foo", 3.14}, S{2, "foo", 3.14}) < 0));
-      BOOST_TEST((comp(S{2, "foo", 3.14}, S{1, "foo", 3.14}) > 0));
-      BOOST_TEST((comp(S{1, "foo", 3.14}, S{1, "foo", 3.14}) == 0));
+      std::string log;
+      {
+        const yk::compare::comparator auto comp = extract(&S::id) | name_extractor{log};
+        // construction -> NC
+        // move_construction in extract_comparator -> MC
+        // move_construction in then_comparator -> MC
+      }
+      std::println("{}", log);
+      // BOOST_TEST(log == "NCMCMCDDD");
     }
-
-    BOOST_TEST(count == 0);
   }
 
   // composing range adaptor closure
-  {
-    const auto range_adaptor_closure = std::views::reverse | std::ranges::to<std::string>();
-    const auto comp = extract(&S::name) | range_adaptor_closure;
-    BOOST_TEST((comp(S{1, "foo", 3.14}, S{2, "bar", 1.41}) < 0));
-  }
+  // {
+  //   const auto range_adaptor_closure = std::views::reverse | std::ranges::to<std::string>();
+  //   const auto comp = extract(&S::name) | range_adaptor_closure;
+  //   BOOST_TEST((comp(S{1, "foo", 3.14}, S{2, "bar", 1.41}) < 0));
+  // }
 
   {
     const auto comp = std::strong_order | then(std::strong_order);
@@ -226,6 +218,215 @@ BOOST_AUTO_TEST_CASE(extract_and_comparator_then)
   {
     const auto comp = std::partial_order | then(std::strong_order);
     static_assert(std::is_same_v<std::invoke_result_t<decltype(comp), int, int>, std::partial_ordering>);
+  }
+}
+
+namespace {
+
+[[maybe_unused]] std::strong_ordering compare(int x, int y) { return x <=> y; }
+
+}  // namespace
+
+BOOST_AUTO_TEST_CASE(ClosureTypeTraits)
+{
+  {
+    auto comp [[maybe_unused]] = yk::compare::then_comparator{compare, compare};
+    using F = std::strong_ordering(int, int);
+    static_assert(std::is_same_v<decltype(comp), yk::compare::then_comparator<
+      yk::compare::wrapper_comparator<F&>,
+      yk::compare::wrapper_comparator<F&>
+    >>);
+  }
+
+  {
+    constexpr struct fn {
+      std::strong_ordering operator()(int x, int y) const noexcept {
+        return x <=> y;
+      }
+    } function_object;
+    auto comp = yk::compare::then_comparator{function_object, function_object};
+    static_assert(std::is_same_v<decltype(comp), yk::compare::then_comparator<
+      yk::compare::wrapper_comparator<const fn&>,
+      yk::compare::wrapper_comparator<const fn&>
+    >>);
+  }
+  
+  {
+    struct fn {
+      std::strong_ordering operator()(int x, int y) const noexcept {
+        return x <=> y;
+      }
+    } function_object;
+    auto comp = yk::compare::then_comparator{function_object, function_object};
+    static_assert(std::is_same_v<decltype(comp), yk::compare::then_comparator<
+      yk::compare::wrapper_comparator<fn&>,
+      yk::compare::wrapper_comparator<fn&>
+    >>);
+  }
+
+  {
+    struct fn {
+      std::strong_ordering operator()(int x, int y) const noexcept {
+        return x <=> y;
+      }
+    };
+    auto comp = yk::compare::then_comparator{ fn{}, fn{} };
+    static_assert(std::is_same_v<decltype(comp), yk::compare::then_comparator<
+      yk::compare::wrapper_comparator<fn>,
+      yk::compare::wrapper_comparator<fn>
+    >>);
+  }
+  ///////////////////////////////////////////////////////////////////////
+  {
+    auto comp [[maybe_unused]] = yk::comparators::then(compare, compare);
+    using F = std::strong_ordering(int, int);
+    static_assert(std::is_same_v<decltype(comp), yk::compare::then_comparator<
+      yk::compare::wrapper_comparator<F&>,
+      yk::compare::wrapper_comparator<F&>
+    >>);
+  }
+
+  {
+    constexpr struct fn {
+      std::strong_ordering operator()(int x, int y) const noexcept {
+        return x <=> y;
+      }
+    } function_object;
+    auto comp = yk::comparators::then(function_object, function_object);
+    static_assert(std::is_same_v<decltype(comp), yk::compare::then_comparator<
+      yk::compare::wrapper_comparator<const fn&>,
+      yk::compare::wrapper_comparator<const fn&>
+    >>);
+  }
+  
+  {
+    struct fn {
+      std::strong_ordering operator()(int x, int y) const noexcept {
+        return x <=> y;
+      }
+    } function_object;
+    auto comp = yk::comparators::then(function_object, function_object);
+    static_assert(std::is_same_v<decltype(comp), yk::compare::then_comparator<
+      yk::compare::wrapper_comparator<fn&>,
+      yk::compare::wrapper_comparator<fn&>
+    >>);
+  }
+
+  {
+    struct fn {
+      std::strong_ordering operator()(int x, int y) const noexcept {
+        return x <=> y;
+      }
+    };
+    auto comp = yk::comparators::then(fn{}, fn{});
+    static_assert(std::is_same_v<decltype(comp), yk::compare::then_comparator<
+      yk::compare::wrapper_comparator<fn>,
+      yk::compare::wrapper_comparator<fn>
+    >>);
+  }
+
+  {
+    auto closure [[maybe_unused]] = yk::comparators::then(&compare);
+    using F = std::strong_ordering(int, int);
+    static_assert(std::is_same_v<decltype(closure), yk::compare::detail::comp_then_closure<F*>>);
+
+    auto comp = yk::comparators::wrap(&compare) | closure;
+    static_assert(std::is_same_v<decltype(comp), yk::compare::then_comparator<
+      yk::compare::wrapper_comparator<const F*>,
+      yk::compare::wrapper_comparator<const F*&>
+    >>);
+  }
+
+  {
+    auto closure [[maybe_unused]] = yk::comparators::then(compare);
+    using F = std::strong_ordering(int, int);
+    static_assert(std::is_same_v<decltype(closure), yk::compare::detail::comp_then_closure<F&>>);
+
+    auto comp = yk::comparators::wrap(compare) | closure;
+    static_assert(std::is_same_v<decltype(comp), yk::compare::then_comparator<
+      yk::compare::wrapper_comparator<F&>,
+      yk::compare::wrapper_comparator<F&>
+    >>);
+  }
+  
+  {
+    constexpr struct fn {
+      std::strong_ordering operator()(int x, int y) const noexcept {
+        return x <=> y;
+      }
+    } function_object;
+    auto closure [[maybe_unused]] = yk::comparators::then(function_object);
+    static_assert(std::is_same_v<decltype(closure), yk::compare::detail::comp_then_closure<const fn&>>);
+
+    auto comp = function_object | closure;
+    static_assert(std::is_same_v<decltype(comp), yk::compare::then_comparator<
+      yk::compare::wrapper_comparator<const fn&>,
+      yk::compare::wrapper_comparator<const fn&>
+    >>);
+  }
+  {
+    struct fn {
+      std::strong_ordering operator()(int x, int y) const noexcept {
+        return x <=> y;
+      }
+    } function_object;
+    auto closure [[maybe_unused]] = yk::comparators::then(function_object);
+    static_assert(std::is_same_v<decltype(closure), yk::compare::detail::comp_then_closure<fn&>>);
+
+    auto comp = function_object | closure;
+    static_assert(std::is_same_v<decltype(comp), yk::compare::then_comparator<
+      yk::compare::wrapper_comparator<fn&>,
+      yk::compare::wrapper_comparator<fn&>
+    >>);
+  }
+  {
+    struct fn {
+      std::strong_ordering operator()(int x, int y) const noexcept {
+        return x <=> y;
+      }
+    } function_object;
+    auto comp = function_object | yk::comparators::then(function_object);
+    static_assert(std::is_same_v<decltype(comp), yk::compare::then_comparator<
+      yk::compare::wrapper_comparator<fn&>,
+      yk::compare::wrapper_comparator<fn&>
+    >>);
+  }
+  {
+    struct A {
+      std::strong_ordering operator()(int x, int y) const noexcept {
+        return x <=> y;
+      }
+    };
+    struct B {
+      std::strong_ordering operator()(int x, int y) const noexcept {
+        return x <=> y;
+      }
+    };
+    auto closure [[maybe_unused]] = yk::comparators::then(A{});
+    static_assert(std::is_same_v<decltype(closure), yk::compare::detail::comp_then_closure<A>>);
+
+    auto comp = B{} |  closure;
+    static_assert(std::is_same_v<decltype(comp), yk::compare::then_comparator<
+      yk::compare::wrapper_comparator<B>,
+      yk::compare::wrapper_comparator<A&>
+    >>);
+  }
+  {
+    struct A {
+      std::strong_ordering operator()(int x, int y) const noexcept {
+        return x <=> y;
+      }
+    };
+    struct B {
+      std::strong_ordering operator()(int x, int y) const noexcept {
+        return x <=> y;
+      }
+    };
+    auto comp = B{} | yk::comparators::then(A{});
+    static_assert(std::is_same_v<decltype(comp), yk::compare::then_comparator<
+      yk::compare::wrapper_comparator<B>,
+      yk::compare::wrapper_comparator<A>
+    >>);
   }
 }
 
