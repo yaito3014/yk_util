@@ -142,20 +142,45 @@ BOOST_AUTO_TEST_CASE(extract_and_comparator_then)
 
   // using lambda
   {
-    const yk::compare::comparator auto comp =
-        extract(&S::id) | [](const S& s) { return s.name; } | [](const auto& s) { return s.height; };
+    struct name_extractor {
+      int& count;
 
-    BOOST_TEST((comp(S{1, "foo", 3.14}, S{2, "bar", 3.14}) < 0));
-    BOOST_TEST((comp(S{2, "foo", 3.14}, S{1, "bar", 3.14}) > 0));
-    BOOST_TEST((comp(S{1, "foo", 3.14}, S{1, "bar", 3.14}) > 0));
+      name_extractor(int& c) : count(c) { ++count; }
+      name_extractor(const name_extractor& other) noexcept : count(other.count) { ++count; }
+      name_extractor(name_extractor&& other) noexcept : count(other.count) { ++count; }
+      ~name_extractor() { --count; }
+      name_extractor& operator=(const name_extractor& other) noexcept
+      {
+        count = other.count;
+        return *this;
+      }
+      name_extractor& operator=(name_extractor&& other) noexcept
+      {
+        count = other.count;
+        return *this;
+      }
+      const std::string& operator()(const S& s) const { return s.name; }
+    };
 
-    BOOST_TEST((comp(S{1, "bar", 3.14}, S{2, "foo", 3.14}) < 0));
-    BOOST_TEST((comp(S{2, "bar", 3.14}, S{1, "foo", 3.14}) > 0));
-    BOOST_TEST((comp(S{1, "bar", 3.14}, S{1, "foo", 3.14}) < 0));
+    int count = 0;
 
-    BOOST_TEST((comp(S{1, "foo", 3.14}, S{2, "foo", 3.14}) < 0));
-    BOOST_TEST((comp(S{2, "foo", 3.14}, S{1, "foo", 3.14}) > 0));
-    BOOST_TEST((comp(S{1, "foo", 3.14}, S{1, "foo", 3.14}) == 0));
+    {
+      const yk::compare::comparator auto comp = extract(&S::id) | name_extractor{count};
+
+      BOOST_TEST((comp(S{1, "foo", 3.14}, S{2, "bar", 3.14}) < 0));
+      BOOST_TEST((comp(S{2, "foo", 3.14}, S{1, "bar", 3.14}) > 0));
+      BOOST_TEST((comp(S{1, "foo", 3.14}, S{1, "bar", 3.14}) > 0));
+
+      BOOST_TEST((comp(S{1, "bar", 3.14}, S{2, "foo", 3.14}) < 0));
+      BOOST_TEST((comp(S{2, "bar", 3.14}, S{1, "foo", 3.14}) > 0));
+      BOOST_TEST((comp(S{1, "bar", 3.14}, S{1, "foo", 3.14}) < 0));
+
+      BOOST_TEST((comp(S{1, "foo", 3.14}, S{2, "foo", 3.14}) < 0));
+      BOOST_TEST((comp(S{2, "foo", 3.14}, S{1, "foo", 3.14}) > 0));
+      BOOST_TEST((comp(S{1, "foo", 3.14}, S{1, "foo", 3.14}) == 0));
+    }
+
+    BOOST_TEST(count == 0);
   }
 
   // composing range adaptor closure
