@@ -1,9 +1,9 @@
-#include "yk/compare/comparator.hpp"
-#include "yk/compare/then.hpp"
+#include "yk/compare.hpp"
 
 #include <boost/test/unit_test.hpp>
 
 #include <compare>
+#include <type_traits>
 
 BOOST_AUTO_TEST_SUITE(Compare)
 
@@ -123,21 +123,57 @@ BOOST_AUTO_TEST_CASE(extract_and_comparator_then)
 
   // short-hand syntax
   {
-    const yk::compare::comparator auto comp1 = extract(&S::id);
-    const yk::compare::comparator auto comp2 = comp1 | &S::name;
-    const yk::compare::comparator auto comp3 = comp2 | &S::height;
+    const yk::compare::comparator auto comp = extract(&S::id) | &S::name | &S::height;
 
-    BOOST_TEST((comp3(S{1, "foo", 3.14}, S{2, "bar", 3.14}) < 0));
-    BOOST_TEST((comp3(S{2, "foo", 3.14}, S{1, "bar", 3.14}) > 0));
-    BOOST_TEST((comp3(S{1, "foo", 3.14}, S{1, "bar", 3.14}) > 0));
+    BOOST_TEST((comp(S{1, "foo", 3.14}, S{2, "bar", 3.14}) < 0));
+    BOOST_TEST((comp(S{2, "foo", 3.14}, S{1, "bar", 3.14}) > 0));
+    BOOST_TEST((comp(S{1, "foo", 3.14}, S{1, "bar", 3.14}) > 0));
 
-    BOOST_TEST((comp3(S{1, "bar", 3.14}, S{2, "foo", 3.14}) < 0));
-    BOOST_TEST((comp3(S{2, "bar", 3.14}, S{1, "foo", 3.14}) > 0));
-    BOOST_TEST((comp3(S{1, "bar", 3.14}, S{1, "foo", 3.14}) < 0));
+    BOOST_TEST((comp(S{1, "bar", 3.14}, S{2, "foo", 3.14}) < 0));
+    BOOST_TEST((comp(S{2, "bar", 3.14}, S{1, "foo", 3.14}) > 0));
+    BOOST_TEST((comp(S{1, "bar", 3.14}, S{1, "foo", 3.14}) < 0));
 
-    BOOST_TEST((comp3(S{1, "foo", 3.14}, S{2, "foo", 3.14}) < 0));
-    BOOST_TEST((comp3(S{2, "foo", 3.14}, S{1, "foo", 3.14}) > 0));
-    BOOST_TEST((comp3(S{1, "foo", 3.14}, S{1, "foo", 3.14}) == 0));
+    BOOST_TEST((comp(S{1, "foo", 3.14}, S{2, "foo", 3.14}) < 0));
+    BOOST_TEST((comp(S{2, "foo", 3.14}, S{1, "foo", 3.14}) > 0));
+    BOOST_TEST((comp(S{1, "foo", 3.14}, S{1, "foo", 3.14}) == 0));
+  }
+
+  {
+    const auto comp = std::strong_order | then(std::strong_order);
+    static_assert(std::is_same_v<std::invoke_result_t<decltype(comp), int, int>, std::strong_ordering>);
+  }
+  {
+    const auto comp = std::weak_order | then(std::weak_order);
+    static_assert(std::is_same_v<std::invoke_result_t<decltype(comp), int, int>, std::weak_ordering>);
+  }
+  {
+    const auto comp = std::partial_order | then(std::partial_order);
+    static_assert(std::is_same_v<std::invoke_result_t<decltype(comp), int, int>, std::partial_ordering>);
+  }
+
+  {
+    const auto comp = std::strong_order | then(std::weak_order);
+    static_assert(std::is_same_v<std::invoke_result_t<decltype(comp), int, int>, std::weak_ordering>);
+  }
+  {
+    const auto comp = std::weak_order | then(std::strong_order);
+    static_assert(std::is_same_v<std::invoke_result_t<decltype(comp), int, int>, std::weak_ordering>);
+  }
+  {
+    const auto comp = std::weak_order | then(std::partial_order);
+    static_assert(std::is_same_v<std::invoke_result_t<decltype(comp), int, int>, std::partial_ordering>);
+  }
+  {
+    const auto comp = std::partial_order | then(std::weak_order);
+    static_assert(std::is_same_v<std::invoke_result_t<decltype(comp), int, int>, std::partial_ordering>);
+  }
+  {
+    const auto comp = std::strong_order | then(std::partial_order);
+    static_assert(std::is_same_v<std::invoke_result_t<decltype(comp), int, int>, std::partial_ordering>);
+  }
+  {
+    const auto comp = std::partial_order | then(std::strong_order);
+    static_assert(std::is_same_v<std::invoke_result_t<decltype(comp), int, int>, std::partial_ordering>);
   }
 }
 
