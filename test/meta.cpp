@@ -481,4 +481,20 @@ BOOST_AUTO_TEST_CASE(Compose)
   BOOST_TEST(yk::compose(g, f)(42) == 2);
 }
 
+BOOST_AUTO_TEST_CASE(HasFunctionCallOperator)
+{
+  {
+    struct S {};
+    static_assert(!yk::has_function_call_operator_v<S>);
+  }
+  {
+    struct S {
+      void operator()() {}
+    };
+    static_assert(yk::has_function_call_operator_v<S>);
+  }
+  static_assert(yk::has_function_call_operator_v<decltype([]{})>);
+  static_assert(yk::has_function_call_operator_v<decltype([](auto){})>);
+}
+
 BOOST_AUTO_TEST_SUITE_END()

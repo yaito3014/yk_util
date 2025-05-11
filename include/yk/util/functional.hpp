@@ -20,6 +20,41 @@ enum class invocable_kind {
 
 namespace detail {
 
+template <class T, class = void>
+struct has_unambiguous_function_call_operator : std::false_type {};
+
+template <class T>
+struct has_unambiguous_function_call_operator<T, std::void_t<decltype(&T::operator())>> : std::true_type {};
+
+struct has_function_call_operator_mixin {
+  void operator()() {}
+};
+
+template <class T>
+struct has_function_call_operator_helper : T, has_function_call_operator_mixin {};
+
+template <class T>
+struct has_function_call_operator
+    : std::conjunction<
+          std::is_class<T>,
+          std::negation<has_unambiguous_function_call_operator<has_function_call_operator_helper<T>>>> {};
+
+}  // namespace detail
+
+template <class T>
+struct has_unambiguous_function_call_operator : detail::has_unambiguous_function_call_operator<T> {};
+
+template <class T>
+inline constexpr bool has_umambiguous_function_call_operator_v = has_unambiguous_function_call_operator<T>::value;
+
+template <class T>
+struct has_function_call_operator : detail::has_function_call_operator<T> {};
+
+template <class T>
+inline constexpr bool has_function_call_operator_v = has_function_call_operator<T>::value;
+
+namespace detail {
+
 template <class F, class = void>
 struct invocable_traits {
   static constexpr invocable_kind kind = invocable_kind::generic_function_object;
