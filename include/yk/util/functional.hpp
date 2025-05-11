@@ -164,16 +164,35 @@ struct invocable_traits<
   static constexpr invocable_kind kind = invocable_kind::overloaded_function_object;
 };
 
-template <class F, std::size_t N, class TypeList>
+template <class T, class = void>
+struct has_arity : std::false_type {};
+
+template <class T>
+struct has_arity<T, std::void_t<decltype(T::arity)>> : std::true_type {};
+
+template <class F, std::size_t N, class TypeList, class = void>
 struct is_n_ary_function_impl : std::bool_constant<N == TypeList::size> {};
+
+template <class F, std::size_t N, class TypeList>
+struct is_n_ary_function_impl<F, N, TypeList, std::enable_if_t<has_arity<F>::value>>
+    : std::bool_constant<N == TypeList::size> {
+  static_assert(F::arity == TypeList::size, "arity must match parameters' size");
+};
 
 template <class F, std::size_t N, class = void>
 struct is_n_ary_function : std::false_type {};
 
 template <class F, std::size_t N>
 struct is_n_ary_function<
-    F, N, std::enable_if_t<invocable_traits<F>::kind == invocable_kind::overloaded_function_object>> : std::true_type {
-};
+    F, N,
+    std::enable_if_t<invocable_traits<F>::kind == invocable_kind::overloaded_function_object && !has_arity<F>::value>>
+    : std::true_type {};
+
+template <class F, std::size_t N>
+struct is_n_ary_function<
+    F, N,
+    std::enable_if_t<invocable_traits<F>::kind == invocable_kind::overloaded_function_object && has_arity<F>::value>>
+    : std::bool_constant<N == F::arity> {};
 
 template <class F, std::size_t N>
 struct is_n_ary_function<
