@@ -165,10 +165,7 @@ struct invocable_traits<
 };
 
 template <class F, std::size_t N, class TypeList>
-struct is_n_ary_function_impl;
-
-template <class F, std::size_t N, class... Args>
-struct is_n_ary_function_impl<F, N, type_list<Args...>> : std::bool_constant<N == sizeof...(Args)> {};
+struct is_n_ary_function_impl : std::bool_constant<N == TypeList::size> {};
 
 template <class F, std::size_t N, class = void>
 struct is_n_ary_function : std::false_type {};
