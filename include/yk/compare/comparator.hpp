@@ -44,7 +44,7 @@ concept comparator = yk::binary_function<Comp> && enable_comparator<Comp>;
 struct comparator_adaptor_closure {};
 
 template <class Comp, class Closure>
-  requires std::derived_from<std::remove_cvref_t<Closure>, comparator_adaptor_closure>
+  requires binary_function<std::decay_t<Comp>> && std::derived_from<std::remove_cvref_t<Closure>, comparator_adaptor_closure>
 constexpr auto operator|(Comp&& comp, Closure&& closure) noexcept
 {
   return std::invoke(std::forward<Closure>(closure), std::forward<Comp>(comp));
@@ -54,6 +54,8 @@ namespace detail {
 
 template <class Lhs, class Rhs>
 struct pipe_closure : comparator_adaptor_closure {
+  static constexpr std::size_t arity = 1;
+
   YK_NO_UNIQUE_ADDRESS Lhs lhs;
   YK_NO_UNIQUE_ADDRESS Rhs rhs;
 
@@ -154,6 +156,8 @@ namespace detail {
 
 template <class Comp2>
 struct comp_then_closure : comparator_adaptor_closure {
+  static constexpr std::size_t arity = 1;
+
   YK_NO_UNIQUE_ADDRESS Comp2 comp2;
 
   constexpr comp_then_closure(Comp2&& c2) noexcept : comp2(std::forward<Comp2>(c2)) {}
