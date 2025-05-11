@@ -56,9 +56,7 @@ inline constexpr bool has_function_call_operator_v = has_function_call_operator<
 namespace detail {
 
 template <class F, class = void>
-struct invocable_traits {
-  static constexpr invocable_kind kind = invocable_kind::overloaded_function_object;
-};
+struct invocable_traits {};
 
 template <class R, class... Args>
 struct invocable_traits<R(Args...)> {
@@ -153,10 +151,17 @@ struct drop_head<type_list<T, Args...>> {
 };
 
 template <class F>
-struct invocable_traits<F, std::void_t<decltype(&F::operator())>> {
+struct invocable_traits<
+    F, std::enable_if_t<has_function_call_operator_v<F> && has_umambiguous_function_call_operator_v<F>>> {
   static constexpr invocable_kind kind = invocable_kind::function_object;
   using return_type = typename invocable_traits<decltype(&F::operator())>::return_type;
   using parameters = typename drop_head<typename invocable_traits<decltype(&F::operator())>::parameters>::type;
+};
+
+template <class F>
+struct invocable_traits<
+    F, std::enable_if_t<has_function_call_operator_v<F> && !has_umambiguous_function_call_operator_v<F>>> {
+  static constexpr invocable_kind kind = invocable_kind::overloaded_function_object;
 };
 
 template <class F, std::size_t N, class TypeList>
@@ -166,14 +171,16 @@ template <class F, std::size_t N, class... Args>
 struct is_n_ary_function_impl<F, N, type_list<Args...>> : std::bool_constant<N == sizeof...(Args)> {};
 
 template <class F, std::size_t N, class = void>
-struct is_n_ary_function;
+struct is_n_ary_function : std::false_type {};
 
 template <class F, std::size_t N>
-struct is_n_ary_function<F, N, std::enable_if_t<invocable_traits<F>::kind == invocable_kind::overloaded_function_object>>
-    : std::true_type {};
+struct is_n_ary_function<
+    F, N, std::enable_if_t<invocable_traits<F>::kind == invocable_kind::overloaded_function_object>> : std::true_type {
+};
 
 template <class F, std::size_t N>
-struct is_n_ary_function<F, N, std::enable_if_t<invocable_traits<F>::kind != invocable_kind::overloaded_function_object>>
+struct is_n_ary_function<
+    F, N, std::enable_if_t<invocable_traits<F>::kind != invocable_kind::overloaded_function_object>>
     : is_n_ary_function_impl<F, N, typename invocable_traits<F>::parameters> {};
 
 }  // namespace detail
