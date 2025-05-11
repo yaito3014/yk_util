@@ -448,7 +448,7 @@ BOOST_AUTO_TEST_CASE(FunctionTraits)
 
   {
     const auto lambda = [](float, double) -> int { return 42; };
-    using F = decltype(lambda);
+    using F = std::decay_t<decltype(lambda)>;
     static_assert(yk::invocable_traits<F>::kind == yk::invocable_kind::function_object);
     static_assert(std::is_same_v<yk::invocable_traits<F>::return_type, int>);
     static_assert(std::is_same_v<yk::invocable_traits<F>::parameters, yk::type_list<float, double>>);
@@ -458,7 +458,7 @@ BOOST_AUTO_TEST_CASE(FunctionTraits)
 
   {
     const auto generic_lambda = [](auto) {};
-    using F = decltype(generic_lambda);
+    using F = std::decay_t<decltype(generic_lambda)>;
     static_assert(yk::invocable_traits<F>::kind == yk::invocable_kind::overloaded_function_object);
     static_assert(yk::is_unary_function_v<F>);   // fallback
     static_assert(yk::is_binary_function_v<F>);  // fallback
@@ -466,7 +466,7 @@ BOOST_AUTO_TEST_CASE(FunctionTraits)
 
   {
     const auto generic_lambda = [](auto, auto) {};
-    using F = decltype(generic_lambda);
+    using F = std::decay_t<decltype(generic_lambda)>;
     static_assert(yk::invocable_traits<F>::kind == yk::invocable_kind::overloaded_function_object);
     static_assert(yk::is_unary_function_v<F>);   // fallback
     static_assert(yk::is_binary_function_v<F>);  // fallback
