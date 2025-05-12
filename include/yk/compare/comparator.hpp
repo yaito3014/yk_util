@@ -82,6 +82,7 @@ constexpr auto operator|(Lhs&& lhs, Rhs&& rhs) noexcept
 }
 
 template <class Comp>
+  requires binary_function<std::decay_t<Comp>>
 struct wrapper_comparator : comparator_interface {
   YK_NO_UNIQUE_ADDRESS Comp comp;
 
