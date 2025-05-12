@@ -44,7 +44,8 @@ concept comparator = yk::binary_function<Comp> && enable_comparator<Comp>;
 struct comparator_adaptor_closure {};
 
 template <class Comp, class Closure>
-  requires binary_function<std::decay_t<Comp>> && std::derived_from<std::remove_cvref_t<Closure>, comparator_adaptor_closure>
+  requires binary_function<std::decay_t<Comp>>
+           && std::derived_from<std::remove_cvref_t<Closure>, comparator_adaptor_closure>
 constexpr auto operator|(Comp&& comp, Closure&& closure) noexcept
 {
   return std::invoke(std::forward<Closure>(closure), std::forward<Comp>(comp));
@@ -84,6 +85,8 @@ constexpr auto operator|(Lhs&& lhs, Rhs&& rhs) noexcept
 template <class Comp>
   requires binary_function<std::decay_t<Comp>>
 struct wrapper_comparator : comparator_interface {
+  static constexpr std::size_t arity = 2;
+
   YK_NO_UNIQUE_ADDRESS Comp comp;
 
   constexpr wrapper_comparator(Comp&& c) noexcept : comp(std::forward<Comp>(c)) {}
@@ -129,6 +132,8 @@ using wrap_t = decltype(comparators::wrap(std::declval<Comp>()));
 
 template <comparator Comp1, comparator Comp2>
 struct then_comparator : comparator_interface {
+  static constexpr std::size_t arity = 2;
+
   YK_NO_UNIQUE_ADDRESS Comp1 comp1;
   YK_NO_UNIQUE_ADDRESS Comp2 comp2;
 
@@ -179,7 +184,7 @@ struct comp_then_closure : comparator_adaptor_closure {
   {
     return then_comparator{std::forward<Comp1>(comp1), comp2};
   }
-  
+
   // if closure if rvalue reference, move if Comp2 is not reference
   template <class Comp1>
     requires binary_function<std::decay_t<Comp1>>
@@ -225,6 +230,8 @@ inline constexpr detail::comp_then_fn then{};
 template <class F>
   requires unary_function<std::decay_t<F>>
 struct extract_comparator : comparator_interface {
+  static constexpr std::size_t arity = 2;
+
   YK_NO_UNIQUE_ADDRESS F func;
 
   constexpr extract_comparator(F&& f) noexcept : func(std::forward<F>(f)) {}
