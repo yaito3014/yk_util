@@ -329,7 +329,7 @@ BOOST_AUTO_TEST_CASE(ClosureTypeTraits)
     auto closure [[maybe_unused]] = yk::comparators::then(&compare);
     using F = std::strong_ordering(int, int);
     static_assert(std::is_same_v<decltype(closure), yk::compare::detail::comp_then_closure<F*>>);
-
+    static_assert(!yk::compare::detail::RangeAdaptorClosure<decltype(closure)>);
     auto comp = yk::comparators::wrap(&compare) | closure;
     static_assert(std::is_same_v<decltype(comp), yk::compare::then_comparator<
       yk::compare::wrapper_comparator<F*>,
@@ -341,7 +341,7 @@ BOOST_AUTO_TEST_CASE(ClosureTypeTraits)
     auto closure [[maybe_unused]] = yk::comparators::then(compare);
     using F = std::strong_ordering(int, int);
     static_assert(std::is_same_v<decltype(closure), yk::compare::detail::comp_then_closure<F&>>);
-
+    static_assert(!yk::compare::detail::RangeAdaptorClosure<decltype(closure)>);
     auto comp = yk::comparators::wrap(compare) | closure;
     static_assert(std::is_same_v<decltype(comp), yk::compare::then_comparator<
       yk::compare::wrapper_comparator<F&>,
@@ -357,7 +357,7 @@ BOOST_AUTO_TEST_CASE(ClosureTypeTraits)
     } function_object;
     auto closure [[maybe_unused]] = yk::comparators::then(function_object);
     static_assert(std::is_same_v<decltype(closure), yk::compare::detail::comp_then_closure<const fn&>>);
-
+    static_assert(!yk::compare::detail::RangeAdaptorClosure<decltype(closure)>);
     auto comp = function_object | closure;
     static_assert(std::is_same_v<decltype(comp), yk::compare::then_comparator<
       yk::compare::wrapper_comparator<const fn&>,
@@ -372,7 +372,7 @@ BOOST_AUTO_TEST_CASE(ClosureTypeTraits)
     } function_object;
     auto closure [[maybe_unused]] = yk::comparators::then(function_object);
     static_assert(std::is_same_v<decltype(closure), yk::compare::detail::comp_then_closure<fn&>>);
-
+    static_assert(!yk::compare::detail::RangeAdaptorClosure<decltype(closure)>);
     auto comp = function_object | closure;
     static_assert(std::is_same_v<decltype(comp), yk::compare::then_comparator<
       yk::compare::wrapper_comparator<fn&>,
@@ -404,7 +404,7 @@ BOOST_AUTO_TEST_CASE(ClosureTypeTraits)
     };
     auto closure [[maybe_unused]] = yk::comparators::then(A{});
     static_assert(std::is_same_v<decltype(closure), yk::compare::detail::comp_then_closure<A>>);
-
+    static_assert(!yk::compare::detail::RangeAdaptorClosure<decltype(closure)>);
     auto comp = B{} |  closure;
     static_assert(std::is_same_v<decltype(comp), yk::compare::then_comparator<
       yk::compare::wrapper_comparator<B>,
