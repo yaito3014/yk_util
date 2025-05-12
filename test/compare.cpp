@@ -176,11 +176,11 @@ BOOST_AUTO_TEST_CASE(extract_and_comparator_then)
   }
 
   // composing range adaptor closure
-  // {
-  //   const auto range_adaptor_closure = std::views::reverse | std::ranges::to<std::string>();
-  //   const auto comp = extract(&S::name) | range_adaptor_closure;
-  //   BOOST_TEST((comp(S{1, "foo", 3.14}, S{2, "bar", 1.41}) < 0));
-  // }
+  {
+    const auto range_adaptor_closure = std::views::reverse | std::ranges::to<std::string>();
+    const auto comp = extract(&S::name) | range_adaptor_closure;
+    BOOST_TEST((comp(S{1, "foo", 3.14}, S{2, "bar", 1.41}) < 0));
+  }
 
   {
     const auto comp = std::strong_order | then(std::strong_order);
