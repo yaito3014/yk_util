@@ -18,8 +18,7 @@ struct then_closure {
   T value;
 
   template <ordering Lhs>
-    requires std::convertible_to<Lhs, T>
-  friend constexpr T operator|(Lhs lhs, then_closure rhs) noexcept
+  friend constexpr std::common_comparison_category_t<Lhs, T> operator|(Lhs lhs, then_closure rhs) noexcept
   {
     if (lhs == 0) {
       return rhs.value;
@@ -43,15 +42,18 @@ struct then_impl {
   }
 };
 
-template <std::invocable F>
+template <class F>
+  requires std::invocable<std::decay_t<F>>
 struct then_with_closure {
   YK_NO_UNIQUE_ADDRESS F func;
 
-  template <ordering Lhs>
-  friend constexpr std::invoke_result_t<F> operator|(Lhs lhs, then_with_closure rhs) noexcept
+  template <ordering Lhs, class Self>
+    requires std::same_as<std::remove_cvref_t<Self>, then_with_closure>
+  friend constexpr auto operator|(Lhs lhs, Self&& rhs) noexcept
+      -> std::common_comparison_category_t<Lhs, std::invoke_result_t<std::decay_t<F>>>
   {
     if (lhs == 0) {
-      return std::invoke(rhs.func);
+      return std::invoke(std::forward<Self>(rhs).func);
     } else {
       return lhs;
     }
@@ -59,14 +61,16 @@ struct then_with_closure {
 };
 
 struct then_with_impl {
-  template <std::invocable F>
-  constexpr then_with_closure<F> operator()(F x) const noexcept
+  template <class F>
+    requires std::invocable<std::decay_t<F>>
+  constexpr then_with_closure<F> operator()(F&& f) const noexcept
   {
-    return {x};
+    return then_with_closure<F>{f};
   }
 
-  template <ordering T, std::invocable F>
-  constexpr auto operator()(T x, F f) const noexcept
+  template <ordering T, class F>
+    requires std::invocable<std::decay_t<F>>
+  constexpr auto operator()(T x, F&& f) const noexcept
   {
     return x | then_with_closure<F>{f};
   }
