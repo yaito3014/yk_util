@@ -2,7 +2,6 @@
 #define YK_BOOLEAN_TESTABLE_HPP
 
 #include <concepts>
-#include <utility>
 
 namespace yk {
 
@@ -15,7 +14,7 @@ concept boolean_testable_impl = std::convertible_to<T, bool>;
 
 template <class T>
 concept boolean_testable = detail::boolean_testable_impl<T> && requires(T&& t) {
-  { !std::forward<T>(t) } -> detail::boolean_testable_impl;
+  { !static_cast<T&&>(t) } -> detail::boolean_testable_impl;
 };
 
 }  // namespace yk
