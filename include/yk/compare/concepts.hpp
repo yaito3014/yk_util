@@ -13,8 +13,19 @@ namespace compare {
 template <class T>
 concept ordering = requires(T x) {
   { x < 0 } -> boolean_testable;
+  { x <= 0 } -> boolean_testable;
   { x == 0 } -> boolean_testable;
+  { x >= 0 } -> boolean_testable;
   { x > 0 } -> boolean_testable;
+  { x != 0 } -> boolean_testable;
+  { x <=> 0 } -> std::same_as<T>;
+  { 0 < x } -> boolean_testable;
+  { 0 <= x } -> boolean_testable;
+  { 0 == x } -> boolean_testable;
+  { 0 >= x } -> boolean_testable;
+  { 0 > x } -> boolean_testable;
+  { 0 != x } -> boolean_testable;
+  { 0 <=> x } -> std::same_as<T>;
 };
 
 }  // namespace compare
