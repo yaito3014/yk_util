@@ -105,14 +105,14 @@ namespace detail {
 
 struct wrap_fn {
   template <class Comp>
-    requires binary_function<std::remove_cvref_t<Comp>>
+    requires binary_function<std::decay_t<Comp>>
   constexpr auto operator()(Comp&& comp) const noexcept
   {
     return wrapper_comparator{std::forward<Comp>(comp)};
   }
 
   template <class Comp>
-    requires comparator<std::remove_cvref_t<Comp>>
+    requires comparator<std::decay_t<Comp>>
   constexpr auto operator()(Comp&& comp) const noexcept
   {
     return std::forward<Comp>(comp);
