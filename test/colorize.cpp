@@ -47,18 +47,40 @@ BOOST_AUTO_TEST_CASE(colorize)
     auto s = yk::colorize("[green]bar");
     BOOST_TEST(s == "\033[0;32mbar");
   }
+
+  {
+    auto s = yk::colorize("[red]foo[green]bar[reset]baz");
+    BOOST_TEST(s == "\033[0;31mfoo\033[0;32mbar\033[0mbaz");
+  }
 }
 
-#if __cpp_lib_format >= 202311L
-
-BOOST_AUTO_TEST_CASE(forward_to_std_print)
+BOOST_AUTO_TEST_CASE(format_and_colorize)
 {
-  std::stringstream ss;
-  yk::print(ss, "{}", 42);
-  BOOST_TEST(ss.str() == "42");
-  std::format("{}", 42);
+  {
+    std::string s;
+    yk::format_and_colorize_to(std::back_inserter(s), "[red]{}", 42);
+    BOOST_TEST(s == "\033[0;31m42");
+  }
+
+  {
+    auto s = yk::format_and_colorize("[green]{}", 42);
+    BOOST_TEST(s == "\033[0;32m42");
+  }
 }
 
-#endif
+BOOST_AUTO_TEST_CASE(print)
+{
+  {
+    std::stringstream ss;
+    yk::print(ss, "{}", 42);
+    BOOST_TEST(ss.str() == "42");
+  }
+
+  {
+    std::stringstream ss;
+    yk::print(ss, "[yellow]{}", 42);
+    BOOST_TEST(ss.str() == "\033[0;33m42");
+  }
+}
 
 BOOST_AUTO_TEST_SUITE_END()
