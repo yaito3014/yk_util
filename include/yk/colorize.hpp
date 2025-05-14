@@ -199,6 +199,9 @@ struct checking_scanner : scanner<CharT> {
   }
 };
 
+template <class CharT>
+struct colorizing_scanner : scanner<CharT> {};
+
 }  // namespace detail
 
 template <class CharT, class... Args>
@@ -211,14 +214,14 @@ struct basic_colored_format_string {
     scanner.scan();
   }
 
-  constexpr std::basic_string<CharT> get() const noexcept { return colorize(fmt_.get()); }
+  constexpr std::basic_string_view<CharT> get() const noexcept { return fmt_.get(); }
 
 private:
   std::basic_format_string<CharT, Args...> fmt_;
 };
 
 template <class... Args>
-using colored_format_string = basic_colored_format_string<char, Args...>;
+using colored_format_string = basic_colored_format_string<char, std::type_identity_t<Args>...>;
 
 }  // namespace yk
 

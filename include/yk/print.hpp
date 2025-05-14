@@ -3,6 +3,8 @@
 
 #include "yk/colorize.hpp"
 
+#include <print>
+
 #if __cpp_lib_format >= 202311L
 
 namespace yk {
