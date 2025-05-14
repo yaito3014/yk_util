@@ -8,6 +8,7 @@
 #include <ranges>
 #include <string_view>
 #include <utility>
+#include <version>
 
 #include <cstdint>
 
@@ -57,15 +58,18 @@ template <class CharT = char>
 struct colorizer {
   constexpr auto parse(basic_colorize_parse_context<CharT>& pc)
   {
-    auto [it, color, style] = do_parse(pc);
+    auto [it, color, style, reset] = do_parse(pc);
     color_ = color;
     style_ = style;
+    reset_ = reset;
     return it;
   }
 
   template <class Out>
   constexpr auto colorize(basic_colorize_context<Out, CharT>& cc) const
   {
+    if (reset_) return std::ranges::copy(std::string_view{"\033[0m"}, cc.out()).out;
+
     return std::ranges::copy(
                std::format("\033[{};{}m", std::to_underlying(style_), std::to_underlying(color_) + 30), cc.out()
     )
@@ -94,7 +98,8 @@ private:
   struct do_parse_result {
     basic_colorize_parse_context<CharT>::iterator in;
     colorizer::color color;
-    colorizer::style style;
+    colorizer::style style = colorizer::style::normal;
+    bool reset = false;
   };
 
   static constexpr do_parse_result do_parse(basic_colorize_parse_context<CharT>& pc)
@@ -107,19 +112,22 @@ private:
     };
 
     using namespace std::string_view_literals;
-    if (auto opt = starts_with(pc, "black"sv); opt && **opt == ']') return {*opt, color::black, style::normal};
-    if (auto opt = starts_with(pc, "red"sv); opt && **opt == ']') return {*opt, color::red, style::normal};
-    if (auto opt = starts_with(pc, "green"sv); opt && **opt == ']') return {*opt, color::green, style::normal};
-    if (auto opt = starts_with(pc, "yellow"sv); opt && **opt == ']') return {*opt, color::yellow, style::normal};
-    if (auto opt = starts_with(pc, "blue"sv); opt && **opt == ']') return {*opt, color::blue, style::normal};
-    if (auto opt = starts_with(pc, "magenta"sv); opt && **opt == ']') return {*opt, color::magenta, style::normal};
-    if (auto opt = starts_with(pc, "cyan"sv); opt && **opt == ']') return {*opt, color::cyan, style::normal};
-    if (auto opt = starts_with(pc, "white"sv); opt && **opt == ']') return {*opt, color::white, style::normal};
+    if (auto opt = starts_with(pc, "reset"sv); opt && **opt == ']') return {*opt, {}, {}, true};
+
+    if (auto opt = starts_with(pc, "black"sv); opt && **opt == ']') return {*opt, color::black};
+    if (auto opt = starts_with(pc, "red"sv); opt && **opt == ']') return {*opt, color::red};
+    if (auto opt = starts_with(pc, "green"sv); opt && **opt == ']') return {*opt, color::green};
+    if (auto opt = starts_with(pc, "yellow"sv); opt && **opt == ']') return {*opt, color::yellow};
+    if (auto opt = starts_with(pc, "blue"sv); opt && **opt == ']') return {*opt, color::blue};
+    if (auto opt = starts_with(pc, "magenta"sv); opt && **opt == ']') return {*opt, color::magenta};
+    if (auto opt = starts_with(pc, "cyan"sv); opt && **opt == ']') return {*opt, color::cyan};
+    if (auto opt = starts_with(pc, "white"sv); opt && **opt == ']') return {*opt, color::white};
     throw colorize_error("unkown color");
   }
 
   color color_;
   style style_;
+  bool reset_;
 };
 
 namespace detail {
@@ -234,6 +242,28 @@ struct colorizing_scanner : scanner<CharT> {
 
 }  // namespace detail
 
+namespace detail {
+
+template <class CharT>
+struct basic_runtime_colorize_string {
+  constexpr explicit basic_runtime_colorize_string(std::basic_string_view<CharT> str) : str_(str) {}
+  std::basic_string_view<CharT> str_;
+};
+
+template <class CharT>
+struct basic_runtime_colorize_format_string {
+  constexpr explicit basic_runtime_colorize_format_string(std::basic_string_view<CharT> str) : str_(str) {}
+  std::basic_string_view<CharT> str_;
+};
+
+}  // namespace detail
+
+constexpr auto runtime_colorize(std::string_view str) { return detail::basic_runtime_colorize_string<char>{str}; }
+constexpr auto runtime_colorize_format(std::string_view str)
+{
+  return detail::basic_runtime_colorize_format_string<char>{str};
+}
+
 template <class CharT>
 struct basic_colorize_string {
   template <class S>
@@ -242,6 +272,11 @@ struct basic_colorize_string {
   {
     detail::checking_scanner<CharT> scanner(str);
     scanner.scan();
+  }
+
+  constexpr basic_colorize_string(detail::basic_runtime_colorize_string<CharT> runtime_str) noexcept
+      : str_(runtime_str.str_)
+  {
   }
 
   constexpr std::basic_string_view<CharT> get() const noexcept { return str_; }
@@ -262,7 +297,14 @@ struct basic_colorize_format_string {
     scanner.scan();
   }
 
-  constexpr std::basic_string_view<CharT> get() const noexcept { return fmt_.get(); }
+#if __cpp_lib_format >= 202411L
+  explicit basic_colorize_format_string(detail::basic_runtime_colorize_format_string<CharT> runtime_str)
+      : fmt_(std::runtime_format(runtime_str.str_))
+  {
+  }
+#endif
+
+  constexpr std::basic_format_string<CharT, Args...> get() const noexcept { return fmt_; }
 
 private:
   std::basic_format_string<CharT, Args...> fmt_;
@@ -289,21 +331,17 @@ inline std::string colorize(colorize_string col)
   return str;
 }
 
-#if __cpp_lib_format >= 202311L
-
 template <class Out, class... Args>
-inline Out colorize_and_format_to(Out out, colorize_format_string<Args...> fmt, Args&&... args)
+inline Out format_and_colorize_to(Out out, colorize_format_string<Args...> fmt, Args&&... args)
 {
-  return std::format_to(std::move(out), std::runtime_format(colorize(fmt)), std::forward<Args>(args)...);
+  return colorize_to(std::move(out), runtime_colorize(std::format(fmt.get(), std::forward<Args>(args)...)));
 }
 
 template <class... Args>
-inline std::string colorize_and_format(colorize_format_string<Args...> fmt, Args&&... args)
+inline std::string format_and_colorize(colorize_format_string<Args...> fmt, Args&&... args)
 {
-  return std::format(std::runtime_format(colorize(fmt)), std::forward<Args>(args)...);
+  return colorize(runtime_colorize(std::format(fmt.get(), std::forward<Args>(args)...)));
 }
-
-#endif
 
 }  // namespace yk
 
