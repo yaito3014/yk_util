@@ -21,7 +21,6 @@ BOOST_AUTO_TEST_CASE(colored_format_string)
   test("[white]");
 }
 
-
 #if __cpp_lib_format >= 202311L
 
 BOOST_AUTO_TEST_CASE(forward_to_std_print)
