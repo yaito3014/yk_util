@@ -8,42 +8,42 @@
 namespace yk {
 
 template <class... Args>
-void print(std::FILE* stream, colored_format_string<Args...> fmt, Args&&... args)
+inline void print(std::FILE* stream, colored_format_string<Args...> fmt, Args&&... args)
 {
   std::print(stream, std::runtime_format(fmt.get()), std::forward<Args>(args)...);
 }
 
 template <class... Args>
-void print(std::ostream& os, colored_format_string<Args...> fmt, Args&&... args)
+inline void print(std::ostream& os, colored_format_string<Args...> fmt, Args&&... args)
 {
   std::print(os, std::runtime_format(fmt.get()), std::forward<Args>(args)...);
 }
 
 template <class... Args>
-void print(colored_format_string<Args...> fmt, Args&&... args)
+inline void print(colored_format_string<Args...> fmt, Args&&... args)
 {
   std::print(std::runtime_format(fmt.get()), std::forward<Args>(args)...);
 }
 
 template <class... Args>
-void println(std::FILE* stream, colored_format_string<Args...> fmt, Args&&... args)
+inline void println(std::FILE* stream, colored_format_string<Args...> fmt, Args&&... args)
 {
   std::println(stream, std::runtime_format(fmt.get()), std::forward<Args>(args)...);
 }
 
 template <class... Args>
-void println(std::ostream& os, colored_format_string<Args...> fmt, Args&&... args)
+inline void println(std::ostream& os, colored_format_string<Args...> fmt, Args&&... args)
 {
   std::println(os, std::runtime_format(fmt.get()), std::forward<Args>(args)...);
 }
 
 template <class... Args>
-void println(colored_format_string<Args...> fmt, Args&&... args)
+inline void println(colored_format_string<Args...> fmt, Args&&... args)
 {
   std::println(std::runtime_format(fmt.get()), std::forward<Args>(args)...);
 }
 
-}
+}  // namespace yk
 
 #endif
 
