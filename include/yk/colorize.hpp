@@ -5,10 +5,11 @@
 
 #include <algorithm>
 #include <format>
-#include <ostream>
+#include <ranges>
+#include <string_view>
+#include <utility>
 
 #include <cstdint>
-#include <cstdio>
 
 namespace yk {
 
@@ -41,12 +42,16 @@ struct basic_colorize_context {
   using char_type = CharT;
   using iterator = Out;
 
+  explicit basic_colorize_context(Out out) : out_(std::move(out)) {}
+
   constexpr iterator out() { return std::move(out_); }
   constexpr void advance_to(iterator it) { out_ = std::move(it); }
 
 private:
   iterator out_;
 };
+
+using colorize_parse_context = basic_colorize_parse_context<char>;
 
 template <class CharT = char>
 struct colorizer {
@@ -61,7 +66,10 @@ struct colorizer {
   template <class Out>
   constexpr auto colorize(basic_colorize_context<Out, CharT>& cc) const
   {
-    return cc.out();
+    return std::ranges::copy(
+               std::format("\033[{};{}m", std::to_underlying(style_), std::to_underlying(color_) + 30), cc.out()
+    )
+        .out;
   }
 
 private:
@@ -173,7 +181,7 @@ struct scanner {
     if (*next == ']') {
       throw colorize_error("empty color specifier");
     }
-    colorize_arg();
+    colorize();
     if (pc.begin() == pc.end() || *pc.begin() != ']') {
       throw colorize_error("unmatched left brace");
     }
@@ -181,7 +189,7 @@ struct scanner {
   }
 
   constexpr virtual void on_chars(iterator) {}
-  constexpr virtual void colorize_arg() = 0;
+  constexpr virtual void colorize() = 0;
 
   basic_colorize_parse_context<CharT> pc;
 };
@@ -190,7 +198,7 @@ template <class CharT>
 struct checking_scanner : scanner<CharT> {
   consteval checking_scanner(std::basic_string_view<CharT> str) : scanner<CharT>(str) {}
 
-  constexpr void colorize_arg() override { parse_colorize_spec(); }
+  constexpr void colorize() override { parse_colorize_spec(); }
 
   constexpr void parse_colorize_spec()
   {
@@ -199,16 +207,56 @@ struct checking_scanner : scanner<CharT> {
   }
 };
 
-template <class CharT>
-struct colorizing_scanner : scanner<CharT> {};
+template <class Out, class CharT>
+struct colorizing_scanner : scanner<CharT> {
+  using iterator = typename scanner<CharT>::iterator;
+
+  colorizing_scanner(basic_colorize_context<Out, CharT>& cc, std::basic_string_view<CharT> str)
+      : scanner<CharT>(str), cc(cc)
+  {
+  }
+
+  constexpr void on_chars(iterator last) override
+  {
+    std::basic_string_view<CharT> str(this->pc.begin(), last);
+    cc.advance_to(std::ranges::copy(str, cc.out()).out);
+  }
+
+  constexpr void colorize() override
+  {
+    colorizer c;
+    this->pc.advance_to(c.parse(this->pc));
+    cc.advance_to(c.colorize(cc));
+  }
+
+  basic_colorize_context<Out, CharT>& cc;
+};
 
 }  // namespace detail
 
-template <class CharT, class... Args>
-struct basic_colored_format_string {
+template <class CharT>
+struct basic_colorize_string {
   template <class S>
     requires detail::StringLike<const S&>
-  consteval basic_colored_format_string(const S& str) : fmt_(str)
+  consteval basic_colorize_string(const S& str) : str_(str)
+  {
+    detail::checking_scanner<CharT> scanner(str);
+    scanner.scan();
+  }
+
+  constexpr std::basic_string_view<CharT> get() const noexcept { return str_; }
+
+private:
+  std::basic_string_view<CharT> str_;
+};
+
+using colorize_string = basic_colorize_string<char>;
+
+template <class CharT, class... Args>
+struct basic_colorize_format_string {
+  template <class S>
+    requires detail::StringLike<const S&>
+  consteval basic_colorize_format_string(const S& str) : fmt_(str)
   {
     detail::checking_scanner<CharT> scanner(str);
     scanner.scan();
@@ -221,7 +269,41 @@ private:
 };
 
 template <class... Args>
-using colored_format_string = basic_colored_format_string<char, std::type_identity_t<Args>...>;
+using colorize_format_string = basic_colorize_format_string<char, std::type_identity_t<Args>...>;
+
+template <class Out>
+inline Out colorize_to(Out out, colorize_string col)
+{
+  basic_colorize_context<Out, char> ctx(std::move(out));
+  detail::colorizing_scanner<Out, char> scanner(ctx, col.get());
+  scanner.scan();
+  return ctx.out();
+}
+
+inline std::string colorize(colorize_string col)
+{
+  std::string str;
+  basic_colorize_context<std::back_insert_iterator<std::string>, char> ctx(std::back_inserter(str));
+  detail::colorizing_scanner<std::back_insert_iterator<std::string>, char> scanner(ctx, col.get());
+  scanner.scan();
+  return str;
+}
+
+#if __cpp_lib_format >= 202311L
+
+template <class Out, class... Args>
+inline Out colorize_and_format_to(Out out, colorize_format_string<Args...> fmt, Args&&... args)
+{
+  return std::format_to(std::move(out), std::runtime_format(colorize(fmt)), std::forward<Args>(args)...);
+}
+
+template <class... Args>
+inline std::string colorize_and_format(colorize_format_string<Args...> fmt, Args&&... args)
+{
+  return std::format(std::runtime_format(colorize(fmt)), std::forward<Args>(args)...);
+}
+
+#endif
 
 }  // namespace yk
 
