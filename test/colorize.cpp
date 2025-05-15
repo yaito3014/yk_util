@@ -44,13 +44,18 @@ BOOST_AUTO_TEST_CASE(colorize)
   }
 
   {
-    auto s = yk::colorize("[green]bar");
+    const auto s = yk::colorize("[green]bar");
     BOOST_TEST(s == "\033[0;32mbar");
   }
 
   {
-    auto s = yk::colorize("[red]foo[green]bar[reset]baz");
+    const auto s = yk::colorize("[red]foo[green]bar[reset]baz");
     BOOST_TEST(s == "\033[0;31mfoo\033[0;32mbar\033[0mbaz");
+  }
+
+  {
+    const auto s = yk::colorize("[red][[[green]]]");
+    BOOST_TEST(s == "\033[0;31m[\033[0;32m]");
   }
 }
 
@@ -63,7 +68,7 @@ BOOST_AUTO_TEST_CASE(format_and_colorize)
   }
 
   {
-    auto s = yk::format_and_colorize("[green]{}", 42);
+    const auto s = yk::format_and_colorize("[green]{}", 42);
     BOOST_TEST(s == "\033[0;32m42");
   }
 }
