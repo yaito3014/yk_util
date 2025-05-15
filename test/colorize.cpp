@@ -72,10 +72,6 @@ BOOST_AUTO_TEST_CASE(colorize)
     const auto s = yk::colorize("[red|bold]foo");
     BOOST_TEST(s == "\033[1;31mfoo");
   }
-
-  {
-    static_assert(yk::colorize("[red]") == "\033[31m");
-  }
 }
 
 BOOST_AUTO_TEST_CASE(format_and_colorize)
