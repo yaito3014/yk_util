@@ -5,6 +5,7 @@
 
 #include <algorithm>
 #include <format>
+#include <optional>
 #include <ranges>
 #include <string_view>
 #include <utility>
@@ -71,7 +72,10 @@ struct colorizer {
     if (reset_) return std::ranges::copy(std::string_view{"\033[0m"}, cc.out()).out;
 
     return std::ranges::copy(
-               std::format("\033[{};{}m", std::to_underlying(style_), std::to_underlying(color_) + 30), cc.out()
+               std::format(
+                   "\033[{};{}m", std::to_underlying(style_.value_or(style::normal)), std::to_underlying(*color_) + 30
+               ),
+               cc.out()
     )
         .out;
   }
@@ -88,6 +92,19 @@ private:
     white = 7,
   };
 
+  static constexpr color name_to_color(std::string_view name) noexcept
+  {
+    if (name == "black") return color::black;
+    if (name == "red") return color::red;
+    if (name == "green") return color::green;
+    if (name == "yellow") return color::yellow;
+    if (name == "blue") return color::blue;
+    if (name == "magenta") return color::magenta;
+    if (name == "cyan") return color::cyan;
+    if (name == "white") return color::white;
+    std::unreachable();
+  }
+
   enum class style : std::uint8_t {
     normal = 0,
     bold = 1,
@@ -95,10 +112,19 @@ private:
     underline = 4,
   };
 
+  static constexpr style name_to_style(std::string_view name)
+  {
+    if (name == "normal") return style::normal;
+    if (name == "bold") return style::bold;
+    if (name == "italic") return style::italic;
+    if (name == "underline") return style::underline;
+    std::unreachable();
+  }
+
   struct do_parse_result {
-    basic_colorize_parse_context<CharT>::iterator in;
-    colorizer::color color;
-    colorizer::style style = colorizer::style::normal;
+    typename basic_colorize_parse_context<CharT>::iterator in;
+    std::optional<colorizer::color> color;
+    std::optional<colorizer::style> style;
     bool reset = false;
   };
 
@@ -112,21 +138,79 @@ private:
     };
 
     using namespace std::string_view_literals;
-    if (auto opt = starts_with(pc, "reset"sv); opt && **opt == ']') return {*opt, {}, {}, true};
 
-    if (auto opt = starts_with(pc, "black"sv); opt && **opt == ']') return {*opt, color::black};
-    if (auto opt = starts_with(pc, "red"sv); opt && **opt == ']') return {*opt, color::red};
-    if (auto opt = starts_with(pc, "green"sv); opt && **opt == ']') return {*opt, color::green};
-    if (auto opt = starts_with(pc, "yellow"sv); opt && **opt == ']') return {*opt, color::yellow};
-    if (auto opt = starts_with(pc, "blue"sv); opt && **opt == ']') return {*opt, color::blue};
-    if (auto opt = starts_with(pc, "magenta"sv); opt && **opt == ']') return {*opt, color::magenta};
-    if (auto opt = starts_with(pc, "cyan"sv); opt && **opt == ']') return {*opt, color::cyan};
-    if (auto opt = starts_with(pc, "white"sv); opt && **opt == ']') return {*opt, color::white};
-    throw colorize_error("unkown color");
+    do_parse_result result;
+
+    const auto assign_color = [&](std::string_view color_name, bool& modified) {
+      if (auto opt = starts_with(pc, color_name)) {
+        if (result.color) {
+          throw colorize_error("multiple color cannot be specified");
+        }
+        result.in = *opt;
+        result.color = name_to_color(color_name);
+        modified = true;
+      }
+    };
+
+    const auto assign_style = [&](std::string_view style_name, bool& modified) {
+      if (auto opt = starts_with(pc, style_name)) {
+        if (result.style) {
+          throw colorize_error("multiple style cannot be specified");
+        }
+        result.in = *opt;
+        result.style = name_to_style(style_name);
+        modified = true;
+      }
+    };
+
+    result.in = pc.begin();
+    while (result.in != pc.end()) {
+      if (*result.in == ']') break;
+      if (*result.in == '|') pc.advance_to(++result.in);
+
+      if (auto opt = starts_with(pc, "reset"sv)) {
+        if (result.color || result.style) {
+          throw colorize_error("none of other specifiers must be present when reset was specified");
+        }
+        if (**opt == ']') return {*opt, {}, {}, true};
+        throw colorize_error("bracket mismatch");
+      }
+
+      bool modified = false;
+
+      assign_color("black", modified);
+      assign_color("red", modified);
+      assign_color("green", modified);
+      assign_color("yellow", modified);
+      assign_color("blue", modified);
+      assign_color("magenta", modified);
+      assign_color("cyan", modified);
+      assign_color("white", modified);
+
+      assign_style("normal", modified);
+      assign_style("bold", modified);
+      assign_style("italic", modified);
+      assign_style("underline", modified);
+
+      if (!modified) throw colorize_error("unknown specifier");
+    }
+    if (*result.in != ']') {
+      throw colorize_error("unknown specifier");
+    }
+
+    // TODO: remove this restriction
+    if (!result.color) {
+      throw colorize_error("at least one color must be specified");
+    }
+
+    if (!result.color && !result.style && !result.reset) {
+      throw colorize_error("no specifier found");
+    }
+    return result;
   }
 
-  color color_;
-  style style_;
+  std::optional<color> color_;
+  std::optional<style> style_;
   bool reset_;
 };
 
