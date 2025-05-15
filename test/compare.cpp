@@ -169,9 +169,9 @@ BOOST_AUTO_TEST_CASE(extract_and_comparator_then)
         // construction -> NC
         // move_construction in extract_comparator -> MC
         // move_construction in then_comparator -> MC
+        BOOST_TEST((comp(S{0, "foo", 3.14}, S{1, "bar", 6.28}) < 0));
       }
-      std::println("{}", log);
-      // BOOST_TEST(log == "NCMCMCDDD");
+      BOOST_TEST(log == "NCMCMCDDD");
     }
   }
 
