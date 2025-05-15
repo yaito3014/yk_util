@@ -71,13 +71,16 @@ struct colorizer {
   {
     if (reset_) return std::ranges::copy(std::string_view{"\033[0m"}, cc.out()).out;
 
-    return std::ranges::copy(
-               std::format(
-                   "\033[{};{}m", std::to_underlying(style_.value_or(style::normal)), std::to_underlying(*color_) + 30
-               ),
-               cc.out()
-    )
-        .out;
+    if (color_ && style_) {
+      return std::ranges::copy(
+                 std::format("\033[{};{}m", std::to_underlying(*style_), std::to_underlying(*color_) + 30), cc.out()
+      )
+          .out;
+    } else if (color_) {
+      return std::ranges::copy(std::format("\033[{}m", std::to_underlying(*color_) + 30), cc.out()).out;
+    } else {
+      return std::ranges::copy(std::format("\033[{}m", std::to_underlying(*style_)), cc.out()).out;
+    }
   }
 
 private:
@@ -198,14 +201,10 @@ private:
       throw colorize_error("unknown specifier");
     }
 
-    // TODO: remove this restriction
-    if (!result.color) {
-      throw colorize_error("at least one color must be specified");
-    }
-
     if (!result.color && !result.style && !result.reset) {
       throw colorize_error("no specifier found");
     }
+
     return result;
   }
 
