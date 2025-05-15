@@ -44,7 +44,7 @@ struct basic_colorize_context {
   using char_type = CharT;
   using iterator = Out;
 
-  explicit basic_colorize_context(Out out) : out_(std::move(out)) {}
+  explicit constexpr basic_colorize_context(Out out) : out_(std::move(out)) {}
 
   constexpr iterator out() { return std::move(out_); }
   constexpr void advance_to(iterator it) { out_ = std::move(it); }
@@ -302,7 +302,7 @@ template <class Out, class CharT>
 struct colorizing_scanner : scanner<CharT> {
   using iterator = typename scanner<CharT>::iterator;
 
-  colorizing_scanner(basic_colorize_context<Out, CharT>& cc, std::basic_string_view<CharT> str)
+  constexpr colorizing_scanner(basic_colorize_context<Out, CharT>& cc, std::basic_string_view<CharT> str)
       : scanner<CharT>(str), cc(cc)
   {
   }
@@ -381,7 +381,7 @@ struct basic_colorize_format_string {
   }
 
 #if __cpp_lib_format >= 202411L
-  explicit basic_colorize_format_string(detail::basic_runtime_colorize_format_string<CharT> runtime_str)
+  explicit constexpr basic_colorize_format_string(detail::basic_runtime_colorize_format_string<CharT> runtime_str)
       : fmt_(std::runtime_format(runtime_str.str_))
   {
   }
@@ -397,7 +397,7 @@ template <class... Args>
 using colorize_format_string = basic_colorize_format_string<char, std::type_identity_t<Args>...>;
 
 template <class Out>
-inline Out colorize_to(Out out, colorize_string col)
+inline constexpr Out colorize_to(Out out, colorize_string col)
 {
   basic_colorize_context<Out, char> ctx(std::move(out));
   detail::colorizing_scanner<Out, char> scanner(ctx, col.get());
@@ -405,7 +405,7 @@ inline Out colorize_to(Out out, colorize_string col)
   return ctx.out();
 }
 
-inline std::string colorize(colorize_string col)
+inline constexpr std::string colorize(colorize_string col)
 {
   std::string str;
   basic_colorize_context<std::back_insert_iterator<std::string>, char> ctx(std::back_inserter(str));
@@ -415,13 +415,13 @@ inline std::string colorize(colorize_string col)
 }
 
 template <class Out, class... Args>
-inline Out format_and_colorize_to(Out out, colorize_format_string<Args...> fmt, Args&&... args)
+inline constexpr Out format_and_colorize_to(Out out, colorize_format_string<Args...> fmt, Args&&... args)
 {
   return colorize_to(std::move(out), runtime_colorize(std::format(fmt.get(), std::forward<Args>(args)...)));
 }
 
 template <class... Args>
-inline std::string format_and_colorize(colorize_format_string<Args...> fmt, Args&&... args)
+inline constexpr std::string format_and_colorize(colorize_format_string<Args...> fmt, Args&&... args)
 {
   return colorize(runtime_colorize(std::format(fmt.get(), std::forward<Args>(args)...)));
 }
