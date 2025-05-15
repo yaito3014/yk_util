@@ -10,6 +10,7 @@
 #include <ranges>
 #include <string>
 #include <string_view>
+#include <utility>
 
 namespace yk {
 
@@ -27,7 +28,7 @@ std::ostream& operator<<(std::ostream& os, const T& val) {
                 }) {
     return os << to_string(val);
   } else {
-    return os << yk::to_underlying(val);
+    return os << std::to_underlying(val);
   }
 }
 
@@ -78,7 +79,7 @@ struct formatter<T, CharT> : formatter<std::underlying_type_t<T>, CharT> {
   template <class Context>
   auto format(const T& val, Context& ctx) const {
     if (has_format_spec_) {
-      return base_formatter::format(::yk::to_underlying(val), ctx);
+      return base_formatter::format(std::to_underlying(val), ctx);
     } else {
       return format_to(ctx.out(), "{}", to_string(val));
     }

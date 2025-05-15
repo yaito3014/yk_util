@@ -8,6 +8,7 @@
 #include <cstdint>
 #include <ranges>
 #include <string_view>
+#include <utility>
 #include <vector>
 
 enum class MyFlags : std::uint8_t {
@@ -49,11 +50,11 @@ BOOST_AUTO_TEST_CASE(Enum) {
 
   using enum MyFlags;
 
-  BOOST_TEST((~FOO == static_cast<MyFlags>(~yk::to_underlying(FOO))));
+  BOOST_TEST((~FOO == static_cast<MyFlags>(~std::to_underlying(FOO))));
 
-  BOOST_TEST(((FOO & BAR) == static_cast<MyFlags>(yk::to_underlying(FOO) & yk::to_underlying(BAR))));
-  BOOST_TEST(((FOO ^ BAR) == static_cast<MyFlags>(yk::to_underlying(FOO) ^ yk::to_underlying(BAR))));
-  BOOST_TEST(((FOO | BAR) == static_cast<MyFlags>(yk::to_underlying(FOO) | yk::to_underlying(BAR))));
+  BOOST_TEST(((FOO & BAR) == static_cast<MyFlags>(std::to_underlying(FOO) & std::to_underlying(BAR))));
+  BOOST_TEST(((FOO ^ BAR) == static_cast<MyFlags>(std::to_underlying(FOO) ^ std::to_underlying(BAR))));
+  BOOST_TEST(((FOO | BAR) == static_cast<MyFlags>(std::to_underlying(FOO) | std::to_underlying(BAR))));
 
   // clang-format off
 

@@ -5,7 +5,6 @@
 #include "yk/exec/queue_traits.hpp"
 
 #include "yk/allocator/default_init_allocator.hpp"
-#include "yk/util/to_underlying.hpp"
 
 #include "yk/enum_bitops.hpp"
 #include "yk/interrupt_exception.hpp"
