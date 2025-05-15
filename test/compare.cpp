@@ -169,6 +169,7 @@ BOOST_AUTO_TEST_CASE(extract_and_comparator_then)
         // construction -> NC
         // move_construction in extract_comparator -> MC
         // move_construction in then_comparator -> MC
+        BOOST_TEST(log == "NCMCMCDD");
         BOOST_TEST((comp(S{0, "foo", 3.14}, S{1, "bar", 6.28}) < 0));
       }
       BOOST_TEST(log == "NCMCMCDDD");
@@ -232,97 +233,93 @@ BOOST_AUTO_TEST_CASE(ClosureTypeTraits)
   {
     auto comp [[maybe_unused]] = yk::compare::then_comparator{compare, compare};
     using F = std::strong_ordering(int, int);
-    static_assert(std::is_same_v<decltype(comp), yk::compare::then_comparator<
-      yk::compare::wrapper_comparator<F&>,
-      yk::compare::wrapper_comparator<F&>
-    >>);
+    static_assert(
+        std::is_same_v<
+            decltype(comp),
+            yk::compare::then_comparator<yk::compare::wrapper_comparator<F&>, yk::compare::wrapper_comparator<F&>>>
+    );
   }
 
   {
     constexpr struct fn {
-      std::strong_ordering operator()(int x, int y) const noexcept {
-        return x <=> y;
-      }
+      std::strong_ordering operator()(int x, int y) const noexcept { return x <=> y; }
     } function_object;
     auto comp = yk::compare::then_comparator{function_object, function_object};
-    static_assert(std::is_same_v<decltype(comp), yk::compare::then_comparator<
-      yk::compare::wrapper_comparator<const fn&>,
-      yk::compare::wrapper_comparator<const fn&>
-    >>);
-  }
-  
-  {
-    struct fn {
-      std::strong_ordering operator()(int x, int y) const noexcept {
-        return x <=> y;
-      }
-    } function_object;
-    auto comp = yk::compare::then_comparator{function_object, function_object};
-    static_assert(std::is_same_v<decltype(comp), yk::compare::then_comparator<
-      yk::compare::wrapper_comparator<fn&>,
-      yk::compare::wrapper_comparator<fn&>
-    >>);
+    static_assert(
+        std::is_same_v<
+            decltype(comp), yk::compare::then_comparator<
+                                yk::compare::wrapper_comparator<const fn&>, yk::compare::wrapper_comparator<const fn&>>>
+    );
   }
 
   {
     struct fn {
-      std::strong_ordering operator()(int x, int y) const noexcept {
-        return x <=> y;
-      }
+      std::strong_ordering operator()(int x, int y) const noexcept { return x <=> y; }
+    } function_object;
+    auto comp = yk::compare::then_comparator{function_object, function_object};
+    static_assert(
+        std::is_same_v<
+            decltype(comp),
+            yk::compare::then_comparator<yk::compare::wrapper_comparator<fn&>, yk::compare::wrapper_comparator<fn&>>>
+    );
+  }
+
+  {
+    struct fn {
+      std::strong_ordering operator()(int x, int y) const noexcept { return x <=> y; }
     };
-    auto comp = yk::compare::then_comparator{ fn{}, fn{} };
-    static_assert(std::is_same_v<decltype(comp), yk::compare::then_comparator<
-      yk::compare::wrapper_comparator<fn>,
-      yk::compare::wrapper_comparator<fn>
-    >>);
+    auto comp = yk::compare::then_comparator{fn{}, fn{}};
+    static_assert(
+        std::is_same_v<
+            decltype(comp),
+            yk::compare::then_comparator<yk::compare::wrapper_comparator<fn>, yk::compare::wrapper_comparator<fn>>>
+    );
   }
   ///////////////////////////////////////////////////////////////////////
   {
     auto comp [[maybe_unused]] = yk::comparators::then(compare, compare);
     using F = std::strong_ordering(int, int);
-    static_assert(std::is_same_v<decltype(comp), yk::compare::then_comparator<
-      yk::compare::wrapper_comparator<F&>,
-      yk::compare::wrapper_comparator<F&>
-    >>);
+    static_assert(
+        std::is_same_v<
+            decltype(comp),
+            yk::compare::then_comparator<yk::compare::wrapper_comparator<F&>, yk::compare::wrapper_comparator<F&>>>
+    );
   }
 
   {
     constexpr struct fn {
-      std::strong_ordering operator()(int x, int y) const noexcept {
-        return x <=> y;
-      }
+      std::strong_ordering operator()(int x, int y) const noexcept { return x <=> y; }
     } function_object;
     auto comp = yk::comparators::then(function_object, function_object);
-    static_assert(std::is_same_v<decltype(comp), yk::compare::then_comparator<
-      yk::compare::wrapper_comparator<const fn&>,
-      yk::compare::wrapper_comparator<const fn&>
-    >>);
-  }
-  
-  {
-    struct fn {
-      std::strong_ordering operator()(int x, int y) const noexcept {
-        return x <=> y;
-      }
-    } function_object;
-    auto comp = yk::comparators::then(function_object, function_object);
-    static_assert(std::is_same_v<decltype(comp), yk::compare::then_comparator<
-      yk::compare::wrapper_comparator<fn&>,
-      yk::compare::wrapper_comparator<fn&>
-    >>);
+    static_assert(
+        std::is_same_v<
+            decltype(comp), yk::compare::then_comparator<
+                                yk::compare::wrapper_comparator<const fn&>, yk::compare::wrapper_comparator<const fn&>>>
+    );
   }
 
   {
     struct fn {
-      std::strong_ordering operator()(int x, int y) const noexcept {
-        return x <=> y;
-      }
+      std::strong_ordering operator()(int x, int y) const noexcept { return x <=> y; }
+    } function_object;
+    auto comp = yk::comparators::then(function_object, function_object);
+    static_assert(
+        std::is_same_v<
+            decltype(comp),
+            yk::compare::then_comparator<yk::compare::wrapper_comparator<fn&>, yk::compare::wrapper_comparator<fn&>>>
+    );
+  }
+
+  {
+    struct fn {
+      std::strong_ordering operator()(int x, int y) const noexcept { return x <=> y; }
     };
     auto comp = yk::comparators::then(fn{}, fn{});
-    static_assert(std::is_same_v<decltype(comp), yk::compare::then_comparator<
-      yk::compare::wrapper_comparator<fn>,
-      yk::compare::wrapper_comparator<fn>
-    >>);
+    static_assert(
+        std::is_same_v<
+            decltype(comp),
+            yk::compare::then_comparator<yk::compare::wrapper_comparator<fn>, yk::compare::wrapper_comparator<fn>>>
+    );
   }
 
   {
@@ -331,10 +328,11 @@ BOOST_AUTO_TEST_CASE(ClosureTypeTraits)
     static_assert(std::is_same_v<decltype(closure), yk::compare::detail::comp_then_closure<F*>>);
     static_assert(!yk::compare::detail::RangeAdaptorClosure<decltype(closure)>);
     auto comp = yk::comparators::wrap(&compare) | closure;
-    static_assert(std::is_same_v<decltype(comp), yk::compare::then_comparator<
-      yk::compare::wrapper_comparator<F*>,
-      yk::compare::wrapper_comparator<F*&>
-    >>);
+    static_assert(
+        std::is_same_v<
+            decltype(comp),
+            yk::compare::then_comparator<yk::compare::wrapper_comparator<F*>, yk::compare::wrapper_comparator<F*&>>>
+    );
   }
 
   {
@@ -343,90 +341,82 @@ BOOST_AUTO_TEST_CASE(ClosureTypeTraits)
     static_assert(std::is_same_v<decltype(closure), yk::compare::detail::comp_then_closure<F&>>);
     static_assert(!yk::compare::detail::RangeAdaptorClosure<decltype(closure)>);
     auto comp = yk::comparators::wrap(compare) | closure;
-    static_assert(std::is_same_v<decltype(comp), yk::compare::then_comparator<
-      yk::compare::wrapper_comparator<F&>,
-      yk::compare::wrapper_comparator<F&>
-    >>);
+    static_assert(
+        std::is_same_v<
+            decltype(comp),
+            yk::compare::then_comparator<yk::compare::wrapper_comparator<F&>, yk::compare::wrapper_comparator<F&>>>
+    );
   }
-  
+
   {
     constexpr struct fn {
-      std::strong_ordering operator()(int x, int y) const noexcept {
-        return x <=> y;
-      }
+      std::strong_ordering operator()(int x, int y) const noexcept { return x <=> y; }
     } function_object;
     auto closure [[maybe_unused]] = yk::comparators::then(function_object);
     static_assert(std::is_same_v<decltype(closure), yk::compare::detail::comp_then_closure<const fn&>>);
     static_assert(!yk::compare::detail::RangeAdaptorClosure<decltype(closure)>);
     auto comp = function_object | closure;
-    static_assert(std::is_same_v<decltype(comp), yk::compare::then_comparator<
-      yk::compare::wrapper_comparator<const fn&>,
-      yk::compare::wrapper_comparator<const fn&>
-    >>);
+    static_assert(
+        std::is_same_v<
+            decltype(comp), yk::compare::then_comparator<
+                                yk::compare::wrapper_comparator<const fn&>, yk::compare::wrapper_comparator<const fn&>>>
+    );
   }
   {
     struct fn {
-      std::strong_ordering operator()(int x, int y) const noexcept {
-        return x <=> y;
-      }
+      std::strong_ordering operator()(int x, int y) const noexcept { return x <=> y; }
     } function_object;
     auto closure [[maybe_unused]] = yk::comparators::then(function_object);
     static_assert(std::is_same_v<decltype(closure), yk::compare::detail::comp_then_closure<fn&>>);
     static_assert(!yk::compare::detail::RangeAdaptorClosure<decltype(closure)>);
     auto comp = function_object | closure;
-    static_assert(std::is_same_v<decltype(comp), yk::compare::then_comparator<
-      yk::compare::wrapper_comparator<fn&>,
-      yk::compare::wrapper_comparator<fn&>
-    >>);
+    static_assert(
+        std::is_same_v<
+            decltype(comp),
+            yk::compare::then_comparator<yk::compare::wrapper_comparator<fn&>, yk::compare::wrapper_comparator<fn&>>>
+    );
   }
   {
     struct fn {
-      std::strong_ordering operator()(int x, int y) const noexcept {
-        return x <=> y;
-      }
+      std::strong_ordering operator()(int x, int y) const noexcept { return x <=> y; }
     } function_object;
     auto comp = function_object | yk::comparators::then(function_object);
-    static_assert(std::is_same_v<decltype(comp), yk::compare::then_comparator<
-      yk::compare::wrapper_comparator<fn&>,
-      yk::compare::wrapper_comparator<fn&>
-    >>);
+    static_assert(
+        std::is_same_v<
+            decltype(comp),
+            yk::compare::then_comparator<yk::compare::wrapper_comparator<fn&>, yk::compare::wrapper_comparator<fn&>>>
+    );
   }
   {
     struct A {
-      std::strong_ordering operator()(int x, int y) const noexcept {
-        return x <=> y;
-      }
+      std::strong_ordering operator()(int x, int y) const noexcept { return x <=> y; }
     };
     struct B {
-      std::strong_ordering operator()(int x, int y) const noexcept {
-        return x <=> y;
-      }
+      std::strong_ordering operator()(int x, int y) const noexcept { return x <=> y; }
     };
     auto closure [[maybe_unused]] = yk::comparators::then(A{});
     static_assert(std::is_same_v<decltype(closure), yk::compare::detail::comp_then_closure<A>>);
     static_assert(!yk::compare::detail::RangeAdaptorClosure<decltype(closure)>);
-    auto comp = B{} |  closure;
-    static_assert(std::is_same_v<decltype(comp), yk::compare::then_comparator<
-      yk::compare::wrapper_comparator<B>,
-      yk::compare::wrapper_comparator<A&>
-    >>);
+    auto comp = B{} | closure;
+    static_assert(
+        std::is_same_v<
+            decltype(comp),
+            yk::compare::then_comparator<yk::compare::wrapper_comparator<B>, yk::compare::wrapper_comparator<A&>>>
+    );
   }
   {
     struct A {
-      std::strong_ordering operator()(int x, int y) const noexcept {
-        return x <=> y;
-      }
+      std::strong_ordering operator()(int x, int y) const noexcept { return x <=> y; }
     };
     struct B {
-      std::strong_ordering operator()(int x, int y) const noexcept {
-        return x <=> y;
-      }
+      std::strong_ordering operator()(int x, int y) const noexcept { return x <=> y; }
     };
     auto comp = B{} | yk::comparators::then(A{});
-    static_assert(std::is_same_v<decltype(comp), yk::compare::then_comparator<
-      yk::compare::wrapper_comparator<B>,
-      yk::compare::wrapper_comparator<A>
-    >>);
+    static_assert(
+        std::is_same_v<
+            decltype(comp),
+            yk::compare::then_comparator<yk::compare::wrapper_comparator<B>, yk::compare::wrapper_comparator<A>>>
+    );
   }
 }
 
