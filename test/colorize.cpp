@@ -19,6 +19,14 @@ BOOST_AUTO_TEST_CASE(colorize_string)
   test("[magenta]");
   test("[cyan]");
   test("[white]");
+  test("[bright_black]");
+  test("[bright_red]");
+  test("[bright_green]");
+  test("[bright_yellow]");
+  test("[bright_blue]");
+  test("[bright_magenta]");
+  test("[bright_cyan]");
+  test("[bright_white]");
   test("[red|bold]");
 
   BOOST_REQUIRE_THROW(yk::colorize(yk::runtime_colorize("[]")), yk::colorize_error);
