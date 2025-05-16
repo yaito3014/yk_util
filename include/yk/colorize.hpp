@@ -73,7 +73,7 @@ struct colorizer {
 
     if (color_ && style_) {
       return std::ranges::copy(
-                 std::format("\033[{};{}m", std::to_underlying(*style_), std::to_underlying(*color_) + 30), cc.out()
+                 std::format("\033[{};{}m", std::to_underlying(*style_), std::to_underlying(*color_)), cc.out()
       )
           .out;
     } else if (color_) {
@@ -85,14 +85,22 @@ struct colorizer {
 
 private:
   enum class color : std::uint8_t {
-    black = 0,
-    red = 1,
-    green = 2,
-    yellow = 3,
-    blue = 4,
-    magenta = 5,
-    cyan = 6,
-    white = 7,
+    black = 30,
+    red,
+    green,
+    yellow,
+    blue,
+    magenta,
+    cyan,
+    white,
+    bright_black = 90,
+    bright_red,
+    bright_green,
+    bright_yellow,
+    bright_blue,
+    bright_magenta,
+    bright_cyan,
+    bright_white,
   };
 
   static constexpr color name_to_color(std::string_view name)
@@ -105,6 +113,14 @@ private:
     if (name == "magenta") return color::magenta;
     if (name == "cyan") return color::cyan;
     if (name == "white") return color::white;
+    if (name == "bright_black") return color::bright_black;
+    if (name == "bright_red") return color::bright_red;
+    if (name == "bright_green") return color::bright_green;
+    if (name == "bright_yellow") return color::bright_yellow;
+    if (name == "bright_blue") return color::bright_blue;
+    if (name == "bright_magenta") return color::bright_magenta;
+    if (name == "bright_cyan") return color::bright_cyan;
+    if (name == "bright_white") return color::bright_white;
     throw std::invalid_argument("invalid color name");
   }
 
@@ -189,6 +205,14 @@ private:
       assign_color("magenta", modified);
       assign_color("cyan", modified);
       assign_color("white", modified);
+      assign_color("bright_black", modified);
+      assign_color("bright_red", modified);
+      assign_color("bright_green", modified);
+      assign_color("bright_yellow", modified);
+      assign_color("bright_blue", modified);
+      assign_color("bright_magenta", modified);
+      assign_color("bright_cyan", modified);
+      assign_color("bright_white", modified);
 
       assign_style("normal", modified);
       assign_style("bold", modified);
