@@ -95,7 +95,7 @@ private:
     white = 7,
   };
 
-  static constexpr color name_to_color(std::string_view name) noexcept
+  static constexpr color name_to_color(std::string_view name)
   {
     if (name == "black") return color::black;
     if (name == "red") return color::red;
@@ -105,7 +105,7 @@ private:
     if (name == "magenta") return color::magenta;
     if (name == "cyan") return color::cyan;
     if (name == "white") return color::white;
-    std::unreachable();
+    throw std::invalid_argument("invalid color name");
   }
 
   enum class style : std::uint8_t {
@@ -121,7 +121,7 @@ private:
     if (name == "bold") return style::bold;
     if (name == "italic") return style::italic;
     if (name == "underline") return style::underline;
-    std::unreachable();
+    throw std::invalid_argument("invalid style name");
   }
 
   struct do_parse_result {
