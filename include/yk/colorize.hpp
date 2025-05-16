@@ -77,7 +77,7 @@ struct colorizer {
       )
           .out;
     } else if (color_) {
-      return std::ranges::copy(std::format("\033[{}m", std::to_underlying(*color_) + 30), cc.out()).out;
+      return std::ranges::copy(std::format("\033[{}m", std::to_underlying(*color_)), cc.out()).out;
     } else {
       return std::ranges::copy(std::format("\033[{}m", std::to_underlying(*style_)), cc.out()).out;
     }
