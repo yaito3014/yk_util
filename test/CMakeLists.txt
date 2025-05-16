@@ -7,6 +7,7 @@ if(BUILD_TESTING)
     hash.cpp
     meta.cpp
     util.cpp
+    flat_meow.cpp
     variant_view.cpp
     atomic_queue.cpp
     concurrency.cpp
