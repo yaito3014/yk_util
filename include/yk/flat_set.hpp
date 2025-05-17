@@ -62,7 +62,7 @@ inline constexpr sorted_unique_t sorted_unique;
 template <class Key, class Compare = std::less<Key>, class KeyContainer = std::vector<Key>>
 class flat_set {
 private:
-  void sort_and_unique()
+  constexpr void sort_and_unique()
   {
     std::ranges::sort(cont_, compare_);
     const auto res = std::ranges::unique(cont_);
