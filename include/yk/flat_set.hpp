@@ -283,10 +283,9 @@ public:
   constexpr void insert(std::initializer_list<value_type> il) { insert(il.begin(), il.end()); }
   constexpr void insert(sorted_unique_t s, std::initializer_list<value_type> il) { insert(s, il.begin(), il.end()); }
 
-  constexpr container_type extract() &&;
-  constexpr void replace(container_type&&);
+  constexpr container_type extract() && { return std::move(cont_); };
+  constexpr void replace(container_type&& cont) { cont_ = std::move(cont); }
 
-  constexpr iterator erase(iterator position);
   constexpr iterator erase(const_iterator position);
   constexpr size_type erase(const key_type& x);
   template <class K>
