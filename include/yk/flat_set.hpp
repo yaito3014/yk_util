@@ -286,7 +286,7 @@ public:
   constexpr void insert(InputIterator first, InputIterator last)
   {
     // TODO: improve time complexity
-    cont_.insert(first, last);
+    cont_.insert(cont_.end(), first, last);
     sort_and_unique();
   }
 
@@ -294,7 +294,7 @@ public:
   constexpr void insert(sorted_unique_t, InputIterator first, InputIterator last)
   {
     // TODO: improve time complexity
-    cont_.insert(first, last);
+    cont_.insert(cont_.end(), first, last);
     sort_and_unique();
   }
 
