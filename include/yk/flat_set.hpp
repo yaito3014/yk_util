@@ -61,10 +61,6 @@ inline constexpr sorted_unique_t sorted_unique;
 
 template <class Key, class Compare = std::less<Key>, class KeyContainer = std::vector<Key>>
 class flat_set {
-private:
-  template <bool Const>
-  struct Iterator;
-
 public:
   using key_type = Key;
   using value_type = Key;
