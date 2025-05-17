@@ -61,6 +61,14 @@ inline constexpr sorted_unique_t sorted_unique;
 
 template <class Key, class Compare = std::less<Key>, class KeyContainer = std::vector<Key>>
 class flat_set {
+private:
+  void sort_and_unique()
+  {
+    std::ranges::sort(cont_, compare_);
+    const auto res = std::ranges::unique(cont_);
+    cont_.erase(res.begin(), res.end());
+  }
+
 public:
   using key_type = Key;
   using value_type = Key;
@@ -83,9 +91,7 @@ public:
   constexpr explicit flat_set(container_type container, const key_compare& compare = key_compare{})
       : compare_(compare), cont_(std::move(container))
   {
-    std::ranges::sort(cont_, compare_);
-    const auto res = std::ranges::unique(cont_);  // TODO: equivalence respect to compare_???
-    cont_.erase(res.begin(), res.end());
+    sort_and_unique();
   }
 
   constexpr flat_set(sorted_unique_t, container_type container, const key_compare& compare = key_compare{})
@@ -142,11 +148,8 @@ public:
 
   template <class Alloc>
   constexpr flat_set(const container_type& cont, const key_compare& comp, const Alloc& a)
-      : compare_(comp), cont_(std::make_obj_using_allocator<container_type>(a, cont))
+      : flat_set(std::make_obj_using_allocator<container_type>(a, cont), comp)
   {
-    std::ranges::sort(cont_, compare_);
-    const auto res = std::ranges::unique(cont_);
-    cont_.erase(res.begin(), res.end());
   }
 
   template <class Alloc>
@@ -162,10 +165,16 @@ public:
   }
 
   template <class Alloc>
-  constexpr flat_set(const flat_set& other, const Alloc& a);
+  constexpr flat_set(const flat_set& other, const Alloc& a)
+      : compare_(other.compare_), cont_(std::make_obj_using_allocator<container_type>(a, other.cont_))
+  {
+  }
 
   template <class Alloc>
-  constexpr flat_set(flat_set&& other, const Alloc& a);
+  constexpr flat_set(flat_set&& other, const Alloc& a)
+      : compare_(other.compare_), cont_(std::make_obj_using_allocator<container_type>(a, std::move(other).cont_))
+  {
+  }
 
   template <class InputIterator, class Alloc>
   constexpr flat_set(InputIterator first, InputIterator last, const Alloc& a) : flat_set(first, last, key_compare{}, a)
@@ -227,7 +236,9 @@ public:
 
   constexpr flat_set& operator=(std::initializer_list<value_type> il)
   {
-    // TODO: implement
+    // TODO: improve time complexity
+    clear();
+    insert(il);
   }
 
   constexpr iterator begin() noexcept { return cont_.begin(); }
@@ -272,13 +283,28 @@ public:
   constexpr iterator insert(const_iterator hint, K&& x);
 
   template <class InputIterator>
-  constexpr void insert(InputIterator first, InputIterator last);
+  constexpr void insert(InputIterator first, InputIterator last)
+  {
+    // TODO: improve time complexity
+    cont_.insert(first, last);
+    sort_and_unique();
+  }
 
   template <class InputIterator>
-  constexpr void insert(sorted_unique_t, InputIterator first, InputIterator last);
+  constexpr void insert(sorted_unique_t, InputIterator first, InputIterator last)
+  {
+    // TODO: improve time complexity
+    cont_.insert(first, last);
+    sort_and_unique();
+  }
 
   template <xo::container_compatible_range<value_type> R>
-  constexpr void insert_range(R&& rg);
+  constexpr void insert_range(R&& rg)
+  {
+    // TODO: improve time complexity
+    cont_.insert_range(std::forward<R>(rg));
+    sort_and_unique();
+  }
 
   constexpr void insert(std::initializer_list<value_type> il) { insert(il.begin(), il.end()); }
   constexpr void insert(sorted_unique_t s, std::initializer_list<value_type> il) { insert(s, il.begin(), il.end()); }
@@ -286,57 +312,119 @@ public:
   constexpr container_type extract() && { return std::move(cont_); };
   constexpr void replace(container_type&& cont) { cont_ = std::move(cont); }
 
-  constexpr iterator erase(const_iterator position);
-  constexpr size_type erase(const key_type& x);
+  constexpr iterator erase(const_iterator position) { return cont_.erase(position); }
+  constexpr size_type erase(const key_type& x)
+  {
+    erase(lower_bound(x));
+    return 1;
+  }
   template <class K>
-  constexpr size_type erase(K&& x);
-  constexpr iterator erase(const_iterator first, const_iterator last);
+    requires requires { typename Compare::is_transparent; }
+  constexpr size_type erase(K&& x)
+  {
+    erase(lower_bound(x));
+    return 1;
+  }
+  constexpr iterator erase(const_iterator first, const_iterator last) { return erase(first, last); }
 
-  constexpr void swap(flat_set& y) noexcept;
-  constexpr void clear() noexcept;
+  constexpr void swap(flat_set& y) noexcept
+  {
+    std::ranges::swap(compare_, y.compare_);
+    std::ranges::swap(cont_, y.cont_);
+  }
+  constexpr void clear() noexcept { cont_.clear(); }
 
-  constexpr key_compare key_comp() const;
-  constexpr value_compare value_comp() const;
+  constexpr key_compare key_comp() const { return compare_; }
+  constexpr value_compare value_comp() const { return compare_; }
 
-  constexpr iterator find(const key_type& x);
-  constexpr const_iterator find(const key_type& x) const;
+  constexpr iterator find(const key_type& x) { return lower_bound(x); }
+  constexpr const_iterator find(const key_type& x) const { return lower_bound(x); }
   template <class K>
-  constexpr iterator find(const K& x);
+    requires requires { typename Compare::is_transparent; }
+  constexpr iterator find(const K& x)
+  {
+    return lower_bound(x);
+  }
   template <class K>
-  constexpr const_iterator find(const K& x) const;
+    requires requires { typename Compare::is_transparent; }
+  constexpr const_iterator find(const K& x) const
+  {
+    return lower_bound(x);
+  }
 
-  constexpr size_type count(const key_type& x) const;
+  constexpr size_type count(const key_type& x) const { return std::ranges::equal_range(cont_, x, compare_).size(); }
   template <class K>
-  constexpr size_type count(const K& x) const;
+    requires requires { typename Compare::is_transparent; }
+  constexpr size_type count(const K& x) const
+  {
+    return std::ranges::equal_range(cont_, x, compare_).size();
+  }
 
-  constexpr bool contains(const key_type& x) const;
+  constexpr bool contains(const key_type& x) const { return std::ranges::contains(cont_, x); }
   template <class K>
-  constexpr bool contains(const K& x) const;
+    requires requires { typename Compare::is_transparent; }
+  constexpr bool contains(const K& x) const
+  {
+    return std::ranges::contains(cont_, x);
+  }
 
-  constexpr iterator lower_bound(const key_type& x);
-  constexpr const_iterator lower_bound(const key_type& x) const;
+  constexpr iterator lower_bound(const key_type& x) { return std::ranges::lower_bound(cont_, x, compare_); }
+  constexpr const_iterator lower_bound(const key_type& x) const { return std::ranges::lower_bound(cont_, x, compare_); }
   template <class K>
-  constexpr iterator lower_bound(const K& x);
+    requires requires { typename Compare::is_transparent; }
+  constexpr iterator lower_bound(const K& x)
+  {
+    return std::ranges::lower_bound(cont_, x, compare_);
+  }
   template <class K>
-  constexpr const_iterator lower_bound(const K& x) const;
+    requires requires { typename Compare::is_transparent; }
+  constexpr const_iterator lower_bound(const K& x) const
+  {
+    return std::ranges::lower_bound(cont_, x, compare_);
+  }
 
-  constexpr iterator upper_bound(const key_type& x);
-  constexpr const_iterator upper_bound(const key_type& x) const;
+  constexpr iterator upper_bound(const key_type& x) { return std::ranges::upper_bound(cont_, x, compare_); }
+  constexpr const_iterator upper_bound(const key_type& x) const { return std::ranges::upper_bound(cont_, x, compare_); }
   template <class K>
-  constexpr iterator upper_bound(const K& x);
+    requires requires { typename Compare::is_transparent; }
+  constexpr iterator upper_bound(const K& x)
+  {
+    return std::ranges::upper_bound(cont_, x, compare_);
+  }
   template <class K>
-  constexpr const_iterator upper_bound(const K& x) const;
+    requires requires { typename Compare::is_transparent; }
+  constexpr const_iterator upper_bound(const K& x) const
+  {
+    return std::ranges::upper_bound(cont_, x, compare_);
+  }
 
-  constexpr std::pair<iterator, iterator> equal_range(const key_type& x);
-  constexpr std::pair<const_iterator, const_iterator> equal_range(const key_type& x) const;
+  constexpr std::pair<iterator, iterator> equal_range(const key_type& x)
+  {
+    return std::ranges::equal_range(cont_, x, compare_);
+  }
+  constexpr std::pair<const_iterator, const_iterator> equal_range(const key_type& x) const
+  {
+    return std::ranges::equal_range(cont_, x, compare_);
+  }
   template <class K>
-  constexpr std::pair<iterator, iterator> equal_range(const K& x);
+    requires requires { typename Compare::is_transparent; }
+  constexpr std::pair<iterator, iterator> equal_range(const K& x)
+  {
+    return std::ranges::equal_range(cont_, x, compare_);
+  }
   template <class K>
-  constexpr std::pair<const_iterator, const_iterator> equal_range(const K& x) const;
+    requires requires { typename Compare::is_transparent; }
+  constexpr std::pair<const_iterator, const_iterator> equal_range(const K& x) const
+  {
+    return std::ranges::equal_range(cont_, x, compare_);
+  }
 
-  constexpr friend bool operator==(const flat_set& x, const flat_set& y);
+  constexpr friend bool operator==(const flat_set& x, const flat_set& y) { return x.cont_ == y.cont_; }
 
-  constexpr friend xo::synth_three_way_result<value_type> operator<=>(const flat_set& x, const flat_set& y);
+  constexpr friend xo::synth_three_way_result<value_type> operator<=>(const flat_set& x, const flat_set& y)
+  {
+    return x.cont_ <=> y.cont_;
+  }
 
   constexpr friend void swap(flat_set& x, flat_set& y) noexcept { x.swap(y); }
 
