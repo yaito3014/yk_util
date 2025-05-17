@@ -356,7 +356,7 @@ public:
     requires requires { typename Compare::is_transparent; }
   constexpr size_type count(const K& x) const
   {
-    return std::ranges::equal_range(cont_, x, compare_).size();
+    return contains(x);
   }
 
   constexpr bool contains(const key_type& x) const { return std::ranges::contains(cont_, x); }
