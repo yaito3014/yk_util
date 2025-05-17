@@ -22,6 +22,8 @@ BOOST_AUTO_TEST_CASE(flat_set)
     fs.insert({9, 2, 6, 5, 3, 5});
     BOOST_TEST(std::ranges::equal(fs, std::vector{1, 2, 3, 4, 5, 6, 9}));
   }
+
+  static_assert(std::ranges::equal(yk::flat_set{3, 1, 4, 1, 5}, std::vector{1, 3, 4, 5}));
 }
 
 BOOST_AUTO_TEST_SUITE_END()
