@@ -236,7 +236,6 @@ public:
 
   constexpr flat_set& operator=(std::initializer_list<value_type> il)
   {
-    // TODO: improve time complexity
     clear();
     insert(il);
   }
