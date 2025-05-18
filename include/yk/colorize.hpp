@@ -2,6 +2,7 @@
 #define YK_COLORIZE_HPP
 
 #include "yk/detail/string_like.hpp"
+#include "yk/enum_bitops.hpp"
 
 #include <algorithm>
 #include <array>
@@ -115,23 +116,59 @@ static constexpr color name_to_color(std::string_view name)
   return it->value;
 }
 
-enum class emphasis : std::uint8_t {
-  normal = 0,
-  bold = 1,
-  italic = 3,
-  underline = 4,
+enum class emphasis : uint8_t {
+  _empty = 0,
+  bold = 1 << 0,
+  faint = 1 << 1,
+  italic = 1 << 2,
+  underline = 1 << 3,
+  blink = 1 << 4,
+  reverse = 1 << 5,
+  conceal = 1 << 6,
+  strike = 1 << 7,
 };
 
-static constexpr std::optional<emphasis> name_to_emphasis(std::string_view name)
+static constexpr emphasis name_to_emphasis(std::string_view name)
 {
-  if (name == "normal") return emphasis::normal;
   if (name == "bold") return emphasis::bold;
+  if (name == "faint") return emphasis::faint;
   if (name == "italic") return emphasis::italic;
   if (name == "underline") return emphasis::underline;
-  return std::nullopt;
+  if (name == "blink") return emphasis::blink;
+  if (name == "reverse") return emphasis::reverse;
+  if (name == "conceal") return emphasis::conceal;
+  if (name == "strike") return emphasis::strike;
+  return emphasis::_empty;
+}
+
+static constexpr std::uint8_t emphasis_to_value(emphasis em)
+{
+  switch (em) {
+    case emphasis::bold:
+      return 1;
+    case emphasis::faint:
+      return 2;
+    case emphasis::italic:
+      return 3;
+    case emphasis::underline:
+      return 4;
+    case emphasis::blink:
+      return 5;
+    case emphasis::reverse:
+      return 7;
+    case emphasis::conceal:
+      return 8;
+    case emphasis::strike:
+      return 9;
+    default:
+      throw std::invalid_argument("invalid emphasis");
+  }
 }
 
 }  // namespace detail
+
+template <>
+struct bitops_enabled<detail::emphasis> : std::true_type {};
 
 template <class CharT = char>
 struct colorizer {
@@ -149,15 +186,16 @@ struct colorizer {
   {
     if (reset_) return std::ranges::copy(std::string_view{"\033[0m"}, cc.out()).out;
 
-    if (color_ != detail::color::_empty && emphasis_ != detail::emphasis::normal) {
+    // TODO: iterate emphasis correctly
+    if (color_ != detail::color::_empty && emphasis_ != detail::emphasis::_empty) {
       return std::ranges::copy(
-                 std::format("\033[{};{}m", std::to_underlying(emphasis_), std::to_underlying(color_)), cc.out()
+                 std::format("\033[{};{}m", emphasis_to_value(emphasis_), std::to_underlying(color_)), cc.out()
       )
           .out;
     } else if (color_ != detail::color::_empty) {
       return std::ranges::copy(std::format("\033[{}m", std::to_underlying(color_)), cc.out()).out;
     } else {
-      return std::ranges::copy(std::format("\033[{}m", std::to_underlying(emphasis_)), cc.out()).out;
+      return std::ranges::copy(std::format("\033[{}m", emphasis_to_value(emphasis_)), cc.out()).out;
     }
   }
 
@@ -174,7 +212,7 @@ private:
     do_parse_result result{
         pc.begin(),
         detail::color::_empty,
-        detail::emphasis::normal,
+        detail::emphasis::_empty,
         false,
     };
 
@@ -192,8 +230,9 @@ private:
       } else if (auto color = detail::name_to_color(specifier); color != detail::color::_empty) {
         if (result.color != detail::color::_empty) throw colorize_error("multiple color must not be specified");
         result.color = color;
-      } else if (auto opt = detail::name_to_emphasis(specifier)) {
-        result.emphasis = *opt;
+      } else if (auto emphasis = detail::name_to_emphasis(specifier); emphasis != detail::emphasis::_empty) {
+        using namespace bitops_operators;
+        result.emphasis |= emphasis;
       } else {
         throw colorize_error("invalid speicier");
       }
@@ -201,7 +240,7 @@ private:
       pc.advance_to(it += len);
     }
 
-    if (result.reset && (result.color != detail::color::_empty || result.emphasis != detail::emphasis::normal)) {
+    if (result.reset && (result.color != detail::color::_empty || result.emphasis != detail::emphasis::_empty)) {
       throw colorize_error("reset must be independently specified");
     }
 
