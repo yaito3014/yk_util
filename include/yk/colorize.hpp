@@ -3,6 +3,7 @@
 
 #include "yk/detail/string_like.hpp"
 #include "yk/enum_bitops.hpp"
+#include "yk/enum_bitops_algorithm.hpp"
 
 #include <algorithm>
 #include <array>
@@ -168,7 +169,9 @@ static constexpr std::uint8_t emphasis_to_value(emphasis em)
 }  // namespace detail
 
 template <>
-struct bitops_enabled<detail::emphasis> : std::true_type {};
+struct bitops_enabled<detail::emphasis> : std::true_type {
+  static constexpr int max_bit = 7;
+};
 
 template <class CharT = char>
 struct colorizer {
@@ -184,19 +187,34 @@ struct colorizer {
   template <class Out>
   constexpr auto colorize(basic_colorize_context<Out, CharT>& cc) const
   {
-    if (reset_) return std::ranges::copy(std::string_view{"\033[0m"}, cc.out()).out;
+    using namespace std::string_view_literals;
 
-    // TODO: iterate emphasis correctly
-    if (color_ != detail::color::_empty && emphasis_ != detail::emphasis::_empty) {
-      return std::ranges::copy(
-                 std::format("\033[{};{}m", emphasis_to_value(emphasis_), std::to_underlying(color_)), cc.out()
-      )
-          .out;
-    } else if (color_ != detail::color::_empty) {
-      return std::ranges::copy(std::format("\033[{}m", std::to_underlying(color_)), cc.out()).out;
-    } else {
-      return std::ranges::copy(std::format("\033[{}m", emphasis_to_value(emphasis_)), cc.out()).out;
+    // shorhand for reset
+    if (reset_) return std::ranges::copy("\033[0m"sv, cc.out()).out;
+
+    // write prefix
+    auto it = std::ranges::copy("\033["sv, cc.out()).out;
+
+    bool first = true;
+
+    // write emphases
+    for (auto em : each_bit(emphasis_)) {
+      if (!first) *it++ = ';';
+      first = false;
+      it = std::format_to(it, "{}", emphasis_to_value(em));
     }
+
+    // write color
+    if (color_ != detail::color::_empty) {
+      if (!first) *it++ = ';';
+      first = false;
+      it = std::format_to(it, "{}", std::to_underlying(color_));
+    }
+
+    // write suffix
+    *it++ = 'm';
+
+    return it;
   }
 
 private:

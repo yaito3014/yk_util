@@ -28,6 +28,7 @@ BOOST_AUTO_TEST_CASE(colorize_string)
   test("[bright_cyan]");
   test("[bright_white]");
   test("[red|bold]");
+  test("[bold|italic]");
 
   BOOST_REQUIRE_THROW(yk::colorize(yk::runtime_colorize("[]")), yk::colorize_error);
   BOOST_REQUIRE_THROW(yk::colorize(yk::runtime_colorize("[")), yk::colorize_error);
@@ -50,6 +51,7 @@ BOOST_AUTO_TEST_CASE(colorize_format_string)
   test("[cyan]");
   test("[white]");
   test("[red|bold]");
+  test("[bold|italic]");
 }
 
 BOOST_AUTO_TEST_CASE(colorize)
@@ -78,6 +80,11 @@ BOOST_AUTO_TEST_CASE(colorize)
   {
     const auto s = yk::colorize("[red|bold]foo");
     BOOST_TEST(s == "\033[1;31mfoo");
+  }
+
+  {
+    const auto s = yk::colorize("[bold|italic]foo");
+    BOOST_TEST(s == "\033[1;3mfoo");
   }
 }
 
