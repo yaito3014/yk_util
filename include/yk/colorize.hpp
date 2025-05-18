@@ -488,8 +488,8 @@ template <class CharT = char>
 struct colorizer {
   constexpr auto parse(basic_colorize_parse_context<CharT>& pc)
   {
-    auto [it, color, emphasis, reset] = do_parse(pc);
-    color_ = color;
+    auto [it, fg_color, emphasis, reset] = do_parse(pc);
+    fg_color_ = fg_color;
     emphasis_ = emphasis;
     reset_ = reset;
     return it;
@@ -515,14 +515,14 @@ struct colorizer {
       it = std::format_to(it, "{}", emphasis_to_value(em));
     }
 
-    // write color
-    if (!color_.empty()) {
+    // write foreground color
+    if (!fg_color_.empty()) {
       if (!first) *it++ = ';';
       first = false;
-      if (color_.is_ansi_color()) {
-        it = std::format_to(it, "{}", std::to_underlying(color_.get_ansi_color()));
+      if (fg_color_.is_ansi_color()) {
+        it = std::format_to(it, "{}", std::to_underlying(fg_color_.get_ansi_color()));
       } else {
-        detail::rgb_color rgb = color_.get_rgb_color();
+        detail::rgb_color rgb = fg_color_.get_rgb_color();
         auto [r, g, b] = detail::get_rgb(rgb);
         it = std::format_to(it, "38;5;{};{};{}", r, g, b);
       }
@@ -537,7 +537,7 @@ struct colorizer {
 private:
   struct do_parse_result {
     typename basic_colorize_parse_context<CharT>::iterator in;
-    detail::color color;
+    detail::color fg_color;
     detail::emphasis emphasis;
     bool reset;
   };
@@ -563,8 +563,8 @@ private:
       if (specifier == "reset") {
         result.reset = true;
       } else if (auto color = detail::name_to_color(specifier); !color.empty()) {
-        if (!result.color.empty()) throw colorize_error("multiple color must not be specified");
-        result.color = color;
+        if (!result.fg_color.empty()) throw colorize_error("multiple color must not be specified");
+        result.fg_color = color;
       } else if (auto emphasis = detail::name_to_emphasis(specifier); emphasis != detail::emphasis::_empty) {
         using namespace bitops_operators;
         result.emphasis |= emphasis;
@@ -575,14 +575,14 @@ private:
       pc.advance_to(it += len);
     }
 
-    if (result.reset && (!result.color.empty() || result.emphasis != detail::emphasis::_empty)) {
+    if (result.reset && (!result.fg_color.empty() || result.emphasis != detail::emphasis::_empty)) {
       throw colorize_error("reset must be independently specified");
     }
 
     return result;
   }
 
-  detail::color color_;
+  detail::color fg_color_;
   detail::emphasis emphasis_;
   bool reset_;
 };
