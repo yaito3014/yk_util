@@ -7,6 +7,7 @@
 #include <format>
 #include <optional>
 #include <ranges>
+#include <stdexcept>
 #include <string_view>
 #include <utility>
 #include <version>
