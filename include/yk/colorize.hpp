@@ -574,9 +574,9 @@ private:
 
       if (specifier == "reset") {
         result.reset = true;
-      } else if (auto fg_color = detail::name_to_color(specifier); !fg_color.empty()) {
+      } else if (auto color = detail::name_to_color(specifier); !color.empty()) {
         if (!result.fg_color.empty()) throw colorize_error("multiple color must not be specified");
-        result.fg_color = fg_color;
+        result.fg_color = color;
       } else if (auto emphasis = detail::name_to_emphasis(specifier); emphasis != detail::emphasis::_empty) {
         using namespace bitops_operators;
         result.emphasis |= emphasis;
