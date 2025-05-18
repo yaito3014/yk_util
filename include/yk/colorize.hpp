@@ -574,23 +574,23 @@ private:
 
       if (specifier == "reset") {
         result.reset = true;
-      } else if (auto color = detail::name_to_color(specifier); !color.empty()) {
+      } else if (auto fg_color = detail::name_to_color(specifier); !fg_color.empty()) {
         if (!result.fg_color.empty()) throw colorize_error("multiple color must not be specified");
-        result.fg_color = color;
+        result.fg_color = fg_color;
       } else if (auto emphasis = detail::name_to_emphasis(specifier); emphasis != detail::emphasis::_empty) {
         using namespace bitops_operators;
         result.emphasis |= emphasis;
       } else if (specifier.starts_with("fg:")) {
-        if (auto color = detail::name_to_color(specifier.substr(3)); !color.empty()) {
+        if (auto fg_color = detail::name_to_color(specifier.substr(3)); !fg_color.empty()) {
           if (!result.fg_color.empty()) throw colorize_error("multiple color must not be specified");
-          result.fg_color = color;
+          result.fg_color = fg_color;
         } else {
           throw colorize_error("fg prefix must precedes color name");
         }
       } else if (specifier.starts_with("bg:")) {
-        if (auto color = detail::name_to_color(specifier.substr(3)); !color.empty()) {
+        if (auto bg_color = detail::name_to_color(specifier.substr(3)); !bg_color.empty()) {
           if (!result.bg_color.empty()) throw colorize_error("multiple color must not be specified");
-          result.bg_color = color;
+          result.bg_color = bg_color;
         } else {
           throw colorize_error("bg prefix must precedes color name");
         }
