@@ -56,6 +56,66 @@ private:
 
 using colorize_parse_context = basic_colorize_parse_context<char>;
 
+namespace detail {
+
+enum class color : std::uint8_t {
+  black = 30,
+  red,
+  green,
+  yellow,
+  blue,
+  magenta,
+  cyan,
+  white,
+  bright_black = 90,
+  bright_red,
+  bright_green,
+  bright_yellow,
+  bright_blue,
+  bright_magenta,
+  bright_cyan,
+  bright_white,
+};
+
+static constexpr color name_to_color(std::string_view name)
+{
+  if (name == "black") return color::black;
+  if (name == "red") return color::red;
+  if (name == "green") return color::green;
+  if (name == "yellow") return color::yellow;
+  if (name == "blue") return color::blue;
+  if (name == "magenta") return color::magenta;
+  if (name == "cyan") return color::cyan;
+  if (name == "white") return color::white;
+  if (name == "bright_black") return color::bright_black;
+  if (name == "bright_red") return color::bright_red;
+  if (name == "bright_green") return color::bright_green;
+  if (name == "bright_yellow") return color::bright_yellow;
+  if (name == "bright_blue") return color::bright_blue;
+  if (name == "bright_magenta") return color::bright_magenta;
+  if (name == "bright_cyan") return color::bright_cyan;
+  if (name == "bright_white") return color::bright_white;
+  throw std::invalid_argument("invalid color name");
+}
+
+enum class style : std::uint8_t {
+  normal = 0,
+  bold = 1,
+  italic = 3,
+  underline = 4,
+};
+
+static constexpr style name_to_style(std::string_view name)
+{
+  if (name == "normal") return style::normal;
+  if (name == "bold") return style::bold;
+  if (name == "italic") return style::italic;
+  if (name == "underline") return style::underline;
+  throw std::invalid_argument("invalid style name");
+}
+
+}  // namespace detail
+
 template <class CharT = char>
 struct colorizer {
   constexpr auto parse(basic_colorize_parse_context<CharT>& pc)
@@ -85,66 +145,10 @@ struct colorizer {
   }
 
 private:
-  enum class color : std::uint8_t {
-    black = 30,
-    red,
-    green,
-    yellow,
-    blue,
-    magenta,
-    cyan,
-    white,
-    bright_black = 90,
-    bright_red,
-    bright_green,
-    bright_yellow,
-    bright_blue,
-    bright_magenta,
-    bright_cyan,
-    bright_white,
-  };
-
-  static constexpr color name_to_color(std::string_view name)
-  {
-    if (name == "black") return color::black;
-    if (name == "red") return color::red;
-    if (name == "green") return color::green;
-    if (name == "yellow") return color::yellow;
-    if (name == "blue") return color::blue;
-    if (name == "magenta") return color::magenta;
-    if (name == "cyan") return color::cyan;
-    if (name == "white") return color::white;
-    if (name == "bright_black") return color::bright_black;
-    if (name == "bright_red") return color::bright_red;
-    if (name == "bright_green") return color::bright_green;
-    if (name == "bright_yellow") return color::bright_yellow;
-    if (name == "bright_blue") return color::bright_blue;
-    if (name == "bright_magenta") return color::bright_magenta;
-    if (name == "bright_cyan") return color::bright_cyan;
-    if (name == "bright_white") return color::bright_white;
-    throw std::invalid_argument("invalid color name");
-  }
-
-  enum class style : std::uint8_t {
-    normal = 0,
-    bold = 1,
-    italic = 3,
-    underline = 4,
-  };
-
-  static constexpr style name_to_style(std::string_view name)
-  {
-    if (name == "normal") return style::normal;
-    if (name == "bold") return style::bold;
-    if (name == "italic") return style::italic;
-    if (name == "underline") return style::underline;
-    throw std::invalid_argument("invalid style name");
-  }
-
   struct do_parse_result {
     typename basic_colorize_parse_context<CharT>::iterator in;
-    std::optional<colorizer::color> color;
-    std::optional<colorizer::style> style;
+    std::optional<detail::color> color;
+    std::optional<detail::style> style;
     bool reset = false;
   };
 
@@ -167,7 +171,7 @@ private:
           throw colorize_error("multiple color cannot be specified");
         }
         result.in = *opt;
-        result.color = name_to_color(color_name);
+        result.color = detail::name_to_color(color_name);
         modified = true;
       }
     };
@@ -178,7 +182,7 @@ private:
           throw colorize_error("multiple style cannot be specified");
         }
         result.in = *opt;
-        result.style = name_to_style(style_name);
+        result.style = detail::name_to_style(style_name);
         modified = true;
       }
     };
@@ -233,8 +237,8 @@ private:
     return result;
   }
 
-  std::optional<color> color_;
-  std::optional<style> style_;
+  std::optional<detail::color> color_;
+  std::optional<detail::style> style_;
   bool reset_;
 };
 
