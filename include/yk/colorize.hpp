@@ -1,9 +1,10 @@
 #ifndef YK_COLORIZE_HPP
 #define YK_COLORIZE_HPP
 
-#include <yk/detail/string_like.hpp>
+#include "yk/detail/string_like.hpp"
 
 #include <algorithm>
+#include <array>
 #include <format>
 #include <optional>
 #include <ranges>
@@ -59,6 +60,7 @@ using colorize_parse_context = basic_colorize_parse_context<char>;
 namespace detail {
 
 enum class color : std::uint8_t {
+  _empty = 0,
   black = 30,
   red,
   green,
@@ -77,25 +79,40 @@ enum class color : std::uint8_t {
   bright_white,
 };
 
+struct color_pair {
+  std::string_view name;
+  color value;
+};
+
+static constexpr auto color_lookup_table = [] {
+  using namespace std::string_view_literals;
+  std::array table{
+      color_pair{"black", color::black},
+      color_pair{"red", color::red},
+      color_pair{"green", color::green},
+      color_pair{"yellow", color::yellow},
+      color_pair{"blue", color::blue},
+      color_pair{"magenta", color::magenta},
+      color_pair{"cyan", color::cyan},
+      color_pair{"white", color::white},
+      color_pair{"bright_black", color::bright_black},
+      color_pair{"bright_red", color::bright_red},
+      color_pair{"bright_green", color::bright_green},
+      color_pair{"bright_yellow", color::bright_yellow},
+      color_pair{"bright_blue", color::bright_blue},
+      color_pair{"bright_magenta", color::bright_magenta},
+      color_pair{"bright_cyan", color::bright_cyan},
+      color_pair{"bright_white", color::bright_white},
+  };
+  std::ranges::sort(table, {}, &color_pair::name);
+  return table;
+}();
+
 static constexpr color name_to_color(std::string_view name)
 {
-  if (name == "black") return color::black;
-  if (name == "red") return color::red;
-  if (name == "green") return color::green;
-  if (name == "yellow") return color::yellow;
-  if (name == "blue") return color::blue;
-  if (name == "magenta") return color::magenta;
-  if (name == "cyan") return color::cyan;
-  if (name == "white") return color::white;
-  if (name == "bright_black") return color::bright_black;
-  if (name == "bright_red") return color::bright_red;
-  if (name == "bright_green") return color::bright_green;
-  if (name == "bright_yellow") return color::bright_yellow;
-  if (name == "bright_blue") return color::bright_blue;
-  if (name == "bright_magenta") return color::bright_magenta;
-  if (name == "bright_cyan") return color::bright_cyan;
-  if (name == "bright_white") return color::bright_white;
-  throw std::invalid_argument("invalid color name");
+  auto it = std::ranges::lower_bound(color_lookup_table, name, {}, &color_pair::name);
+  if (it == color_lookup_table.end() || it->name != name) return color::_empty;
+  return it->value;
 }
 
 enum class style : std::uint8_t {
@@ -105,13 +122,13 @@ enum class style : std::uint8_t {
   underline = 4,
 };
 
-static constexpr style name_to_style(std::string_view name)
+static constexpr std::optional<style> name_to_style(std::string_view name)
 {
   if (name == "normal") return style::normal;
   if (name == "bold") return style::bold;
   if (name == "italic") return style::italic;
   if (name == "underline") return style::underline;
-  throw std::invalid_argument("invalid style name");
+  return std::nullopt;
 }
 
 }  // namespace detail
@@ -132,113 +149,67 @@ struct colorizer {
   {
     if (reset_) return std::ranges::copy(std::string_view{"\033[0m"}, cc.out()).out;
 
-    if (color_ && style_) {
+    if (color_ != detail::color::_empty && style_ != detail::style::normal) {
       return std::ranges::copy(
-                 std::format("\033[{};{}m", std::to_underlying(*style_), std::to_underlying(*color_)), cc.out()
+                 std::format("\033[{};{}m", std::to_underlying(style_), std::to_underlying(color_)), cc.out()
       )
           .out;
-    } else if (color_) {
-      return std::ranges::copy(std::format("\033[{}m", std::to_underlying(*color_)), cc.out()).out;
+    } else if (color_ != detail::color::_empty) {
+      return std::ranges::copy(std::format("\033[{}m", std::to_underlying(color_)), cc.out()).out;
     } else {
-      return std::ranges::copy(std::format("\033[{}m", std::to_underlying(*style_)), cc.out()).out;
+      return std::ranges::copy(std::format("\033[{}m", std::to_underlying(style_)), cc.out()).out;
     }
   }
 
 private:
   struct do_parse_result {
     typename basic_colorize_parse_context<CharT>::iterator in;
-    std::optional<detail::color> color;
-    std::optional<detail::style> style;
-    bool reset = false;
+    detail::color color;
+    detail::style style;
+    bool reset;
   };
 
   static constexpr do_parse_result do_parse(basic_colorize_parse_context<CharT>& pc)
   {
-    const auto starts_with = [](auto&& r1, auto&& r2) -> std::optional<std::ranges::iterator_t<decltype(r2)>> {
-      auto [it1, it2] = std::ranges::mismatch(r1, r2);
-      auto last2 = std::ranges::end(r2);
-      if (it2 == last2) return it1;
-      return std::nullopt;
+    do_parse_result result{
+        pc.begin(),
+        detail::color::_empty,
+        detail::style::normal,
+        false,
     };
 
-    using namespace std::string_view_literals;
+    auto& it = result.in;
+    while (it != pc.end()) {
+      if (*it == ']') break;
+      if (*it == '|') pc.advance_to(++it);
 
-    do_parse_result result;
+      const std::string_view rest{it, pc.end()};
+      const auto len = rest.find_first_of("|]");
+      const std::string_view specifier = rest.substr(0, len);
 
-    const auto assign_color = [&](std::string_view color_name, bool& modified) {
-      if (auto opt = starts_with(pc, color_name)) {
-        if (result.color) {
-          throw colorize_error("multiple color cannot be specified");
-        }
-        result.in = *opt;
-        result.color = detail::name_to_color(color_name);
-        modified = true;
-      }
-    };
-
-    const auto assign_style = [&](std::string_view style_name, bool& modified) {
-      if (auto opt = starts_with(pc, style_name)) {
-        if (result.style) {
-          throw colorize_error("multiple style cannot be specified");
-        }
-        result.in = *opt;
-        result.style = detail::name_to_style(style_name);
-        modified = true;
-      }
-    };
-
-    result.in = pc.begin();
-    while (result.in != pc.end()) {
-      if (*result.in == ']') break;
-      if (*result.in == '|') pc.advance_to(++result.in);
-
-      if (auto opt = starts_with(pc, "reset"sv)) {
-        if (result.color || result.style) {
-          throw colorize_error("none of other specifiers must be present when reset was specified");
-        }
-        if (**opt == ']') return {*opt, {}, {}, true};
-        throw colorize_error("bracket mismatch");
+      if (specifier == "reset") {
+        result.reset = true;
+      } else if (auto color = detail::name_to_color(specifier); color != detail::color::_empty) {
+        if (result.color != detail::color::_empty) throw colorize_error("multiple color must not be specified");
+        result.color = color;
+      } else if (auto opt = detail::name_to_style(specifier)) {
+        result.style = *opt;
+      } else {
+        throw colorize_error("invalid speicier");
       }
 
-      bool modified = false;
-
-      assign_color("black", modified);
-      assign_color("red", modified);
-      assign_color("green", modified);
-      assign_color("yellow", modified);
-      assign_color("blue", modified);
-      assign_color("magenta", modified);
-      assign_color("cyan", modified);
-      assign_color("white", modified);
-      assign_color("bright_black", modified);
-      assign_color("bright_red", modified);
-      assign_color("bright_green", modified);
-      assign_color("bright_yellow", modified);
-      assign_color("bright_blue", modified);
-      assign_color("bright_magenta", modified);
-      assign_color("bright_cyan", modified);
-      assign_color("bright_white", modified);
-
-      assign_style("normal", modified);
-      assign_style("bold", modified);
-      assign_style("italic", modified);
-      assign_style("underline", modified);
-
-      if (!modified) throw colorize_error("unknown specifier");
-    }
-    if (*result.in != ']') {
-      throw colorize_error("unknown specifier");
+      pc.advance_to(it += len);
     }
 
-    if (!result.color && !result.style && !result.reset) {
-      throw colorize_error("no specifier found");
+    if (result.reset && (result.color != detail::color::_empty || result.style != detail::style::normal)) {
+      throw colorize_error("reset must be independently specified");
     }
 
     return result;
   }
 
-  std::optional<detail::color> color_;
-  std::optional<detail::style> style_;
+  detail::color color_;
+  detail::style style_;
   bool reset_;
 };
 

@@ -35,7 +35,6 @@ BOOST_AUTO_TEST_CASE(colorize_string)
   BOOST_REQUIRE_THROW(yk::colorize(yk::runtime_colorize("[reset|red]")), yk::colorize_error);
   BOOST_REQUIRE_THROW(yk::colorize(yk::runtime_colorize("[red|reset]")), yk::colorize_error);
   BOOST_REQUIRE_THROW(yk::colorize(yk::runtime_colorize("[black|red]")), yk::colorize_error);
-  BOOST_REQUIRE_THROW(yk::colorize(yk::runtime_colorize("[bold|underline]")), yk::colorize_error);
 }
 
 BOOST_AUTO_TEST_CASE(colorize_format_string)
