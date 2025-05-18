@@ -115,19 +115,19 @@ static constexpr color name_to_color(std::string_view name)
   return it->value;
 }
 
-enum class style : std::uint8_t {
+enum class emphasis : std::uint8_t {
   normal = 0,
   bold = 1,
   italic = 3,
   underline = 4,
 };
 
-static constexpr std::optional<style> name_to_style(std::string_view name)
+static constexpr std::optional<emphasis> name_to_emphasis(std::string_view name)
 {
-  if (name == "normal") return style::normal;
-  if (name == "bold") return style::bold;
-  if (name == "italic") return style::italic;
-  if (name == "underline") return style::underline;
+  if (name == "normal") return emphasis::normal;
+  if (name == "bold") return emphasis::bold;
+  if (name == "italic") return emphasis::italic;
+  if (name == "underline") return emphasis::underline;
   return std::nullopt;
 }
 
@@ -137,9 +137,9 @@ template <class CharT = char>
 struct colorizer {
   constexpr auto parse(basic_colorize_parse_context<CharT>& pc)
   {
-    auto [it, color, style, reset] = do_parse(pc);
+    auto [it, color, emphasis, reset] = do_parse(pc);
     color_ = color;
-    style_ = style;
+    emphasis_ = emphasis;
     reset_ = reset;
     return it;
   }
@@ -149,15 +149,15 @@ struct colorizer {
   {
     if (reset_) return std::ranges::copy(std::string_view{"\033[0m"}, cc.out()).out;
 
-    if (color_ != detail::color::_empty && style_ != detail::style::normal) {
+    if (color_ != detail::color::_empty && emphasis_ != detail::emphasis::normal) {
       return std::ranges::copy(
-                 std::format("\033[{};{}m", std::to_underlying(style_), std::to_underlying(color_)), cc.out()
+                 std::format("\033[{};{}m", std::to_underlying(emphasis_), std::to_underlying(color_)), cc.out()
       )
           .out;
     } else if (color_ != detail::color::_empty) {
       return std::ranges::copy(std::format("\033[{}m", std::to_underlying(color_)), cc.out()).out;
     } else {
-      return std::ranges::copy(std::format("\033[{}m", std::to_underlying(style_)), cc.out()).out;
+      return std::ranges::copy(std::format("\033[{}m", std::to_underlying(emphasis_)), cc.out()).out;
     }
   }
 
@@ -165,7 +165,7 @@ private:
   struct do_parse_result {
     typename basic_colorize_parse_context<CharT>::iterator in;
     detail::color color;
-    detail::style style;
+    detail::emphasis emphasis;
     bool reset;
   };
 
@@ -174,7 +174,7 @@ private:
     do_parse_result result{
         pc.begin(),
         detail::color::_empty,
-        detail::style::normal,
+        detail::emphasis::normal,
         false,
     };
 
@@ -192,8 +192,8 @@ private:
       } else if (auto color = detail::name_to_color(specifier); color != detail::color::_empty) {
         if (result.color != detail::color::_empty) throw colorize_error("multiple color must not be specified");
         result.color = color;
-      } else if (auto opt = detail::name_to_style(specifier)) {
-        result.style = *opt;
+      } else if (auto opt = detail::name_to_emphasis(specifier)) {
+        result.emphasis = *opt;
       } else {
         throw colorize_error("invalid speicier");
       }
@@ -201,7 +201,7 @@ private:
       pc.advance_to(it += len);
     }
 
-    if (result.reset && (result.color != detail::color::_empty || result.style != detail::style::normal)) {
+    if (result.reset && (result.color != detail::color::_empty || result.emphasis != detail::emphasis::normal)) {
       throw colorize_error("reset must be independently specified");
     }
 
@@ -209,7 +209,7 @@ private:
   }
 
   detail::color color_;
-  detail::style style_;
+  detail::emphasis emphasis_;
   bool reset_;
 };
 
