@@ -488,8 +488,9 @@ template <class CharT = char>
 struct colorizer {
   constexpr auto parse(basic_colorize_parse_context<CharT>& pc)
   {
-    auto [it, fg_color, emphasis, reset] = do_parse(pc);
+    auto [it, fg_color, bg_color, emphasis, reset] = do_parse(pc);
     fg_color_ = fg_color;
+    bg_color_ = bg_color;
     emphasis_ = emphasis;
     reset_ = reset;
     return it;
@@ -528,6 +529,19 @@ struct colorizer {
       }
     }
 
+    // write background color
+    if (!bg_color_.empty()) {
+      if (!first) *it++ = ';';
+      first = false;
+      if (bg_color_.is_ansi_color()) {
+        it = std::format_to(it, "{}", std::to_underlying(bg_color_.get_ansi_color()) + 10);
+      } else {
+        detail::rgb_color rgb = bg_color_.get_rgb_color();
+        auto [r, g, b] = detail::get_rgb(rgb);
+        it = std::format_to(it, "48;5;{};{};{}", r, g, b);
+      }
+    }
+
     // write suffix
     *it++ = 'm';
 
@@ -538,6 +552,7 @@ private:
   struct do_parse_result {
     typename basic_colorize_parse_context<CharT>::iterator in;
     detail::color fg_color;
+    detail::color bg_color;
     detail::emphasis emphasis;
     bool reset;
   };
@@ -545,10 +560,7 @@ private:
   static constexpr do_parse_result do_parse(basic_colorize_parse_context<CharT>& pc)
   {
     do_parse_result result{
-        pc.begin(),
-        detail::color{},
-        detail::emphasis::_empty,
-        false,
+        pc.begin(), detail::color{}, detail::color{}, detail::emphasis::_empty, false,
     };
 
     auto& it = result.in;
@@ -568,6 +580,20 @@ private:
       } else if (auto emphasis = detail::name_to_emphasis(specifier); emphasis != detail::emphasis::_empty) {
         using namespace bitops_operators;
         result.emphasis |= emphasis;
+      } else if (specifier.starts_with("fg:")) {
+        if (auto color = detail::name_to_color(specifier.substr(3)); !color.empty()) {
+          if (!result.fg_color.empty()) throw colorize_error("multiple color must not be specified");
+          result.fg_color = color;
+        } else {
+          throw colorize_error("fg prefix must precedes color name");
+        }
+      } else if (specifier.starts_with("bg:")) {
+        if (auto color = detail::name_to_color(specifier.substr(3)); !color.empty()) {
+          if (!result.bg_color.empty()) throw colorize_error("multiple color must not be specified");
+          result.bg_color = color;
+        } else {
+          throw colorize_error("bg prefix must precedes color name");
+        }
       } else {
         throw colorize_error("invalid speicier");
       }
@@ -583,6 +609,7 @@ private:
   }
 
   detail::color fg_color_;
+  detail::color bg_color_;
   detail::emphasis emphasis_;
   bool reset_;
 };
