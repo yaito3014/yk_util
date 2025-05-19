@@ -29,8 +29,9 @@
 
 namespace yk {
 
-class colorize_error : public std::runtime_error {
-  using runtime_error::runtime_error;
+class colorize_error : public std::invalid_argument {
+public:
+  using invalid_argument::invalid_argument;
 };
 
 template <class CharT>
