@@ -710,7 +710,7 @@ struct scanner {
 
 template <class CharT>
 struct checking_scanner : scanner<CharT> {
-  consteval checking_scanner(std::basic_string_view<CharT> str) : scanner<CharT>(str) {}
+  constexpr checking_scanner(std::basic_string_view<CharT> str) : scanner<CharT>(str) {}
 
   constexpr void colorize() override { parse_colorize_spec(); }
 
@@ -738,7 +738,7 @@ struct colorizing_scanner : scanner<CharT> {
 
   constexpr void colorize() override
   {
-    colorizer c;
+    colorizer<CharT> c;
     this->pc.advance_to(c.parse(this->pc));
     cc.advance_to(c.colorize(cc));
   }
