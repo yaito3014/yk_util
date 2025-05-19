@@ -11,6 +11,9 @@ BOOST_AUTO_TEST_CASE(colorize_string)
 {
   constexpr auto test = [](yk::colorize_string) {};
   test("foo");
+  test("[reset]");
+  test("[fg:reset]");
+  test("[bg:reset]");
   test("[black]");
   test("[red]");
   test("[green]");
@@ -43,6 +46,9 @@ BOOST_AUTO_TEST_CASE(colorize_format_string)
 {
   constexpr auto test = [](yk::colorize_format_string<>) {};
   test("foo");
+  test("[reset]");
+  test("[fg:reset]");
+  test("[bg:reset]");
   test("[black]");
   test("[red]");
   test("[green]");
@@ -92,6 +98,11 @@ BOOST_AUTO_TEST_CASE(colorize)
   {
     const auto s = yk::colorize("[fg:red|bg:blue]foo");
     BOOST_TEST(s == "\033[31;44mfoo");
+  }
+
+  {
+    const auto s = yk::colorize("[fg:red|bg:blue]foo[fg:reset]bar[bg:reset]baz");
+    BOOST_TEST(s == "\033[31;44mfoo\033[39mbar\033[49mbaz");
   }
 
   {
