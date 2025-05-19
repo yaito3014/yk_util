@@ -114,6 +114,23 @@ BOOST_AUTO_TEST_CASE(colorize)
 
   BOOST_CHECK_THROW(yk::colorize(yk::runtime_colorize("[rgb(256,34,56)]foo")), yk::colorize_error);
   BOOST_CHECK_THROW(yk::colorize(yk::runtime_colorize("[rgb(-1,34,56)]foo")), yk::colorize_error);
+
+  {
+    const auto s = yk::colorize("[fg:rgb(12,34,56)]foo");
+    BOOST_TEST(s == "\033[38;2;12;34;56mfoo");
+  }
+
+  {
+    const auto s = yk::colorize("[bg:rgb(12,34,56)]foo");
+    BOOST_TEST(s == "\033[48;2;12;34;56mfoo");
+  }
+  {
+    const auto s = yk::colorize("[fg:rgb(12,34,56)|bg:rgb(78,90,12)]foo");
+    BOOST_TEST(s == "\033[38;2;12;34;56;48;2;78;90;12mfoo");
+  }
+
+  BOOST_CHECK_THROW(yk::colorize(yk::runtime_colorize("[fg:rgb(12,34,56)|fg:rgb(78,90,12)]foo")), yk::colorize_error);
+  BOOST_CHECK_THROW(yk::colorize(yk::runtime_colorize("[bg:rgb(12,34,56)|bg:rgb(78,90,12)]foo")), yk::colorize_error);
 }
 
 BOOST_AUTO_TEST_CASE(format_colorize)
