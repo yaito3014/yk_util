@@ -555,14 +555,15 @@ private:
       const auto parse_rgb = [](std::string_view spec) -> detail::color {
         if (spec.starts_with("rgb(")) {
           auto rest = spec.substr(4);
+          const auto last = spec.data() + spec.size();
           std::uint8_t r, g, b;
-          auto [ptr1, ec1] = std::from_chars(rest.begin(), rest.end(), r);
+          auto [ptr1, ec1] = std::from_chars(rest.data(), last, r);
           if (ec1 != std::errc{}) throw colorize_error("invalid number");
           if (*ptr1++ != ',') throw colorize_error("invalid delimiter");
-          auto [ptr2, ec2] = std::from_chars(ptr1, rest.end(), g);
+          auto [ptr2, ec2] = std::from_chars(ptr1, last, g);
           if (ec2 != std::errc{}) throw colorize_error("invalid number");
           if (*ptr2++ != ',') throw colorize_error("invalid delimiter");
-          auto [ptr3, ec3] = std::from_chars(ptr2, rest.end(), b);
+          auto [ptr3, ec3] = std::from_chars(ptr2, last, b);
           if (ec3 != std::errc{}) throw colorize_error("invalid number");
           if (*ptr3 != ')') throw colorize_error("unmatched right parenthesis");
           return detail::rgb_color{std::uint32_t(r) << 16 | std::uint32_t(g) << 8 | std::uint32_t(b)};
