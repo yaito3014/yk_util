@@ -574,9 +574,9 @@ private:
 
       if (specifier == "reset") {
         result.reset = true;
-      } else if (auto color = parse_rgb(specifier); !color.empty()) {
+      } else if (auto rgb_color = parse_rgb(specifier); !rgb_color.empty()) {
         if (!result.fg_color.empty()) throw colorize_error("multiple colors must not be specified");
-        result.fg_color = color;
+        result.fg_color = rgb_color;
       } else if (auto color = detail::name_to_color(specifier); !color.empty()) {
         if (!result.fg_color.empty()) throw colorize_error("multiple colors must not be specified");
         result.fg_color = color;
