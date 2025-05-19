@@ -838,13 +838,13 @@ inline constexpr std::string colorize(colorize_string col)
 }
 
 template <class Out, class... Args>
-inline constexpr Out format_and_colorize_to(Out out, colorize_format_string<Args...> fmt, Args&&... args)
+inline constexpr Out format_colorize_to(Out out, colorize_format_string<Args...> fmt, Args&&... args)
 {
   return colorize_to(std::move(out), runtime_colorize(std::format(fmt.get(), std::forward<Args>(args)...)));
 }
 
 template <class... Args>
-inline constexpr std::string format_and_colorize(colorize_format_string<Args...> fmt, Args&&... args)
+inline constexpr std::string format_colorize(colorize_format_string<Args...> fmt, Args&&... args)
 {
   return colorize(runtime_colorize(std::format(fmt.get(), std::forward<Args>(args)...)));
 }

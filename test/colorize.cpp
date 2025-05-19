@@ -116,16 +116,16 @@ BOOST_AUTO_TEST_CASE(colorize)
   }
 }
 
-BOOST_AUTO_TEST_CASE(format_and_colorize)
+BOOST_AUTO_TEST_CASE(format_colorize)
 {
   {
     std::string s;
-    yk::format_and_colorize_to(std::back_inserter(s), "[red]{}", 42);
+    yk::format_colorize_to(std::back_inserter(s), "[red]{}", 42);
     BOOST_TEST(s == "\033[31m42");
   }
 
   {
-    const auto s = yk::format_and_colorize("[green]{}", 42);
+    const auto s = yk::format_colorize("[green]{}", 42);
     BOOST_TEST(s == "\033[32m42");
   }
 }
