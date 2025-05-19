@@ -746,10 +746,6 @@ struct colorizing_scanner : scanner<CharT> {
   basic_colorize_context<Out, CharT>& cc;
 };
 
-}  // namespace detail
-
-namespace detail {
-
 template <class CharT>
 struct basic_runtime_colorize_string {
   constexpr explicit basic_runtime_colorize_string(std::basic_string_view<CharT> str) : str_(str) {}
@@ -803,7 +799,7 @@ struct basic_colorize_format_string {
     scanner.scan();
   }
 
-  constexpr basic_colorize_format_string(basic_colorize_string<CharT> s) : fmt_(str) {}
+  constexpr basic_colorize_format_string(basic_colorize_string<CharT> str) : fmt_(str) {}
 
 #if __cpp_lib_format >= 202411L
   explicit constexpr basic_colorize_format_string(detail::basic_runtime_colorize_format_string<CharT> runtime_str)
@@ -833,9 +829,7 @@ inline constexpr Out colorize_to(Out out, colorize_string col)
 inline constexpr std::string colorize(colorize_string col)
 {
   std::string str;
-  basic_colorize_context<std::back_insert_iterator<std::string>, char> ctx(std::back_inserter(str));
-  detail::colorizing_scanner<std::back_insert_iterator<std::string>, char> scanner(ctx, col.get());
-  scanner.scan();
+  colorize_to(std::back_inserter(str), col);
   return str;
 }
 
