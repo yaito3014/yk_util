@@ -109,6 +109,11 @@ BOOST_AUTO_TEST_CASE(colorize)
     const auto s = yk::colorize("[lime]foo");
     BOOST_TEST(s == "\033[38;5;0;255;0mfoo");
   }
+
+  {
+    const auto s = yk::colorize("[bg:gray]foo");
+    BOOST_TEST(s == "\033[48;5;128;128;128mfoo");
+  }
 }
 
 BOOST_AUTO_TEST_CASE(format_and_colorize)
