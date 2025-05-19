@@ -63,7 +63,6 @@ using colorize_parse_context = basic_colorize_parse_context<char>;
 namespace detail {
 
 enum class ansi_color : std::uint8_t {
-  _empty = 0,
   black = 30,
   red,
   green,
@@ -429,7 +428,6 @@ static constexpr color name_to_color(std::string_view name)
 }
 
 enum class emphasis : uint8_t {
-  _empty = 0,
   bold = 1 << 0,
   faint = 1 << 1,
   italic = 1 << 2,
@@ -450,7 +448,7 @@ static constexpr emphasis name_to_emphasis(std::string_view name)
   if (name == "reverse") return emphasis::reverse;
   if (name == "conceal") return emphasis::conceal;
   if (name == "strike") return emphasis::strike;
-  return emphasis::_empty;
+  return emphasis{};
 }
 
 static constexpr std::uint8_t emphasis_to_value(emphasis em)
@@ -578,7 +576,7 @@ private:
   static constexpr do_parse_result do_parse(basic_colorize_parse_context<CharT>& pc)
   {
     do_parse_result result{
-        pc.begin(), detail::color{}, detail::color{}, detail::emphasis::_empty, false, false, false,
+        pc.begin(), detail::color{}, detail::color{}, detail::emphasis{}, false, false, false,
     };
 
     auto& it = result.in;
@@ -595,7 +593,7 @@ private:
       } else if (auto color = detail::name_to_color(specifier); !color.empty()) {
         if (!result.fg_color.empty()) throw colorize_error("multiple color must not be specified");
         result.fg_color = color;
-      } else if (auto emphasis = detail::name_to_emphasis(specifier); emphasis != detail::emphasis::_empty) {
+      } else if (auto emphasis = detail::name_to_emphasis(specifier); emphasis != detail::emphasis{}) {
         using namespace bitops_operators;
         result.emphasis |= emphasis;
       } else if (specifier.starts_with("fg:")) {
@@ -623,7 +621,7 @@ private:
       pc.advance_to(it += len);
     }
 
-    if (result.reset && (!result.fg_color.empty() || result.emphasis != detail::emphasis::_empty)) {
+    if (result.reset && (!result.fg_color.empty() || result.emphasis != detail::emphasis{})) {
       throw colorize_error("reset must be independently specified");
     }
 
