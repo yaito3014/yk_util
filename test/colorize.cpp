@@ -26,12 +26,12 @@ BOOST_AUTO_TEST_CASE(colorize_string)
   test("[bold|italic]");
   test("[fg:red|bg:blue]");
 
-  BOOST_REQUIRE_THROW(yk::colorize(yk::runtime_colorize("[]")), yk::colorize_error);
-  BOOST_REQUIRE_THROW(yk::colorize(yk::runtime_colorize("[")), yk::colorize_error);
-  BOOST_REQUIRE_THROW(yk::colorize(yk::runtime_colorize("]")), yk::colorize_error);
-  BOOST_REQUIRE_THROW(yk::colorize(yk::runtime_colorize("[reset|red]")), yk::colorize_error);
-  BOOST_REQUIRE_THROW(yk::colorize(yk::runtime_colorize("[red|reset]")), yk::colorize_error);
-  BOOST_REQUIRE_THROW(yk::colorize(yk::runtime_colorize("[black|red]")), yk::colorize_error);
+  BOOST_CHECK_THROW(yk::colorize(yk::runtime_colorize("[]")), yk::colorize_error);
+  BOOST_CHECK_THROW(yk::colorize(yk::runtime_colorize("[")), yk::colorize_error);
+  BOOST_CHECK_THROW(yk::colorize(yk::runtime_colorize("]")), yk::colorize_error);
+  BOOST_CHECK_THROW(yk::colorize(yk::runtime_colorize("[reset|red]")), yk::colorize_error);
+  BOOST_CHECK_THROW(yk::colorize(yk::runtime_colorize("[red|reset]")), yk::colorize_error);
+  BOOST_CHECK_THROW(yk::colorize(yk::runtime_colorize("[black|red]")), yk::colorize_error);
 }
 
 BOOST_AUTO_TEST_CASE(colorize_format_string)
@@ -106,6 +106,14 @@ BOOST_AUTO_TEST_CASE(colorize)
     const auto s = yk::colorize("[bg:gray]foo");
     BOOST_TEST(s == "\033[48;2;128;128;128mfoo");
   }
+
+  {
+    const auto s = yk::colorize("[rgb(12,34,56)]foo");
+    BOOST_TEST(s == "\033[38;2;12;34;56mfoo");
+  }
+
+  BOOST_CHECK_THROW(yk::colorize(yk::runtime_colorize("[rgb(256,34,56)]foo")), yk::colorize_error);
+  BOOST_CHECK_THROW(yk::colorize(yk::runtime_colorize("[rgb(-1,34,56)]foo")), yk::colorize_error);
 }
 
 BOOST_AUTO_TEST_CASE(format_colorize)

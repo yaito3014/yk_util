@@ -550,8 +550,30 @@ private:
       const auto len = rest.find_first_of("|]");
       const std::string_view specifier = rest.substr(0, len);
 
+      const auto parse_rgb = [](std::string_view spec) -> detail::color {
+        if (spec.starts_with("rgb(")) {
+          auto rest = spec.substr(4);
+          std::uint8_t r, g, b;
+          auto [ptr1, ec1] = std::from_chars(rest.begin(), rest.end(), r);
+          if (ec1 != std::errc{}) throw colorize_error("invalid number");
+          if (*ptr1++ != ',') throw colorize_error("invalid delimiter");
+          auto [ptr2, ec2] = std::from_chars(ptr1, rest.end(), g);
+          if (ec2 != std::errc{}) throw colorize_error("invalid number");
+          if (*ptr2++ != ',') throw colorize_error("invalid delimiter");
+          auto [ptr3, ec3] = std::from_chars(ptr2, rest.end(), b);
+          if (ec3 != std::errc{}) throw colorize_error("invalid number");
+          if (*ptr3 != ')') throw colorize_error("unmatched right parenthesis");
+          return detail::rgb_color{std::uint32_t(r) << 16 | std::uint32_t(g) << 8 | std::uint32_t(b)};
+        } else {
+          return detail::color{};
+        }
+      };
+
       if (specifier == "reset") {
         result.reset = true;
+      } else if (auto color = parse_rgb(specifier); !color.empty()) {
+        if (!result.fg_color.empty()) throw colorize_error("multiple colors must not be specified");
+        result.fg_color = color;
       } else if (auto color = detail::name_to_color(specifier); !color.empty()) {
         if (!result.fg_color.empty()) throw colorize_error("multiple colors must not be specified");
         result.fg_color = color;
