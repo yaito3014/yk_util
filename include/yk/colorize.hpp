@@ -13,7 +13,6 @@
 #include <stdexcept>
 #include <string_view>
 #include <utility>
-#include <variant>
 #include <version>
 
 #include <cstdint>
@@ -61,25 +60,6 @@ private:
 using colorize_parse_context = basic_colorize_parse_context<char>;
 
 namespace detail {
-
-enum class ansi_color : std::uint8_t {
-  black = 30,
-  red,
-  green,
-  yellow,
-  blue,
-  magenta,
-  cyan,
-  white,
-  bright_black = 90,
-  bright_red,
-  bright_green,
-  bright_yellow,
-  bright_blue,
-  bright_magenta,
-  bright_cyan,
-  bright_white,
-};
 
 // https://github.com/fmtlib/fmt/blob/master/include/fmt/color.h
 enum class rgb_color : uint32_t {
@@ -235,19 +215,16 @@ constexpr auto get_rgb(rgb_color rgb)
 class color {
 public:
   constexpr color() : value() {}
-  constexpr color(ansi_color ansi) : value(ansi) {}
   constexpr color(rgb_color rgb) : value(rgb) {}
 
-  constexpr bool is_ansi_color() const { return std::holds_alternative<ansi_color>(value); }
-  constexpr bool is_rgb_color() const { return std::holds_alternative<rgb_color>(value); }
+  constexpr bool is_rgb_color() const { return value.has_value(); }
 
-  constexpr ansi_color get_ansi_color() const { return std::get<ansi_color>(value); }
-  constexpr rgb_color get_rgb_color() const { return std::get<rgb_color>(value); }
+  constexpr rgb_color get_rgb_color() const { return *value; }
 
-  constexpr bool empty() const { return std::holds_alternative<std::monostate>(value); }
+  constexpr bool empty() const { return !value.has_value(); }
 
 private:
-  std::variant<std::monostate, ansi_color, rgb_color> value;
+  std::optional<rgb_color> value;
 };
 
 struct color_pair {
@@ -258,22 +235,6 @@ struct color_pair {
 static constexpr auto color_lookup_table = [] {
   using namespace std::string_view_literals;
   std::array table{
-      color_pair{"black", ansi_color::black},
-      color_pair{"red", ansi_color::red},
-      color_pair{"green", ansi_color::green},
-      color_pair{"yellow", ansi_color::yellow},
-      color_pair{"blue", ansi_color::blue},
-      color_pair{"magenta", ansi_color::magenta},
-      color_pair{"cyan", ansi_color::cyan},
-      color_pair{"white", ansi_color::white},
-      color_pair{"bright_black", ansi_color::bright_black},
-      color_pair{"bright_red", ansi_color::bright_red},
-      color_pair{"bright_green", ansi_color::bright_green},
-      color_pair{"bright_yellow", ansi_color::bright_yellow},
-      color_pair{"bright_blue", ansi_color::bright_blue},
-      color_pair{"bright_magenta", ansi_color::bright_magenta},
-      color_pair{"bright_cyan", ansi_color::bright_cyan},
-      color_pair{"bright_white", ansi_color::bright_white},
       color_pair{"alice_blue", rgb_color::alice_blue},
       color_pair{"antique_white", rgb_color::antique_white},
       color_pair{"aqua", rgb_color::aqua},
@@ -281,9 +242,9 @@ static constexpr auto color_lookup_table = [] {
       color_pair{"azure", rgb_color::azure},
       color_pair{"beige", rgb_color::beige},
       color_pair{"bisque", rgb_color::bisque},
-      color_pair{"rgb_black", rgb_color::black},
+      color_pair{"black", rgb_color::black},
       color_pair{"blanched_almond", rgb_color::blanched_almond},
-      color_pair{"rgb_blue", rgb_color::blue},
+      color_pair{"blue", rgb_color::blue},
       color_pair{"blue_violet", rgb_color::blue_violet},
       color_pair{"brown", rgb_color::brown},
       color_pair{"burly_wood", rgb_color::burly_wood},
@@ -294,7 +255,7 @@ static constexpr auto color_lookup_table = [] {
       color_pair{"cornflower_blue", rgb_color::cornflower_blue},
       color_pair{"cornsilk", rgb_color::cornsilk},
       color_pair{"crimson", rgb_color::crimson},
-      color_pair{"rgb_cyan", rgb_color::cyan},
+      color_pair{"cyan", rgb_color::cyan},
       color_pair{"dark_blue", rgb_color::dark_blue},
       color_pair{"dark_cyan", rgb_color::dark_cyan},
       color_pair{"dark_golden_rod", rgb_color::dark_golden_rod},
@@ -325,7 +286,7 @@ static constexpr auto color_lookup_table = [] {
       color_pair{"gold", rgb_color::gold},
       color_pair{"golden_rod", rgb_color::golden_rod},
       color_pair{"gray", rgb_color::gray},
-      color_pair{"rgb_green", rgb_color::green},
+      color_pair{"green", rgb_color::green},
       color_pair{"green_yellow", rgb_color::green_yellow},
       color_pair{"honey_dew", rgb_color::honey_dew},
       color_pair{"hot_pink", rgb_color::hot_pink},
@@ -353,7 +314,7 @@ static constexpr auto color_lookup_table = [] {
       color_pair{"lime", rgb_color::lime},
       color_pair{"lime_green", rgb_color::lime_green},
       color_pair{"linen", rgb_color::linen},
-      color_pair{"rgb_magenta", rgb_color::magenta},
+      color_pair{"magenta", rgb_color::magenta},
       color_pair{"maroon", rgb_color::maroon},
       color_pair{"medium_aquamarine", rgb_color::medium_aquamarine},
       color_pair{"medium_blue", rgb_color::medium_blue},
@@ -388,7 +349,7 @@ static constexpr auto color_lookup_table = [] {
       color_pair{"powder_blue", rgb_color::powder_blue},
       color_pair{"purple", rgb_color::purple},
       color_pair{"rebecca_purple", rgb_color::rebecca_purple},
-      color_pair{"rgb_red", rgb_color::red},
+      color_pair{"red", rgb_color::red},
       color_pair{"rosy_brown", rgb_color::rosy_brown},
       color_pair{"royal_blue", rgb_color::royal_blue},
       color_pair{"saddle_brown", rgb_color::saddle_brown},
@@ -411,9 +372,9 @@ static constexpr auto color_lookup_table = [] {
       color_pair{"turquoise", rgb_color::turquoise},
       color_pair{"violet", rgb_color::violet},
       color_pair{"wheat", rgb_color::wheat},
-      color_pair{"rgb_white", rgb_color::white},
+      color_pair{"white", rgb_color::white},
       color_pair{"white_smoke", rgb_color::white_smoke},
-      color_pair{"rgb_yellow", rgb_color::yellow},
+      color_pair{"yellow", rgb_color::yellow},
       color_pair{"yellow_green", rgb_color::yellow_green},
   };
   std::ranges::sort(table, {}, &color_pair::name);
@@ -534,26 +495,18 @@ struct colorizer {
     if (!fg_color_.empty()) {
       if (!first) *it++ = ';';
       first = false;
-      if (fg_color_.is_ansi_color()) {
-        it = std::format_to(it, "{}", std::to_underlying(fg_color_.get_ansi_color()));
-      } else {
-        detail::rgb_color rgb = fg_color_.get_rgb_color();
-        auto [r, g, b] = detail::get_rgb(rgb);
-        it = std::format_to(it, "38;5;{};{};{}", r, g, b);
-      }
+      detail::rgb_color rgb = fg_color_.get_rgb_color();
+      auto [r, g, b] = detail::get_rgb(rgb);
+      it = std::format_to(it, "38;2;{};{};{}", r, g, b);
     }
 
     // write background color
     if (!bg_color_.empty()) {
       if (!first) *it++ = ';';
       first = false;
-      if (bg_color_.is_ansi_color()) {
-        it = std::format_to(it, "{}", std::to_underlying(bg_color_.get_ansi_color()) + 10);
-      } else {
-        detail::rgb_color rgb = bg_color_.get_rgb_color();
-        auto [r, g, b] = detail::get_rgb(rgb);
-        it = std::format_to(it, "48;5;{};{};{}", r, g, b);
-      }
+      detail::rgb_color rgb = bg_color_.get_rgb_color();
+      auto [r, g, b] = detail::get_rgb(rgb);
+      it = std::format_to(it, "48;2;{};{};{}", r, g, b);
     }
 
     // write suffix

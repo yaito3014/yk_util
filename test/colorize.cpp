@@ -22,14 +22,6 @@ BOOST_AUTO_TEST_CASE(colorize_string)
   test("[magenta]");
   test("[cyan]");
   test("[white]");
-  test("[bright_black]");
-  test("[bright_red]");
-  test("[bright_green]");
-  test("[bright_yellow]");
-  test("[bright_blue]");
-  test("[bright_magenta]");
-  test("[bright_cyan]");
-  test("[bright_white]");
   test("[red|bold]");
   test("[bold|italic]");
   test("[fg:red|bg:blue]");
@@ -67,27 +59,27 @@ BOOST_AUTO_TEST_CASE(colorize)
   {
     std::string s;
     yk::colorize_to(std::back_inserter(s), "[red]foo");
-    BOOST_TEST(s == "\033[31mfoo");
+    BOOST_TEST(s == "\033[38;2;255;0;0mfoo");
   }
 
   {
     const auto s = yk::colorize("[green]bar");
-    BOOST_TEST(s == "\033[32mbar");
+    BOOST_TEST(s == "\033[38;2;0;128;0mbar");
   }
 
   {
     const auto s = yk::colorize("[red]foo[green]bar[reset]baz");
-    BOOST_TEST(s == "\033[31mfoo\033[32mbar\033[0mbaz");
+    BOOST_TEST(s == "\033[38;2;255;0;0mfoo\033[38;2;0;128;0mbar\033[0mbaz");
   }
 
   {
     const auto s = yk::colorize("[red][[[green]]]");
-    BOOST_TEST(s == "\033[31m[\033[32m]");
+    BOOST_TEST(s == "\033[38;2;255;0;0m[\033[38;2;0;128;0m]");
   }
 
   {
     const auto s = yk::colorize("[red|bold]foo");
-    BOOST_TEST(s == "\033[1;31mfoo");
+    BOOST_TEST(s == "\033[1;38;2;255;0;0mfoo");
   }
 
   {
@@ -97,22 +89,22 @@ BOOST_AUTO_TEST_CASE(colorize)
 
   {
     const auto s = yk::colorize("[fg:red|bg:blue]foo");
-    BOOST_TEST(s == "\033[31;44mfoo");
+    BOOST_TEST(s == "\033[38;2;255;0;0;48;2;0;0;255mfoo");
   }
 
   {
     const auto s = yk::colorize("[fg:red|bg:blue]foo[fg:reset]bar[bg:reset]baz");
-    BOOST_TEST(s == "\033[31;44mfoo\033[39mbar\033[49mbaz");
+    BOOST_TEST(s == "\033[38;2;255;0;0;48;2;0;0;255mfoo\033[39mbar\033[49mbaz");
   }
 
   {
     const auto s = yk::colorize("[lime]foo");
-    BOOST_TEST(s == "\033[38;5;0;255;0mfoo");
+    BOOST_TEST(s == "\033[38;2;0;255;0mfoo");
   }
 
   {
     const auto s = yk::colorize("[bg:gray]foo");
-    BOOST_TEST(s == "\033[48;5;128;128;128mfoo");
+    BOOST_TEST(s == "\033[48;2;128;128;128mfoo");
   }
 }
 
@@ -121,12 +113,12 @@ BOOST_AUTO_TEST_CASE(format_colorize)
   {
     std::string s;
     yk::format_colorize_to(std::back_inserter(s), "[red]{}", 42);
-    BOOST_TEST(s == "\033[31m42");
+    BOOST_TEST(s == "\033[38;2;255;0;0m42");
   }
 
   {
     const auto s = yk::format_colorize("[green]{}", 42);
-    BOOST_TEST(s == "\033[32m42");
+    BOOST_TEST(s == "\033[38;2;0;128;0m42");
   }
 }
 
@@ -141,7 +133,7 @@ BOOST_AUTO_TEST_CASE(print)
   {
     std::stringstream ss;
     yk::print(ss, "[yellow]{}", 42);
-    BOOST_TEST(ss.str() == "\033[33m42");
+    BOOST_TEST(ss.str() == "\033[38;2;255;255;0m42");
   }
 }
 
