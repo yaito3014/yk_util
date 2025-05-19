@@ -8,7 +8,9 @@
 #include <algorithm>
 #include <array>
 #include <format>
+#include <iostream>
 #include <optional>
+#include <ostream>
 #include <ranges>
 #include <stdexcept>
 #include <string_view>
@@ -16,6 +18,13 @@
 #include <version>
 
 #include <cstdint>
+
+#if defined(_POSIX_SOURCE)
+#include <stdio.h>
+#include <unistd.h>
+#elif defined(_WIN32)
+#include <io.h>
+#endif
 
 namespace yk {
 
@@ -675,6 +684,25 @@ struct checking_scanner : scanner<CharT> {
 };
 
 template <class Out, class CharT>
+struct noop_scanner : checking_scanner<CharT> {
+  using iterator = typename checking_scanner<CharT>::iterator;
+
+  constexpr noop_scanner(basic_colorize_context<Out, CharT>& cc, std::basic_string_view<CharT> str)
+      : checking_scanner<CharT>(str), cc(cc)
+  {
+  }
+
+  constexpr void on_chars(iterator last) override
+  {
+    std::basic_string_view<CharT> str(this->pc.begin(), last);
+    cc.advance_to(std::ranges::copy(str, cc.out()).out);
+  }
+
+private:
+  basic_colorize_context<Out, CharT>& cc;
+};
+
+template <class Out, class CharT>
 struct colorizing_scanner : scanner<CharT> {
   using iterator = typename scanner<CharT>::iterator;
 
@@ -770,6 +798,47 @@ private:
 template <class... Args>
 using colorize_format_string = basic_colorize_format_string<char, std::type_identity_t<Args>...>;
 
+struct colorize_config {
+  bool need_color;
+
+  constexpr colorize_config() noexcept : need_color(true) {}
+  constexpr explicit colorize_config(bool need_color) noexcept : need_color(need_color) {}
+  explicit colorize_config(std::FILE* stream) : need_color(auto_detect(stream)) {}
+  explicit colorize_config(std::ostream& os) : need_color(auto_detect(os)) {}
+
+  static bool auto_detect(std::FILE* stream)
+  {
+#if defined(_POSIX_SOURCE)
+    return isatty(fileno(stream));
+#elif defined(_WIN32)
+    return _isatty(_fileno(stream));
+#endif
+  }
+
+  static bool auto_detect(std::ostream& os)
+  {
+    // TODO: implement properly
+    return os.rdbuf() == std::cout.rdbuf();
+  }
+};
+
+inline colorize_config stdout_config{stdout};
+inline colorize_config stderr_config{stderr};
+
+template <class Out>
+inline constexpr Out colorize_to(Out out, const colorize_config& cfg, colorize_string col)
+{
+  basic_colorize_context<Out, char> ctx(std::move(out));
+  if (cfg.need_color) {
+    detail::colorizing_scanner<Out, char> scanner(ctx, col.get());
+    scanner.scan();
+  } else {
+    detail::noop_scanner<Out, char> scanner(ctx, col.get());
+    scanner.scan();
+  }
+  return ctx.out();
+}
+
 template <class Out>
 inline constexpr Out colorize_to(Out out, colorize_string col)
 {
@@ -777,6 +846,13 @@ inline constexpr Out colorize_to(Out out, colorize_string col)
   detail::colorizing_scanner<Out, char> scanner(ctx, col.get());
   scanner.scan();
   return ctx.out();
+}
+
+inline constexpr std::string colorize(const colorize_config& cfg, colorize_string col)
+{
+  std::string str;
+  colorize_to(std::back_inserter(str), cfg, col);
+  return str;
 }
 
 inline constexpr std::string colorize(colorize_string col)
@@ -787,9 +863,25 @@ inline constexpr std::string colorize(colorize_string col)
 }
 
 template <class Out, class... Args>
+inline constexpr Out format_colorize_to(
+    Out out, const colorize_config& cfg, colorize_format_string<Args...> fmt, Args&&... args
+)
+{
+  return colorize_to(std::move(out), cfg, runtime_colorize(std::format(fmt.get(), std::forward<Args>(args)...)));
+}
+
+template <class Out, class... Args>
 inline constexpr Out format_colorize_to(Out out, colorize_format_string<Args...> fmt, Args&&... args)
 {
   return colorize_to(std::move(out), runtime_colorize(std::format(fmt.get(), std::forward<Args>(args)...)));
+}
+
+template <class... Args>
+inline constexpr std::string format_colorize(
+    const colorize_config& cfg, colorize_format_string<Args...> fmt, Args&&... args
+)
+{
+  return colorize(cfg, runtime_colorize(std::format(fmt.get(), std::forward<Args>(args)...)));
 }
 
 template <class... Args>

@@ -135,6 +135,13 @@ BOOST_AUTO_TEST_CASE(print)
     yk::print(ss, "[yellow]{}", 42);
     BOOST_TEST(ss.str() == "\033[38;2;255;255;0m42");
   }
+
+  {
+    std::stringstream ss;
+    yk::colorize_config cfg(ss);
+    yk::print(ss, cfg, "[yellow]{}", 42);
+    BOOST_TEST(ss.str() == "42");
+  }
 }
 
 BOOST_AUTO_TEST_SUITE_END()
