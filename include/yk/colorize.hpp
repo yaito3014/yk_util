@@ -522,7 +522,7 @@ struct colorizer {
       first = false;
       it = std::ranges::copy("39"sv, it).out;
     }
-    
+
     // reset background
     if (bg_reset_) {
       if (!first) *it++ = ';';
@@ -802,6 +802,8 @@ struct basic_colorize_format_string {
     detail::checking_scanner<CharT> scanner(str);
     scanner.scan();
   }
+
+  constexpr basic_colorize_format_string(basic_colorize_string<CharT> s) : fmt_(str) {}
 
 #if __cpp_lib_format >= 202411L
   explicit constexpr basic_colorize_format_string(detail::basic_runtime_colorize_format_string<CharT> runtime_str)
