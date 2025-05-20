@@ -936,7 +936,11 @@ inline constexpr std::size_t colorized_size(colorize_string col)
 
 template <basic_fixed_string Str>
 struct static_colorize_string {
-  static constexpr std::size_t len = colorized_size(Str) + 1;
+  static constexpr std::size_t len = [] {
+    detail::checking_scanner<char> scanner(Str);
+    scanner.scan();
+    return 42;
+  }();
 };
 
 namespace colorize_literals {
