@@ -487,43 +487,50 @@ struct colorizer {
 
     bool first = true;
 
-    // write emphases
-    for (auto em : each_bit(emphasis_)) {
+    const auto append_u8_to = [&first](auto it, std::uint8_t value) {
       if (!first) *it++ = ';';
       first = false;
-      it = std::format_to(it, "{}", emphasis_to_value(em));
+      CharT buf[4];
+      auto [ptr, ec] = std::to_chars(std::begin(buf), std::end(buf), value);
+      if (ec != std::errc{}) throw colorize_error("internal buffer error");
+      return std::ranges::copy(buf, ptr, std::move(it)).out;
+    };
+
+    // write emphases
+    for (auto em : each_bit(emphasis_)) {
+      it = append_u8_to(std::move(it), detail::emphasis_to_value(em));
     }
 
     // reset foreground
     if (fg_reset_) {
-      if (!first) *it++ = ';';
-      first = false;
-      it = std::ranges::copy("39"sv, it).out;
+      it = append_u8_to(std::move(it), 39);
     }
 
     // reset background
     if (bg_reset_) {
-      if (!first) *it++ = ';';
-      first = false;
-      it = std::ranges::copy("49"sv, it).out;
+      it = append_u8_to(std::move(it), 49);
     }
 
     // write foreground color
     if (!fg_color_.empty()) {
-      if (!first) *it++ = ';';
-      first = false;
       detail::rgb_color rgb = fg_color_.get_rgb_color();
       auto [r, g, b] = detail::get_rgb(rgb);
-      it = std::format_to(it, "38;2;{};{};{}", r, g, b);
+      it = append_u8_to(std::move(it), 38);
+      it = append_u8_to(std::move(it), 2);
+      it = append_u8_to(std::move(it), r);
+      it = append_u8_to(std::move(it), g);
+      it = append_u8_to(std::move(it), b);
     }
 
     // write background color
     if (!bg_color_.empty()) {
-      if (!first) *it++ = ';';
-      first = false;
       detail::rgb_color rgb = bg_color_.get_rgb_color();
       auto [r, g, b] = detail::get_rgb(rgb);
-      it = std::format_to(it, "48;2;{};{};{}", r, g, b);
+      it = append_u8_to(std::move(it), 48);
+      it = append_u8_to(std::move(it), 2);
+      it = append_u8_to(std::move(it), r);
+      it = append_u8_to(std::move(it), g);
+      it = append_u8_to(std::move(it), b);
     }
 
     // write suffix

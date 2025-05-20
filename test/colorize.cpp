@@ -131,6 +131,8 @@ BOOST_AUTO_TEST_CASE(colorize)
 
   BOOST_CHECK_THROW(yk::colorize(yk::runtime_colorize("[fg:rgb(12,34,56)|fg:rgb(78,90,12)]foo")), yk::colorize_error);
   BOOST_CHECK_THROW(yk::colorize(yk::runtime_colorize("[bg:rgb(12,34,56)|bg:rgb(78,90,12)]foo")), yk::colorize_error);
+
+  static_assert(yk::colorize("[red]foo") == "\033[38;2;255;0;0mfoo");
 }
 
 BOOST_AUTO_TEST_CASE(format_colorize)
