@@ -210,6 +210,9 @@ struct invocable_traits<const F> : invocable_traits<F> {};
 template <class F, std::size_t N>
 struct is_n_ary_function : detail::is_n_ary_function<F, N> {};
 
+template <class F, std::size_t N>
+struct is_n_ary_function<const F, N> : is_n_ary_function<F, N> {};
+
 template <class F>
 using is_unary_function = is_n_ary_function<F, 1>;
 
