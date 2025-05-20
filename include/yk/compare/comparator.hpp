@@ -46,7 +46,7 @@ struct comparator_adaptor_closure {};
 template <class Comp, class Closure>
   requires binary_function<std::decay_t<Comp>>
            && std::derived_from<std::remove_cvref_t<Closure>, comparator_adaptor_closure>
-constexpr auto operator|(Comp&& comp, Closure&& closure) noexcept
+[[nodiscard]] constexpr auto operator|(Comp&& comp, Closure&& closure) noexcept
 {
   return std::invoke(std::forward<Closure>(closure), std::forward<Comp>(comp));
 }
@@ -64,7 +64,7 @@ struct pipe_closure : comparator_adaptor_closure {
 
   template <class Comp>
     requires binary_function<std::decay_t<Comp>>
-  constexpr auto operator()(Comp&& comp) const noexcept(
+  [[nodiscard]] constexpr auto operator()(Comp&& comp) const noexcept(
       noexcept(std::invoke(rhs, std::invoke(lhs, std::forward<Comp>(comp))))
   )
   {
@@ -77,7 +77,7 @@ struct pipe_closure : comparator_adaptor_closure {
 template <class Lhs, class Rhs>
   requires std::derived_from<std::remove_cvref_t<Lhs>, comparator_adaptor_closure>
            && std::derived_from<std::remove_cvref_t<Rhs>, comparator_adaptor_closure>
-constexpr auto operator|(Lhs&& lhs, Rhs&& rhs) noexcept
+[[nodiscard]] constexpr auto operator|(Lhs&& lhs, Rhs&& rhs) noexcept
 {
   return detail::pipe_closure{std::forward<Lhs>(lhs), std::forward<Rhs>(rhs)};
 }
@@ -92,7 +92,7 @@ struct wrapper_comparator : comparator_interface {
   constexpr wrapper_comparator(Comp&& c) noexcept : comp(std::forward<Comp>(c)) {}
 
   template <class T, class U>
-  constexpr auto operator()(T&& x, U&& y) const noexcept(noexcept(std::is_nothrow_invocable_v<Comp, T, U>))
+  [[nodiscard]] constexpr auto operator()(T&& x, U&& y) const noexcept(noexcept(std::is_nothrow_invocable_v<Comp, T, U>))
   {
     return std::invoke(comp, std::forward<T>(x), std::forward<U>(y));
   }
@@ -106,14 +106,14 @@ namespace detail {
 struct wrap_fn {
   template <class Comp>
     requires binary_function<std::decay_t<Comp>>
-  constexpr auto operator()(Comp&& comp) const noexcept
+  [[nodiscard]] constexpr auto operator()(Comp&& comp) const noexcept
   {
     return wrapper_comparator{std::forward<Comp>(comp)};
   }
 
   template <class Comp>
     requires comparator<std::decay_t<Comp>>
-  constexpr auto operator()(Comp&& comp) const noexcept
+  [[nodiscard]] constexpr auto operator()(Comp&& comp) const noexcept
   {
     return std::forward<Comp>(comp);
   }
@@ -143,7 +143,7 @@ struct then_comparator : comparator_interface {
   }
 
   template <class T, class U>
-  constexpr auto operator()(
+  [[nodiscard]] constexpr auto operator()(
       T&& x, U&& y
   ) const noexcept(std::is_nothrow_invocable_v<Comp1, T&, U&> && std::is_nothrow_invocable_v<Comp2, T&, U&>) ->
       typename std::common_comparison_category_t<
@@ -174,7 +174,7 @@ struct comp_then_closure : comparator_adaptor_closure {
   // if closure if const lvalue reference, pass reference
   template <class Comp1>
     requires binary_function<std::decay_t<Comp1>>
-  constexpr auto operator()(Comp1&& comp1) const& noexcept
+  [[nodiscard]] constexpr auto operator()(Comp1&& comp1) const& noexcept
   {
     return then_comparator{std::forward<Comp1>(comp1), comp2};
   }
@@ -182,7 +182,7 @@ struct comp_then_closure : comparator_adaptor_closure {
   // if closure if non-const lvalue reference, pass reference
   template <class Comp1>
     requires binary_function<std::decay_t<Comp1>>
-  constexpr auto operator()(Comp1&& comp1) & noexcept
+  [[nodiscard]] constexpr auto operator()(Comp1&& comp1) & noexcept
   {
     return then_comparator{std::forward<Comp1>(comp1), comp2};
   }
@@ -190,7 +190,7 @@ struct comp_then_closure : comparator_adaptor_closure {
   // if closure if rvalue reference, move if Comp2 is not reference
   template <class Comp1>
     requires binary_function<std::decay_t<Comp1>>
-  constexpr auto operator()(Comp1&& comp1) && noexcept
+  [[nodiscard]] constexpr auto operator()(Comp1&& comp1) && noexcept
   {
     return then_comparator{std::forward<Comp1>(comp1), std::forward<Comp2>(comp2)};
   }
@@ -208,14 +208,14 @@ comp_then_closure(Comp2&&) -> comp_then_closure<Comp2>;
 struct comp_then_fn {
   template <class Comp1, class Comp2>
     requires binary_function<std::decay_t<Comp1>> && binary_function<std::decay_t<Comp2>>
-  constexpr auto operator()(Comp1&& comp1, Comp2&& comp2) const noexcept
+  [[nodiscard]] constexpr auto operator()(Comp1&& comp1, Comp2&& comp2) const noexcept
   {
     return then_comparator{std::forward<Comp1>(comp1), std::forward<Comp2>(comp2)};
   }
 
   template <class Comp2>
     requires binary_function<std::decay_t<Comp2>>
-  constexpr auto operator()(Comp2&& comp2) const noexcept
+  [[nodiscard]] constexpr auto operator()(Comp2&& comp2) const noexcept
   {
     return comp_then_closure{std::forward<Comp2>(comp2)};
   }
@@ -257,7 +257,7 @@ struct promote_comparator : comparator_interface {
   }
 
   template <class T, class U>
-  constexpr auto operator()(T&& x, U&& y) const noexcept(
+  [[nodiscard]] constexpr auto operator()(T&& x, U&& y) const noexcept(
       std::is_nothrow_invocable_v<Comp1, T&, U&> && std::is_nothrow_invocable_v<Comp2, T&, U&>
   ) -> std::invoke_result_t<Comp2, T&, U&>
     requires is_promotable_v<std::invoke_result_t<Comp1, T&, U&>, std::invoke_result_t<Comp2, T&, U&>>
@@ -284,25 +284,25 @@ struct promote_closure : comparator_adaptor_closure {
 
   YK_NO_UNIQUE_ADDRESS Comp2 comp2;
 
-  constexpr promote_closure(Comp2&& c2) noexcept : comp2(std::forward<Comp2>(c2)) {}
+  [[nodiscard]] constexpr promote_closure(Comp2&& c2) noexcept : comp2(std::forward<Comp2>(c2)) {}
 
   template <class Comp1>
     requires binary_function<std::decay_t<Comp1>>
-  constexpr auto operator()(Comp1&& comp1) const& noexcept
+  [[nodiscard]] constexpr auto operator()(Comp1&& comp1) const& noexcept
   {
     return promote_comparator{std::forward<Comp1>(comp1), comp2};
   }
 
   template <class Comp1>
     requires binary_function<std::decay_t<Comp1>>
-  constexpr auto operator()(Comp1&& comp1) & noexcept
+  [[nodiscard]] constexpr auto operator()(Comp1&& comp1) & noexcept
   {
     return promote_comparator{std::forward<Comp1>(comp1), comp2};
   }
 
   template <class Comp1>
     requires binary_function<std::decay_t<Comp1>>
-  constexpr auto operator()(Comp1&& comp1) && noexcept
+  [[nodiscard]] constexpr auto operator()(Comp1&& comp1) && noexcept
   {
     return promote_comparator{std::forward<Comp1>(comp1), std::forward<Comp2>(comp2)};
   }
@@ -311,14 +311,14 @@ struct promote_closure : comparator_adaptor_closure {
 struct promote_fn {
   template <class Comp1, class Comp2>
     requires binary_function<std::decay_t<Comp1>> && binary_function<std::decay_t<Comp2>>
-  constexpr auto operator()(Comp1&& comp1, Comp2&& comp2) const noexcept
+  [[nodiscard]] constexpr auto operator()(Comp1&& comp1, Comp2&& comp2) const noexcept
   {
     return promote_comparator{std::forward<Comp1>(comp1), std::forward<Comp2>(comp2)};
   }
 
   template <class Comp2>
     requires binary_function<std::decay_t<Comp2>>
-  constexpr auto operator()(Comp2&& comp2) const noexcept
+  [[nodiscard]] constexpr auto operator()(Comp2&& comp2) const noexcept
   {
     return promote_closure(std::forward<Comp2>(comp2));
   }
@@ -342,7 +342,7 @@ struct extract_comparator : comparator_interface {
   constexpr extract_comparator(F&& f) noexcept : func(std::forward<F>(f)) {}
 
   template <class T, class U>
-  constexpr auto operator()(T&& x, U&& y) const noexcept(
+  [[nodiscard]] constexpr auto operator()(T&& x, U&& y) const noexcept(
       noexcept(std::compare_three_way{}(std::invoke(func, std::forward<T>(x)), std::invoke(func, std::forward<U>(y))))
   )
   {
@@ -353,7 +353,7 @@ struct extract_comparator : comparator_interface {
 template <class Self, class RAC>
   requires specialization_of<std::remove_cvref_t<Self>, extract_comparator>
            && detail::RangeAdaptorClosure<std::remove_cvref_t<RAC>>
-constexpr auto operator|(Self&& comp, RAC&& rac) noexcept
+[[nodiscard]] constexpr auto operator|(Self&& comp, RAC&& rac) noexcept
 {
   return extract_comparator{yk::compose(std::forward<RAC>(rac), std::forward<Self>(comp).func)};
 }
@@ -363,7 +363,7 @@ namespace detail {
 struct extract_fn {
   template <class F>
     requires unary_function<std::decay_t<F>>
-  constexpr auto operator()(F&& func) const noexcept
+  [[nodiscard]] constexpr auto operator()(F&& func) const noexcept
   {
     return extract_comparator{std::forward<F>(func)};
   }
@@ -382,7 +382,7 @@ template <class Comp, class F>
   requires comparator<std::decay_t<Comp>> && unary_function<std::decay_t<F>>
            && (!std::derived_from<std::decay_t<F>, comparator_adaptor_closure>)
            && (!detail::RangeAdaptorClosure<std::decay_t<F>>)
-constexpr auto operator|(Comp&& comp, F&& f) noexcept
+[[nodiscard]] constexpr auto operator|(Comp&& comp, F&& f) noexcept
 {
   return comparators::then(std::forward<Comp>(comp), comparators::extract(std::forward<F>(f)));
 }

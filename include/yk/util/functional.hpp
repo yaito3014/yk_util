@@ -276,7 +276,7 @@ compose_impl(F, Fs...) -> compose_impl<F, Fs...>;
 }  // namespace detail
 
 template <class F, class... Fs>
-constexpr auto compose(F&& f, Fs&&... fs) noexcept
+[[nodiscard]] constexpr auto compose(F&& f, Fs&&... fs) noexcept
 {
   return detail::compose_impl{std::forward<F>(f), std::forward<Fs>(fs)...};
 }
