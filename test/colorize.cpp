@@ -179,7 +179,7 @@ BOOST_AUTO_TEST_CASE(fixed)
   static_assert(yk::colorized_size(str) == 18);
   static_assert(yk::colorize(str) == "\033[38;2;255;0;0mfoo");
 
-  constexpr auto val = yk::static_colorize_string<"[red]foo">::colorized;  // なぜか GCC で落ちる
+  constexpr auto val [[maybe_unused]] = yk::static_colorize_string<"[red]foo">::len;  // なぜか GCC で落ちる
 }
 
 BOOST_AUTO_TEST_SUITE_END()

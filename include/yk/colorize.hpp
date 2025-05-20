@@ -936,12 +936,7 @@ inline constexpr std::size_t colorized_size(colorize_string col)
 
 template <basic_fixed_string Str>
 struct static_colorize_string {
-  static constexpr auto value  = Str;
-  static constexpr auto colorized = [] {
-    fixed_string<colorized_size(value)> res;
-    colorize_to(res.begin(), value);
-    return res;
-  }();
+  static constexpr std::size_t len = colorized_size(Str) + 1;
 };
 
 namespace colorize_literals {
@@ -971,8 +966,7 @@ inline constexpr Out format_colorize_to(Out out, colorize_format_string<Args...>
 template <class Out, basic_fixed_string Str, class... Args>
 inline constexpr Out format_colorize_to(Out out, static_colorize_string<Str>, Args&&... args)
 {
-  return colorize_to(std::move(out), std::format(static_colorize_string<Str>::colorized,
-  std::forward<Args>(args)...));
+  return colorize_to(std::move(out), std::format(static_colorize_string<Str>::colorized, std::forward<Args>(args)...));
 }
 
 template <class... Args>
@@ -992,8 +986,7 @@ inline constexpr std::string format_colorize(colorize_format_string<Args...> fmt
 template <basic_fixed_string Str, class... Args>
 inline constexpr std::string format_colorize(static_colorize_string<Str>, Args&&... args)
 {
-  return colorize(runtime_colorize(std::format(static_colorize_string<Str>::colorized,
-  std::forward<Args>(args)...)));
+  return colorize(runtime_colorize(std::format(static_colorize_string<Str>::colorized, std::forward<Args>(args)...)));
 }
 
 }  // namespace yk
