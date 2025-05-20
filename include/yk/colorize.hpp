@@ -4,6 +4,7 @@
 #include "yk/detail/string_like.hpp"
 #include "yk/enum_bitops.hpp"
 #include "yk/enum_bitops_algorithm.hpp"
+#include "yk/fixed_string.hpp"
 
 #include <algorithm>
 #include <array>
@@ -488,7 +489,10 @@ struct colorizer {
     bool first = true;
 
     const auto append_u8_to = [&first](auto it, std::uint8_t value) {
-      if (!first) *it++ = ';';
+      if (!first) {
+        *it = ';';
+        ++it;
+      }
       first = false;
       CharT buf[4];
       auto [ptr, ec] = std::to_chars(std::begin(buf), std::end(buf), value);
@@ -534,7 +538,8 @@ struct colorizer {
     }
 
     // write suffix
-    *it++ = 'm';
+    *it = 'm';
+    ++it;
 
     return it;
   }
@@ -785,6 +790,23 @@ struct basic_runtime_colorize_format_string {
   std::basic_string_view<CharT> str_;
 };
 
+template <class CharT>
+struct counting_iterator {
+  using difference_type = std::ptrdiff_t;
+
+  std::size_t count = 0;
+
+  struct proxy {
+    counting_iterator* ptr;
+
+    constexpr void operator=(CharT) const { ptr->count++; }
+  };
+
+  constexpr counting_iterator& operator++() { return *this; }
+  constexpr void operator++(int) {}
+  constexpr proxy operator*() { return proxy{this}; }
+};
+
 }  // namespace detail
 
 constexpr auto runtime_colorize(std::string_view str) { return detail::basic_runtime_colorize_string<char>{str}; }
@@ -905,6 +927,11 @@ inline constexpr std::string colorize(colorize_string col)
   std::string str;
   colorize_to(std::back_inserter(str), col);
   return str;
+}
+
+inline constexpr std::size_t colorized_size(colorize_string col)
+{
+  return colorize_to(detail::counting_iterator<char>{}, col).count;
 }
 
 template <class Out, class... Args>
