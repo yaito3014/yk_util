@@ -398,10 +398,9 @@ BOOST_AUTO_TEST_CASE(ClosureTypeTraits)
     static_assert(std::is_same_v<decltype(closure), yk::compare::detail::comp_then_closure<A>>);
     static_assert(!yk::compare::detail::RangeAdaptorClosure<decltype(closure)>);
     auto comp = B{} | closure;
-    static_assert(
-        std::is_same_v<
-            decltype(comp),
-            yk::compare::then_comparator<yk::compare::wrapper_comparator<B>, yk::compare::wrapper_comparator<A&>>>
+    static_assert(std::is_same_v<
+                  decltype(comp),
+                  yk::compare::then_comparator<yk::compare::wrapper_comparator<B>, yk::compare::wrapper_comparator<A&>>>
     );
   }
   {
@@ -412,12 +411,28 @@ BOOST_AUTO_TEST_CASE(ClosureTypeTraits)
       std::strong_ordering operator()(int x, int y) const noexcept { return x <=> y; }
     };
     auto comp = B{} | yk::comparators::then(A{});
-    static_assert(
-        std::is_same_v<
-            decltype(comp),
-            yk::compare::then_comparator<yk::compare::wrapper_comparator<B>, yk::compare::wrapper_comparator<A>>>
+    static_assert(std::is_same_v<
+                  decltype(comp),
+                  yk::compare::then_comparator<yk::compare::wrapper_comparator<B>, yk::compare::wrapper_comparator<A>>>
     );
   }
+}
+
+BOOST_AUTO_TEST_CASE(promotion)
+{
+  using namespace yk::comparators;
+
+  struct S {
+    std::string name;
+    int id;
+  };
+
+  const auto weak_comparator = [](const S& a, const S& b) -> std::weak_ordering { return a.name <=> b.name; };
+  BOOST_TEST((weak_comparator(S{"foo", 1}, S{"bar", 2}) == std::weak_ordering::greater));
+  BOOST_TEST((weak_comparator(S{"foo", 1}, S{"foo", 2}) == std::weak_ordering::equivalent));
+  auto comp = weak_comparator | promote(extract(&S::id));
+  BOOST_TEST((comp(S{"foo", 1}, S{"bar", 2}) == std::strong_ordering::greater));
+  BOOST_TEST((comp(S{"foo", 1}, S{"foo", 2}) == std::strong_ordering::less));
 }
 
 BOOST_AUTO_TEST_SUITE_END()
