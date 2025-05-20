@@ -936,9 +936,10 @@ inline constexpr std::size_t colorized_size(colorize_string col)
 
 template <basic_fixed_string Str>
 struct static_colorize_string {
+  static constexpr auto value  = Str;
   static constexpr auto colorized = [] {
-    fixed_string<colorized_size(Str)> res;
-    colorize_to(res.begin(), Str);
+    fixed_string<colorized_size(value)> res;
+    colorize_to(res.begin(), value);
     return res;
   }();
 };
