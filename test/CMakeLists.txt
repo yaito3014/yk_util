@@ -8,6 +8,7 @@ if(BUILD_TESTING)
     meta.cpp
     util.cpp
     colorize.cpp
+    fixed_string.cpp
     variant_view.cpp
     atomic_queue.cpp
     concurrency.cpp

@@ -26,6 +26,16 @@ basic_fixed_string(const CharT (&)[N]) -> basic_fixed_string<CharT, N - 1>;
 template <std::size_t N>
 using fixed_string = basic_fixed_string<char, N>;
 
+namespace fixed_string_literals {
+
+template <basic_fixed_string Str>
+constexpr auto operator""_fixed()
+{
+  return Str;
+}
+
+}  // namespace fixed_string_literals
+
 }  // namespace yk
 
 #endif  // YK_FIXED_STRING_HPP
