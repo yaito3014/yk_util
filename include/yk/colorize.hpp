@@ -934,6 +934,25 @@ inline constexpr std::size_t colorized_size(colorize_string col)
   return colorize_to(detail::counting_iterator<char>{}, col).count;
 }
 
+template <basic_fixed_string Str>
+struct static_colorize_string {
+  static constexpr auto colorized = [] {
+    fixed_string<colorized_size(Str)> res;
+    colorize_to(res.begin(), Str);
+    return res;
+  }();
+};
+
+namespace colorize_literals {
+
+template <basic_fixed_string Str>
+constexpr static_colorize_string<Str> operator""_col()
+{
+  return {};
+}
+
+}  // namespace colorize_literals
+
 template <class Out, class... Args>
 inline constexpr Out format_colorize_to(
     Out out, const colorize_config& cfg, colorize_format_string<Args...> fmt, Args&&... args
@@ -948,6 +967,13 @@ inline constexpr Out format_colorize_to(Out out, colorize_format_string<Args...>
   return colorize_to(std::move(out), runtime_colorize(std::format(fmt.get(), std::forward<Args>(args)...)));
 }
 
+template <class Out, basic_fixed_string Str, class... Args>
+inline constexpr Out format_colorize_to(Out out, static_colorize_string<Str>, Args&&... args)
+{
+  return colorize_to(std::move(out), std::format(static_colorize_string<Str>::colorized,
+  std::forward<Args>(args)...));
+}
+
 template <class... Args>
 inline constexpr std::string format_colorize(
     const colorize_config& cfg, colorize_format_string<Args...> fmt, Args&&... args
@@ -960,6 +986,13 @@ template <class... Args>
 inline constexpr std::string format_colorize(colorize_format_string<Args...> fmt, Args&&... args)
 {
   return colorize(runtime_colorize(std::format(fmt.get(), std::forward<Args>(args)...)));
+}
+
+template <basic_fixed_string Str, class... Args>
+inline constexpr std::string format_colorize(static_colorize_string<Str>, Args&&... args)
+{
+  return colorize(runtime_colorize(std::format(static_colorize_string<Str>::colorized,
+  std::forward<Args>(args)...)));
 }
 
 }  // namespace yk

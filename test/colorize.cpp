@@ -172,4 +172,14 @@ BOOST_AUTO_TEST_CASE(print)
   }
 }
 
+BOOST_AUTO_TEST_CASE(fixed)
+{
+  using namespace yk::colorize_literals;
+  constexpr yk::fixed_string str = "[red]foo";
+  static_assert(yk::colorized_size(str) == 18);
+  static_assert(yk::colorize(str) == "\033[38;2;255;0;0mfoo");
+
+  constexpr auto val = yk::static_colorize_string<"[red]foo">::colorized;  // なぜか GCC で落ちる
+}
+
 BOOST_AUTO_TEST_SUITE_END()
