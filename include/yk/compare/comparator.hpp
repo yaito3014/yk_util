@@ -143,13 +143,15 @@ struct then_comparator : comparator_interface {
   }
 
   template <class T, class U>
-  constexpr auto operator()(T&& x, U&& y) const noexcept(
-      std::is_nothrow_invocable_v<Comp1, T, U> && std::is_nothrow_invocable_v<Comp2, T, U>
-  ) -> typename std::common_comparison_category_t<std::invoke_result_t<Comp1, T, U>, std::invoke_result_t<Comp2, T, U>>
+  constexpr auto operator()(
+      T&& x, U&& y
+  ) const noexcept(std::is_nothrow_invocable_v<Comp1, T&, U&> && std::is_nothrow_invocable_v<Comp2, T&, U&>) ->
+      typename std::common_comparison_category_t<
+          std::invoke_result_t<Comp1, T&, U&>, std::invoke_result_t<Comp2, T&, U&>>
   {
-    ordering auto res = std::invoke(comp1, std::forward<T>(x), std::forward<U>(y));
+    ordering auto res = std::invoke(comp1, x, y);
     if (res == 0) {
-      return std::invoke(comp2, std::forward<T>(x), std::forward<U>(y));
+      return std::invoke(comp2, x, y);
     } else {
       return res;
     }
@@ -224,6 +226,109 @@ struct comp_then_fn {
 namespace comparators {
 
 inline constexpr detail::comp_then_fn then{};
+
+}  // namespace comparators
+
+template <class From, class To>
+struct is_promotable : std::false_type {};
+
+template <>
+struct is_promotable<std::partial_ordering, std::partial_ordering> : std::true_type {};
+
+template <>
+struct is_promotable<std::weak_ordering, std::weak_ordering> : std::true_type {};
+
+template <>
+struct is_promotable<std::weak_ordering, std::strong_ordering> : std::true_type {};
+
+template <class From, class To>
+inline constexpr bool is_promotable_v = is_promotable<From, To>::value;
+
+template <comparator Comp1, comparator Comp2>
+struct promote_comparator : comparator_interface {
+  static constexpr std::size_t arity = 2;
+
+  YK_NO_UNIQUE_ADDRESS Comp1 comp1;
+  YK_NO_UNIQUE_ADDRESS Comp2 comp2;
+
+  constexpr promote_comparator(Comp1&& comp1, Comp2&& comp2)
+      : comp1(std::forward<Comp1>(comp1)), comp2(std::forward<Comp2>(comp2))
+  {
+  }
+
+  template <class T, class U>
+  constexpr auto operator()(T&& x, U&& y) const noexcept(
+      std::is_nothrow_invocable_v<Comp1, T&, U&> && std::is_nothrow_invocable_v<Comp2, T&, U&>
+  ) -> std::invoke_result_t<Comp2, T&, U&>
+    requires is_promotable_v<std::invoke_result_t<Comp1, T&, U&>, std::invoke_result_t<Comp2, T&, U&>>
+  {
+    using From = std::invoke_result_t<Comp1, T&, U&>;
+    using To = std::invoke_result_t<Comp2, T&, U&>;
+    const auto res = std::invoke(comp1, x, y);
+    if (res == From::equivalent) return std::invoke(comp2, x, y);
+    if (res == From::less) return To::less;
+    if (res == From::greater) return To::greater;
+    if constexpr (std::is_same_v<From, To>) return res;
+    std::unreachable();
+  }
+};
+
+template <class Comp1, class Comp2>
+promote_comparator(Comp1&&, Comp2&&) -> promote_comparator<wrap_t<Comp1>, wrap_t<Comp2>>;
+
+namespace detail {
+
+template <class Comp2>
+struct promote_closure : comparator_adaptor_closure {
+  static constexpr std::size_t arity = 1;
+
+  YK_NO_UNIQUE_ADDRESS Comp2 comp2;
+
+  constexpr promote_closure(Comp2&& c2) noexcept : comp2(std::forward<Comp2>(c2)) {}
+
+  template <class Comp1>
+    requires binary_function<std::decay_t<Comp1>>
+  constexpr auto operator()(Comp1&& comp1) const& noexcept
+  {
+    return promote_comparator{std::forward<Comp1>(comp1), comp2};
+  }
+
+  template <class Comp1>
+    requires binary_function<std::decay_t<Comp1>>
+  constexpr auto operator()(Comp1&& comp1) & noexcept
+  {
+    return promote_comparator{std::forward<Comp1>(comp1), comp2};
+  }
+
+  template <class Comp1>
+    requires binary_function<std::decay_t<Comp1>>
+  constexpr auto operator()(Comp1&& comp1) && noexcept
+  {
+    return promote_comparator{std::forward<Comp1>(comp1), std::forward<Comp2>(comp2)};
+  }
+};
+
+struct promote_fn {
+  template <class Comp1, class Comp2>
+    requires binary_function<std::decay_t<Comp1>> && binary_function<std::decay_t<Comp2>>
+  constexpr auto operator()(Comp1&& comp1, Comp2&& comp2) const noexcept
+  {
+    return promote_comparator{std::forward<Comp1>(comp1), std::forward<Comp2>(comp2)};
+  }
+
+  template <class Comp2>
+    requires binary_function<std::decay_t<Comp2>>
+  constexpr auto operator()(Comp2&& comp2) const noexcept
+  {
+    return promote_closure(std::forward<Comp2>(comp2));
+  }
+};
+
+}  // namespace detail
+
+namespace comparators {
+
+inline constexpr detail::promote_fn promote{};
 
 }  // namespace comparators
 
