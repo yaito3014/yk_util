@@ -1,5 +1,5 @@
-#ifndef YK_THEN_COMPARE_HPP
-#define YK_THEN_COMPARE_HPP
+#ifndef YK_COMPARE_ADAPTOR_HPP
+#define YK_COMPARE_ADAPTOR_HPP
 
 #include "yk/compare/concepts.hpp"
 #include "yk/no_unique_address.hpp"
@@ -85,4 +85,4 @@ inline constexpr detail::then_with_impl then_with;
 
 }  // namespace yk
 
-#endif  // YK_THEN_COMPARE_HPP
+#endif  // YK_COMPARE_ADAPTOR_HPP
