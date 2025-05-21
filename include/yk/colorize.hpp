@@ -970,7 +970,7 @@ inline constexpr Out format_colorize_to(Out out, colorize_format_string<Args...>
 template <class Out, basic_fixed_string Str, class... Args>
 inline constexpr Out format_colorize_to(Out out, static_colorize_string<Str>, Args&&... args)
 {
-  return colorize_to(std::move(out), std::format(static_colorize_string<Str>::colorized, std::forward<Args>(args)...));
+  return std::format_to(std::move(out), static_colorize_string<Str>::colorized, std::forward<Args>(args)...);
 }
 
 template <class... Args>
@@ -990,7 +990,7 @@ inline constexpr std::string format_colorize(colorize_format_string<Args...> fmt
 template <basic_fixed_string Str, class... Args>
 inline constexpr std::string format_colorize(static_colorize_string<Str>, Args&&... args)
 {
-  return colorize(runtime_colorize(std::format(static_colorize_string<Str>::colorized, std::forward<Args>(args)...)));
+  return std::format(static_colorize_string<Str>::colorized, std::forward<Args>(args)...);
 }
 
 }  // namespace yk
