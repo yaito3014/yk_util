@@ -936,10 +936,10 @@ inline constexpr std::size_t colorized_size(colorize_string col)
 
 template <basic_fixed_string Str>
 struct static_colorize_string {
-  static constexpr std::size_t len = [] {
-    detail::checking_scanner<char> scanner(Str);
-    scanner.scan();
-    return 42;
+  static constexpr auto colorized = [] {
+    basic_fixed_string<typename decltype(Str)::value_type, colorized_size(Str)> res;
+    colorize_to(res.begin(), Str);
+    return res;
   }();
 };
 

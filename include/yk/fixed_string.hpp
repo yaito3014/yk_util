@@ -16,6 +16,8 @@ struct basic_fixed_string {
 
   storage_type data{};
 
+  using traits_type = Traits;
+  using value_type = CharT;
   using iterator = typename storage_type::iterator;
   using const_iterator = typename storage_type::const_iterator;
   using string_view_type = std::basic_string_view<CharT, Traits>;
