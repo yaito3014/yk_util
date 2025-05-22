@@ -264,8 +264,9 @@ struct promote_comparator : comparator_interface {
   {
   }
 
+  // Invalid promotion. If you're trying to promote strong_ordering to strong_ordering, use then() instead.
   template <class T, class U>
-  void operator()(T&&, U&&) const = delete;  // invalid promotion
+  void operator()(T&&, U&&) const = delete;
 
   template <class T, class U>
   [[nodiscard]] constexpr auto operator()(T&& x, U&& y) const noexcept(
