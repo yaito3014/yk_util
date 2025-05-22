@@ -265,7 +265,7 @@ struct promote_comparator : comparator_interface {
   }
 
   template <class T, class U>
-  void operator()(T&&, U&&) = delete;  // invalid promotion
+  void operator()(T&&, U&&) const = delete;  // invalid promotion
 
   template <class T, class U>
   [[nodiscard]] constexpr auto operator()(T&& x, U&& y) const noexcept(
