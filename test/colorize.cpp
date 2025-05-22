@@ -177,6 +177,7 @@ BOOST_AUTO_TEST_CASE(fixed)
   constexpr yk::fixed_string str = "[red]foo";
   static_assert(yk::colorized_size(str) == 18);
   static_assert(yk::colorize(str) == "\033[38;2;255;0;0mfoo");
+  static_assert(std::string_view{yk::static_colorize_string<str>::colorized} == "\033[38;2;255;0;0mfoo");
 }
 
 BOOST_AUTO_TEST_SUITE_END()
