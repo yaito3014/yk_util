@@ -5,7 +5,7 @@
 
 #include <sstream>
 
-BOOST_AUTO_TEST_SUITE(print)
+BOOST_AUTO_TEST_SUITE(colorize_test)
 
 BOOST_AUTO_TEST_CASE(colorize_string)
 {
@@ -131,6 +131,9 @@ BOOST_AUTO_TEST_CASE(colorize)
 
   BOOST_CHECK_THROW(yk::colorize(yk::runtime_colorize("[fg:rgb(12,34,56)|fg:rgb(78,90,12)]foo")), yk::colorize_error);
   BOOST_CHECK_THROW(yk::colorize(yk::runtime_colorize("[bg:rgb(12,34,56)|bg:rgb(78,90,12)]foo")), yk::colorize_error);
+
+  BOOST_TEST(yk::colorized_size("[red]foo") == 18);
+  static_assert(yk::colorize("[red]foo") == "\033[38;2;255;0;0mfoo");
 }
 
 BOOST_AUTO_TEST_CASE(format_colorize)
@@ -167,6 +170,17 @@ BOOST_AUTO_TEST_CASE(print)
     yk::print(ss, cfg, "[yellow]{}", 42);
     BOOST_TEST(ss.str() == "42");
   }
+}
+
+BOOST_AUTO_TEST_CASE(fixed)
+{
+  static constexpr yk::fixed_string str = "[red]foo";
+  static_assert(yk::colorized_size(str) == 18);
+  static_assert(yk::colorize(str) == "\033[38;2;255;0;0mfoo");
+  static_assert(std::string_view{yk::static_colorize_string<str>::colorized} == "\033[38;2;255;0;0mfoo");
+  using namespace yk::colorize_literals;
+  const auto s = yk::format_colorize("[red]{}"_col, 42);
+  BOOST_TEST(s == "\033[38;2;255;0;0m42");
 }
 
 BOOST_AUTO_TEST_SUITE_END()
