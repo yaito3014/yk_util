@@ -274,6 +274,9 @@ struct promote_comparator : comparator_interface {
     using To = std::invoke_result_t<Comp2, T&, U&>;
     const auto res = std::invoke(comp1, x, y);
     if (res == From::equivalent) return std::invoke(comp2, x, y);
+    if constexpr (std::is_same_v<From, std::partial_ordering>) {
+      if (res == From::unordered) return std::invoke(comp2, x, y);
+    }
     if (res == From::less) return To::less;
     if (res == From::greater) return To::greater;
     if constexpr (std::is_same_v<From, To>) return res;
