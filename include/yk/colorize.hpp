@@ -225,7 +225,7 @@ enum class rgb_color : uint32_t {
 constexpr auto get_rgb(rgb_color rgb)
 {
   std::uint32_t val = std::to_underlying(rgb);
-  return std::make_tuple((val >> 16) & 0xFF, (val >> 8) & 0xFF, val & 0xFF);
+  return std::make_tuple(std::uint8_t{(val >> 16) & 0xFF}, std::uint8_t{(val >> 8) & 0xFF}, std::uint8_t{val & 0xFF});
 }
 
 class color {
