@@ -19,7 +19,10 @@ if(BUILD_TESTING)
   set_target_properties(yk_util_test PROPERTIES CXX_EXTENSIONS OFF)
 
   set(YK_COMMON_FLAG
-    $<$<CXX_COMPILER_ID:GNU>:-fsanitize=address,undefined>
+    # We temporarily disable UBSan on GCC due to the rejects-valid bug;
+    # see https://gcc.gnu.org/bugzilla/show_bug.cgi?id=71962
+    $<$<CXX_COMPILER_ID:GNU>:-fsanitize=address>
+
     $<$<CXX_COMPILER_ID:Clang>:-fsanitize=address,undefined>
     $<$<CXX_COMPILER_ID:Clang>:-stdlib=libc++ -fexperimental-library>
   )
