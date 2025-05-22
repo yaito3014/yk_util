@@ -2,9 +2,9 @@
 #define YK_COMPARE_COMPARATOR
 
 #include "yk/compare/concepts.hpp"
+#include "yk/no_unique_address.hpp"
 #include "yk/util/functional.hpp"
 #include "yk/util/specialization_of.hpp"
-#include "yk/no_unique_address.hpp"
 
 #include <compare>
 #include <concepts>
@@ -92,7 +92,9 @@ struct wrapper_comparator : comparator_interface {
   constexpr wrapper_comparator(Comp&& c) noexcept : comp(std::forward<Comp>(c)) {}
 
   template <class T, class U>
-  [[nodiscard]] constexpr auto operator()(T&& x, U&& y) const noexcept(noexcept(std::is_nothrow_invocable_v<Comp, T, U>))
+  [[nodiscard]] constexpr auto operator()(T&& x, U&& y) const noexcept(
+      noexcept(std::is_nothrow_invocable_v<Comp, T, U>)
+  )
   {
     return std::invoke(comp, std::forward<T>(x), std::forward<U>(y));
   }
@@ -234,6 +236,12 @@ struct is_promotable : std::false_type {};
 
 template <>
 struct is_promotable<std::partial_ordering, std::partial_ordering> : std::true_type {};
+
+template <>
+struct is_promotable<std::partial_ordering, std::weak_ordering> : std::true_type {};
+
+template <>
+struct is_promotable<std::partial_ordering, std::strong_ordering> : std::true_type {};
 
 template <>
 struct is_promotable<std::weak_ordering, std::weak_ordering> : std::true_type {};
