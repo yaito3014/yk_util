@@ -54,7 +54,7 @@ template <class Comp, class Closure>
 namespace detail {
 
 template <class Lhs, class Rhs>
-struct pipe_closure : comparator_adaptor_closure {
+struct [[nodiscard]] pipe_closure : comparator_adaptor_closure {
   static constexpr std::size_t arity = 1;
 
   YK_NO_UNIQUE_ADDRESS Lhs lhs;
@@ -164,7 +164,7 @@ then_comparator(Comp1&&, Comp2&&) -> then_comparator<wrap_t<Comp1>, wrap_t<Comp2
 namespace detail {
 
 template <class Comp2>
-struct comp_then_closure : comparator_adaptor_closure {
+struct [[nodiscard]] comp_then_closure : comparator_adaptor_closure {
   static constexpr std::size_t arity = 1;
 
   YK_NO_UNIQUE_ADDRESS Comp2 comp2;
@@ -279,7 +279,7 @@ promote_comparator(Comp1&&, Comp2&&) -> promote_comparator<wrap_t<Comp1>, wrap_t
 namespace detail {
 
 template <class Comp2>
-struct promote_closure : comparator_adaptor_closure {
+struct [[nodiscard]] promote_closure : comparator_adaptor_closure {
   static constexpr std::size_t arity = 1;
 
   YK_NO_UNIQUE_ADDRESS Comp2 comp2;
