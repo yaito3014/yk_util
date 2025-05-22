@@ -434,9 +434,17 @@ BOOST_AUTO_TEST_CASE(ClosureTypeTraits)
   }
 }
 
+struct PartialPartial
+{
+    double a, b;
+    std::partial_ordering operator<=>(const PartialPartial&) const noexcept = default;
+};
+
 BOOST_AUTO_TEST_CASE(promotion)
 {
   using namespace yk::comparators;
+
+  constexpr double NaN = std::numeric_limits<double>::quiet_NaN();
 
   // partial | promote(partial)
   {
@@ -444,7 +452,13 @@ BOOST_AUTO_TEST_CASE(promotion)
 
     auto comp = partial_comparator | promote(partial_comparator);
     BOOST_TEST((comp(3.14, 1.41) == std::partial_ordering::greater));
-    BOOST_TEST((comp(3.14, std::numeric_limits<double>::quiet_NaN()) == std::partial_ordering::unordered));
+    BOOST_TEST((comp(3.14, NaN) == std::partial_ordering::unordered));
+  }
+  {
+    auto comp = extract(&PartialPartial::a) | promote(extract(&PartialPartial::b));
+    BOOST_TEST((comp(PartialPartial{1.0, NaN}, PartialPartial{2.0, NaN}) == std::partial_ordering::less));
+    BOOST_TEST(((PartialPartial{NaN, 1.0} <=> PartialPartial{NaN, 2.0}) == std::partial_ordering::unordered));
+    BOOST_TEST((comp(PartialPartial{NaN, 1.0}, PartialPartial{NaN, 2.0}) == std::partial_ordering::less));
   }
 
   // partial | promote(weak)
@@ -454,7 +468,7 @@ BOOST_AUTO_TEST_CASE(promotion)
 
     auto comp = partial_comparator | promote(weak_comparator);
     BOOST_TEST((comp(3.14, 1.41) == std::weak_ordering::greater));
-    BOOST_TEST((comp(3.14, std::numeric_limits<double>::quiet_NaN()) == std::weak_ordering::less));
+    BOOST_TEST((comp(3.14, NaN) == std::weak_ordering::less));
   }
 
   // partial | promote(strong)
@@ -464,7 +478,7 @@ BOOST_AUTO_TEST_CASE(promotion)
 
     auto comp = partial_comparator | promote(strong_comparator);
     BOOST_TEST((comp(3.14, 1.41) == std::strong_ordering::greater));
-    BOOST_TEST((comp(3.14, std::numeric_limits<double>::quiet_NaN()) == std::strong_ordering::less));
+    BOOST_TEST((comp(3.14, NaN) == std::strong_ordering::less));
   }
 
   // weak | promote(weak)
