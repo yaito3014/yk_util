@@ -328,7 +328,7 @@ struct promote_fn {
     requires binary_function<std::decay_t<Comp2>>
   [[nodiscard]] constexpr auto operator()(Comp2&& comp2) const noexcept
   {
-    return promote_closure(std::forward<Comp2>(comp2));
+    return promote_closure<Comp2>{std::forward<Comp2>(comp2)};
   }
 };
 
