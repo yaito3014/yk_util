@@ -9,6 +9,14 @@
 #endif
 #endif
 
+#if !defined(YK_EXEC_DEBUG_PRINT)
+#if defined(YK_EXEC_DEBUG)
+#define YK_EXEC_DEBUG_PRINT(...) __VA_ARGS__
+#else
+#define YK_EXEC_DEBUG_PRINT(...) do {} while (false)
+#endif
+#endif
+
 namespace yk::exec {
 
 

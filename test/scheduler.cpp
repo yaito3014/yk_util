@@ -1,3 +1,5 @@
+#define YK_EXEC_DEBUG_PRINT(...) do {} while (false)
+
 #include "yk/exec/scheduler.hpp"
 #include "yk/exec/atomic_queue.hpp"
 
@@ -72,10 +74,8 @@ BOOST_AUTO_TEST_CASE(example)
 
   sched.set_producer_chunk_size(100);
 
-  std::println("starting simulation...");
   BOOST_REQUIRE_NO_THROW(sched.start());
   BOOST_REQUIRE_NO_THROW(sched.wait_for_all_tasks());
-  std::println("simulation done!");
 
   BOOST_REQUIRE(results.size() == ID_COUNT);
   std::ranges::sort(results);
