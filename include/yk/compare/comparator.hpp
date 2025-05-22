@@ -275,7 +275,7 @@ struct promote_comparator : comparator_interface {
     const auto res = std::invoke(comp1, x, y);
     if (res == From::less) return To::less;
     if (res == From::greater) return To::greater;
-    return std::invoke(comp2, x, y)
+    return std::invoke(comp2, x, y);
   }
 };
 
