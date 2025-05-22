@@ -279,7 +279,6 @@ struct promote_comparator : comparator_interface {
     }
     if (res == From::less) return To::less;
     if (res == From::greater) return To::greater;
-    if constexpr (std::is_same_v<From, To>) return res;
     std::unreachable();
   }
 };
