@@ -422,17 +422,19 @@ BOOST_AUTO_TEST_CASE(promotion)
 {
   using namespace yk::comparators;
 
-  struct S {
-    std::string name;
-    int id;
-  };
-
-  const auto weak_comparator = [](const S& a, const S& b) -> std::weak_ordering { return a.name <=> b.name; };
-  BOOST_TEST((weak_comparator(S{"foo", 1}, S{"bar", 2}) == std::weak_ordering::greater));
-  BOOST_TEST((weak_comparator(S{"foo", 1}, S{"foo", 2}) == std::weak_ordering::equivalent));
-  auto comp = weak_comparator | promote(extract(&S::id));
-  BOOST_TEST((comp(S{"foo", 1}, S{"bar", 2}) == std::strong_ordering::greater));
-  BOOST_TEST((comp(S{"foo", 1}, S{"foo", 2}) == std::strong_ordering::less));
+  {
+    const auto weak_comparator = [](const std::string& a, const std::string& b) -> std::weak_ordering {
+      return a.size() <=> b.size();
+    };
+    const auto strong_comparator = [](const std::string& a, const std::string& b) -> std::strong_ordering {
+      return a <=> b;
+    };
+    BOOST_TEST((weak_comparator("fooo", "bar") == std::weak_ordering::greater));
+    BOOST_TEST((weak_comparator("foo", "bar") == std::weak_ordering::equivalent));
+    auto comp = weak_comparator | promote(strong_comparator);
+    BOOST_TEST((comp("fooo", "bar") == std::strong_ordering::greater));
+    BOOST_TEST((comp("foo", "bar") == std::strong_ordering::less));
+  }
 }
 
 BOOST_AUTO_TEST_SUITE_END()
