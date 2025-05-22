@@ -3,6 +3,7 @@
 #include <boost/test/unit_test.hpp>
 
 #include <compare>
+#include <limits>
 #include <print>
 #include <ranges>
 #include <string>
@@ -398,9 +399,10 @@ BOOST_AUTO_TEST_CASE(ClosureTypeTraits)
     static_assert(std::is_same_v<decltype(closure), yk::compare::detail::comp_then_closure<A>>);
     static_assert(!yk::compare::detail::RangeAdaptorClosure<decltype(closure)>);
     auto comp = B{} | closure;
-    static_assert(std::is_same_v<
-                  decltype(comp),
-                  yk::compare::then_comparator<yk::compare::wrapper_comparator<B>, yk::compare::wrapper_comparator<A&>>>
+    static_assert(
+        std::is_same_v<
+            decltype(comp),
+            yk::compare::then_comparator<yk::compare::wrapper_comparator<B>, yk::compare::wrapper_comparator<A&>>>
     );
   }
   {
@@ -411,9 +413,10 @@ BOOST_AUTO_TEST_CASE(ClosureTypeTraits)
       std::strong_ordering operator()(int x, int y) const noexcept { return x <=> y; }
     };
     auto comp = B{} | yk::comparators::then(A{});
-    static_assert(std::is_same_v<
-                  decltype(comp),
-                  yk::compare::then_comparator<yk::compare::wrapper_comparator<B>, yk::compare::wrapper_comparator<A>>>
+    static_assert(
+        std::is_same_v<
+            decltype(comp),
+            yk::compare::then_comparator<yk::compare::wrapper_comparator<B>, yk::compare::wrapper_comparator<A>>>
     );
   }
 }
@@ -433,7 +436,18 @@ BOOST_AUTO_TEST_CASE(promotion)
     BOOST_TEST((weak_comparator("foo", "bar") == std::weak_ordering::equivalent));
     auto comp = weak_comparator | promote(strong_comparator);
     BOOST_TEST((comp("fooo", "bar") == std::strong_ordering::greater));
-    BOOST_TEST((comp("foo", "bar") == std::strong_ordering::less));
+    BOOST_TEST((comp("foo", "bar") == std::strong_ordering::greater));
+  }
+  {
+    const auto partial_comparator = [](double a, double b) -> std::partial_ordering { return a <=> b; };
+    const auto strong_comparator = [](double a, double b) -> std::strong_ordering { return std::strong_order(a, b); };
+    BOOST_TEST((partial_comparator(3.14, 1.41) == std::partial_ordering::greater));
+    BOOST_TEST(
+        (partial_comparator(3.14, std::numeric_limits<double>::quiet_NaN()) == std::partial_ordering::unordered)
+    );
+    auto comp = partial_comparator | promote(strong_comparator);
+    BOOST_TEST((comp(3.14, 1.41) == std::strong_ordering::greater));
+    BOOST_TEST((comp(3.14, std::numeric_limits<double>::quiet_NaN()) == std::strong_ordering::less));
   }
 }
 
