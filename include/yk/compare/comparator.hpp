@@ -265,6 +265,9 @@ struct promote_comparator : comparator_interface {
   }
 
   template <class T, class U>
+  void operator()(T&&, U&&) = delete;  // invalid promotion
+
+  template <class T, class U>
   [[nodiscard]] constexpr auto operator()(T&& x, U&& y) const noexcept(
       std::is_nothrow_invocable_v<Comp1, T&, U&> && std::is_nothrow_invocable_v<Comp2, T&, U&>
   ) -> std::invoke_result_t<Comp2, T&, U&>
