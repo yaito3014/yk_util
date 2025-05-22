@@ -347,9 +347,7 @@ public:
       prev_stats = stats_;
     }
 
-#if YK_EXEC_DEBUG
-    std::println("wait_for_all_tasks: notified");
-#endif
+    YK_EXEC_DEBUG_PRINT(std::println("wait_for_all_tasks: notified"));
 
     if (stats_tracker_) {
       stats_tracker_thread_.request_stop();
@@ -369,9 +367,7 @@ public:
     }
 
     if (worker_pool_->stop_requested()) {
-#if YK_EXEC_DEBUG
-      std::println("wait_for_all_tasks: stop requested");
-#endif
+      YK_EXEC_DEBUG_PRINT(std::println("wait_for_all_tasks: stop requested"));
 
       this->close_queue(queue_);
       worker_pool_->set_rethrow_exceptions_on_exit(false);
@@ -379,9 +375,7 @@ public:
       return;
 
     } else {
-#if YK_EXEC_DEBUG
-      std::println("wait_for_all_tasks: task completed");
-#endif
+      YK_EXEC_DEBUG_PRINT(std::println("wait_for_all_tasks: task completed"));
 
       // TODO: report this
       //auto const remaining_tasks = queue_.size();
