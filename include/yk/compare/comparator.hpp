@@ -276,10 +276,18 @@ struct promote_comparator : comparator_interface {
   {
     using From = std::invoke_result_t<Comp1, T&, U&>;
     using To = std::invoke_result_t<Comp2, T&, U&>;
+
     const auto res = std::invoke(comp1, x, y);
-    if (res == From::less) return To::less;
-    if (res == From::greater) return To::greater;
-    return std::invoke(comp2, x, y);
+
+    if constexpr (std::same_as<From, To>) {
+      if (res == From::equivalent) return std::invoke(comp2, x, y);
+      return res;
+
+    } else {
+      if (res == From::less) return To::less;
+      if (res == From::greater) return To::greater;
+      return std::invoke(comp2, x, y);
+    }
   }
 };
 

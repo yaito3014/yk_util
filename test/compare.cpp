@@ -438,6 +438,46 @@ BOOST_AUTO_TEST_CASE(promotion)
 {
   using namespace yk::comparators;
 
+  // partial | promote(partial)
+  {
+    const auto partial_comparator = [](double a, double b) -> std::partial_ordering { return a <=> b; };
+
+    auto comp = partial_comparator | promote(partial_comparator);
+    BOOST_TEST((comp(3.14, 1.41) == std::weak_ordering::greater));
+    BOOST_TEST((comp(3.14, std::numeric_limits<double>::quiet_NaN()) == std::partial_ordering::unordered));
+  }
+
+  // partial | promote(weak)
+  {
+    const auto partial_comparator = [](double a, double b) -> std::partial_ordering { return a <=> b; };
+    const auto weak_comparator = [](double a, double b) -> std::weak_ordering { return std::weak_order(a, b); };
+
+    auto comp = partial_comparator | promote(weak_comparator);
+    BOOST_TEST((comp(3.14, 1.41) == std::weak_ordering::greater));
+    BOOST_TEST((comp(3.14, std::numeric_limits<double>::quiet_NaN()) == std::weak_ordering::less));
+  }
+
+  // partial | promote(strong)
+  {
+    const auto partial_comparator = [](double a, double b) -> std::partial_ordering { return a <=> b; };
+    const auto strong_comparator = [](double a, double b) -> std::strong_ordering { return std::strong_order(a, b); };
+
+    auto comp = partial_comparator | promote(strong_comparator);
+    BOOST_TEST((comp(3.14, 1.41) == std::strong_ordering::greater));
+    BOOST_TEST((comp(3.14, std::numeric_limits<double>::quiet_NaN()) == std::strong_ordering::less));
+  }
+
+  // weak | promote(weak)
+  {
+    const auto weak_comparator = [](const std::string& a, const std::string& b) -> std::weak_ordering {
+      return a.size() <=> b.size();
+    };
+    auto comp = weak_comparator | promote(weak_comparator);
+    BOOST_TEST((comp("fooo", "bar") == std::weak_ordering::greater));
+    BOOST_TEST((comp("foo", "bar") == std::weak_ordering::equivalent));
+  }
+
+  // weak | promote(strong)
   {
     const auto weak_comparator = [](const std::string& a, const std::string& b) -> std::weak_ordering {
       return a.size() <=> b.size();
@@ -445,23 +485,13 @@ BOOST_AUTO_TEST_CASE(promotion)
     const auto strong_comparator = [](const std::string& a, const std::string& b) -> std::strong_ordering {
       return a <=> b;
     };
-    BOOST_TEST((weak_comparator("fooo", "bar") == std::weak_ordering::greater));
-    BOOST_TEST((weak_comparator("foo", "bar") == std::weak_ordering::equivalent));
     auto comp = weak_comparator | promote(strong_comparator);
     BOOST_TEST((comp("fooo", "bar") == std::strong_ordering::greater));
     BOOST_TEST((comp("foo", "bar") == std::strong_ordering::greater));
   }
-  {
-    const auto partial_comparator = [](double a, double b) -> std::partial_ordering { return a <=> b; };
-    const auto strong_comparator = [](double a, double b) -> std::strong_ordering { return std::strong_order(a, b); };
-    BOOST_TEST((partial_comparator(3.14, 1.41) == std::partial_ordering::greater));
-    BOOST_TEST(
-        (partial_comparator(3.14, std::numeric_limits<double>::quiet_NaN()) == std::partial_ordering::unordered)
-    );
-    auto comp = partial_comparator | promote(strong_comparator);
-    BOOST_TEST((comp(3.14, 1.41) == std::strong_ordering::greater));
-    BOOST_TEST((comp(3.14, std::numeric_limits<double>::quiet_NaN()) == std::strong_ordering::less));
-  }
+
+  // strong | promote(strong)
+  // unsupported; use then() instead.
 }
 
 BOOST_AUTO_TEST_SUITE_END()
