@@ -443,7 +443,7 @@ BOOST_AUTO_TEST_CASE(promotion)
     const auto partial_comparator = [](double a, double b) -> std::partial_ordering { return a <=> b; };
 
     auto comp = partial_comparator | promote(partial_comparator);
-    BOOST_TEST((comp(3.14, 1.41) == std::weak_ordering::greater));
+    BOOST_TEST((comp(3.14, 1.41) == std::partial_ordering::greater));
     BOOST_TEST((comp(3.14, std::numeric_limits<double>::quiet_NaN()) == std::partial_ordering::unordered));
   }
 
