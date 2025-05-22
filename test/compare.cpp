@@ -223,6 +223,19 @@ BOOST_AUTO_TEST_CASE(extract_and_comparator_then)
   }
 }
 
+BOOST_AUTO_TEST_CASE(NonCopyable)
+{
+  struct int_comparator {
+    int_comparator() = default;
+    int_comparator(const int_comparator&) = delete;
+    int_comparator(int_comparator&&) = default;
+    std::strong_ordering operator()(int a, int b) const noexcept { return a <=> b; }
+  };
+
+  auto comp [[maybe_unused]] = int_comparator{} | yk::comparators::then(int_comparator{});
+  auto closure [[maybe_unused]] = yk::comparators::then(int_comparator{}) | yk::comparators::then(int_comparator{});
+}
+
 namespace {
 
 [[maybe_unused]] std::strong_ordering compare(int x, int y) { return x <=> y; }

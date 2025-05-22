@@ -60,7 +60,7 @@ struct [[nodiscard]] pipe_closure : comparator_adaptor_closure {
   YK_NO_UNIQUE_ADDRESS Lhs lhs;
   YK_NO_UNIQUE_ADDRESS Rhs rhs;
 
-  constexpr pipe_closure(Lhs l, Rhs r) noexcept : lhs(std::move(l)), rhs(std::move(r)) {}
+  constexpr pipe_closure(Lhs&& l, Rhs&& r) noexcept : lhs(std::forward<Lhs>(l)), rhs(std::forward<Rhs>(r)) {}
 
   template <class Comp>
     requires binary_function<std::decay_t<Comp>>
