@@ -825,7 +825,7 @@ struct basic_colorize_format_string {
     scanner.scan();
   }
 
-#if __cpp_lib_format >= 202411L
+#if __cpp_lib_format >= 202311L
   explicit constexpr basic_colorize_format_string(detail::basic_runtime_colorize_format_string<CharT> runtime_str)
       : fmt_(std::runtime_format(runtime_str.str_))
   {
@@ -994,7 +994,7 @@ inline constexpr std::string colorize_format(static_colorize_string<Str>, Args&&
   return std::format(static_colorize_string<Str>::colorized, std::forward<Args>(args)...);
 }
 
-#if __cpp_lib_format >= 202411L
+#if __cpp_lib_format >= 202311L
 
 template <class Out, class... Args>
 inline constexpr Out colorize_format_to(

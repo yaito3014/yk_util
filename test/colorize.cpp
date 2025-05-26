@@ -150,7 +150,7 @@ BOOST_AUTO_TEST_CASE(format_colorize)
   }
 }
 
-#if __cpp_lib_format >= 202411L
+#if __cpp_lib_format >= 202311L
 
 BOOST_AUTO_TEST_CASE(colorize_format)
 {
