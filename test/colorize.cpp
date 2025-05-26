@@ -179,7 +179,7 @@ BOOST_AUTO_TEST_CASE(fixed)
   static_assert(yk::colorize(str) == "\033[38;2;255;0;0mfoo");
   static_assert(std::string_view{yk::static_colorize_string<str>::colorized} == "\033[38;2;255;0;0mfoo");
   using namespace yk::colorize_literals;
-  const auto s = yk::format_colorize("[red]{}"_col, 42);
+  const auto s = yk::colorize_format("[red]{}"_col, 42);
   BOOST_TEST(s == "\033[38;2;255;0;0m42");
 }
 
