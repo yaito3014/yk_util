@@ -150,6 +150,24 @@ BOOST_AUTO_TEST_CASE(format_colorize)
   }
 }
 
+#if __cpp_lib_format >= 202411L
+
+BOOST_AUTO_TEST_CASE(colorize_format)
+{
+  {
+    std::string s;
+    yk::colorize_format_to(std::back_inserter(s), "[red]{}", 42);
+    BOOST_TEST(s == "\033[38;2;255;0;0m42");
+  }
+
+  {
+    const auto s = yk::colorize_format("[green]{}", 42);
+    BOOST_TEST(s == "\033[38;2;0;128;0m42");
+  }
+}
+
+#endif
+
 BOOST_AUTO_TEST_CASE(print)
 {
   {

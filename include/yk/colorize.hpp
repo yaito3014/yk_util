@@ -815,29 +815,6 @@ constexpr auto runtime_colorize_format(std::string_view str)
   return detail::basic_runtime_colorize_format_string<char>{str};
 }
 
-template <class CharT>
-struct basic_colorize_string {
-  template <class S>
-    requires detail::StringLike<const S&>
-  consteval basic_colorize_string(const S& str) : str_(str)
-  {
-    detail::checking_scanner<CharT> scanner(str);
-    scanner.scan();
-  }
-
-  constexpr basic_colorize_string(detail::basic_runtime_colorize_string<CharT> runtime_str) noexcept
-      : str_(runtime_str.str_)
-  {
-  }
-
-  constexpr std::basic_string_view<CharT> get() const noexcept { return str_; }
-
-private:
-  std::basic_string_view<CharT> str_;
-};
-
-using colorize_string = basic_colorize_string<char>;
-
 template <class CharT, class... Args>
 struct basic_colorize_format_string {
   template <class S>
@@ -848,7 +825,6 @@ struct basic_colorize_format_string {
     scanner.scan();
   }
 
-  constexpr basic_colorize_format_string(basic_colorize_string<CharT> str) : fmt_(str) {}
 #if __cpp_lib_format >= 202411L
   explicit constexpr basic_colorize_format_string(detail::basic_runtime_colorize_format_string<CharT> runtime_str)
       : fmt_(std::runtime_format(runtime_str.str_))
@@ -864,6 +840,31 @@ private:
 
 template <class... Args>
 using colorize_format_string = basic_colorize_format_string<char, std::type_identity_t<Args>...>;
+
+template <class CharT>
+struct basic_colorize_string {
+  template <class S>
+    requires detail::StringLike<const S&>
+  consteval basic_colorize_string(const S& str) : str_(str)
+  {
+    detail::checking_scanner<CharT> scanner(str);
+    scanner.scan();
+  }
+
+  constexpr basic_colorize_string(detail::basic_runtime_colorize_string<CharT> runtime_str) noexcept
+      : str_(runtime_str.str_)
+  {
+  }
+
+  constexpr basic_colorize_string(basic_colorize_format_string<CharT> fmt) : str_(fmt.get().get()) {}
+
+  constexpr std::basic_string_view<CharT> get() const noexcept { return str_; }
+
+private:
+  std::basic_string_view<CharT> str_;
+};
+
+using colorize_string = basic_colorize_string<char>;
 
 struct colorize_config {
   bool need_color;
@@ -967,12 +968,6 @@ inline constexpr Out format_colorize_to(Out out, colorize_format_string<Args...>
   return colorize_to(std::move(out), runtime_colorize(std::format(fmt.get(), std::forward<Args>(args)...)));
 }
 
-template <class Out, basic_fixed_string Str, class... Args>
-inline constexpr Out colorize_format_to(Out out, static_colorize_string<Str>, Args&&... args)
-{
-  return std::format_to(std::move(out), static_colorize_string<Str>::colorized, std::forward<Args>(args)...);
-}
-
 template <class... Args>
 inline constexpr std::string format_colorize(
     const colorize_config& cfg, colorize_format_string<Args...> fmt, Args&&... args
@@ -987,11 +982,49 @@ inline constexpr std::string format_colorize(colorize_format_string<Args...> fmt
   return colorize(runtime_colorize(std::format(fmt.get(), std::forward<Args>(args)...)));
 }
 
+template <class Out, basic_fixed_string Str, class... Args>
+inline constexpr Out colorize_format_to(Out out, static_colorize_string<Str>, Args&&... args)
+{
+  return std::format_to(std::move(out), static_colorize_string<Str>::colorized, std::forward<Args>(args)...);
+}
+
 template <basic_fixed_string Str, class... Args>
 inline constexpr std::string colorize_format(static_colorize_string<Str>, Args&&... args)
 {
   return std::format(static_colorize_string<Str>::colorized, std::forward<Args>(args)...);
 }
+
+#if __cpp_lib_format >= 202411L
+
+template <class Out, class... Args>
+inline constexpr Out colorize_format_to(
+    Out out, const colorize_config& cfg, colorize_format_string<Args...> fmt, Args&&... args
+)
+{
+  return std::format_to(std::move(out), std::runtime_format(colorize(cfg, fmt)), std::forward<Args>(args)...);
+}
+
+template <class Out, class... Args>
+inline constexpr Out colorize_format_to(Out out, colorize_format_string<Args...> fmt, Args&&... args)
+{
+  return std::format_to(std::move(out), std::runtime_format(colorize(fmt)), std::forward<Args>(args)...);
+}
+
+template <class... Args>
+inline constexpr std::string colorize_format(
+    const colorize_config& cfg, colorize_format_string<Args...> fmt, Args&&... args
+)
+{
+  return std::format(std::runtime_format(colorize(cfg, fmt)), std::forward<Args>(args)...);
+}
+
+template <class... Args>
+inline constexpr std::string colorize_format(colorize_format_string<Args...> fmt, Args&&... args)
+{
+  return std::format(std::runtime_format(colorize(fmt)), std::forward<Args>(args)...);
+}
+
+#endif
 
 }  // namespace yk
 
