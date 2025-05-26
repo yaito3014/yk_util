@@ -856,7 +856,8 @@ struct basic_colorize_string {
   {
   }
 
-  constexpr basic_colorize_string(basic_colorize_format_string<CharT> fmt) : str_(fmt.get().get()) {}
+  template <class... Args>
+  constexpr basic_colorize_string(basic_colorize_format_string<CharT, Args...> fmt) : str_(fmt.get().get()) {}
 
   constexpr std::basic_string_view<CharT> get() const noexcept { return str_; }
 
