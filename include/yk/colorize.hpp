@@ -4,6 +4,7 @@
 #include "yk/detail/string_like.hpp"
 #include "yk/enum_bitops.hpp"
 #include "yk/enum_bitops_algorithm.hpp"
+#include "yk/fixed_string.hpp"
 
 #include <algorithm>
 #include <array>
@@ -224,7 +225,7 @@ enum class rgb_color : uint32_t {
 constexpr auto get_rgb(rgb_color rgb)
 {
   std::uint32_t val = std::to_underlying(rgb);
-  return std::make_tuple((val >> 16) & 0xFF, (val >> 8) & 0xFF, val & 0xFF);
+  return std::make_tuple(std::uint8_t((val >> 16) & 0xFF), std::uint8_t((val >> 8) & 0xFF), std::uint8_t(val & 0xFF));
 }
 
 class color {
@@ -487,47 +488,58 @@ struct colorizer {
 
     bool first = true;
 
+    const auto append_u8_to = [&first](auto it, std::uint8_t value) {
+      if (!first) {
+        *it = ';';
+        ++it;
+      }
+      first = false;
+      CharT buf[4];
+      auto [ptr, ec] = std::to_chars(std::begin(buf), std::end(buf), value);
+      if (ec != std::errc{}) throw colorize_error("internal buffer error");
+      return std::ranges::copy(buf, ptr, std::move(it)).out;
+    };
+
     // write emphases
     for (auto em : each_bit(emphasis_)) {
-      if (!first) *it++ = ';';
-      first = false;
-      it = std::format_to(it, "{}", emphasis_to_value(em));
+      it = append_u8_to(std::move(it), detail::emphasis_to_value(em));
     }
 
     // reset foreground
     if (fg_reset_) {
-      if (!first) *it++ = ';';
-      first = false;
-      it = std::ranges::copy("39"sv, it).out;
+      it = append_u8_to(std::move(it), 39);
     }
 
     // reset background
     if (bg_reset_) {
-      if (!first) *it++ = ';';
-      first = false;
-      it = std::ranges::copy("49"sv, it).out;
+      it = append_u8_to(std::move(it), 49);
     }
 
     // write foreground color
     if (!fg_color_.empty()) {
-      if (!first) *it++ = ';';
-      first = false;
       detail::rgb_color rgb = fg_color_.get_rgb_color();
       auto [r, g, b] = detail::get_rgb(rgb);
-      it = std::format_to(it, "38;2;{};{};{}", r, g, b);
+      it = append_u8_to(std::move(it), 38);
+      it = append_u8_to(std::move(it), 2);
+      it = append_u8_to(std::move(it), r);
+      it = append_u8_to(std::move(it), g);
+      it = append_u8_to(std::move(it), b);
     }
 
     // write background color
     if (!bg_color_.empty()) {
-      if (!first) *it++ = ';';
-      first = false;
       detail::rgb_color rgb = bg_color_.get_rgb_color();
       auto [r, g, b] = detail::get_rgb(rgb);
-      it = std::format_to(it, "48;2;{};{};{}", r, g, b);
+      it = append_u8_to(std::move(it), 48);
+      it = append_u8_to(std::move(it), 2);
+      it = append_u8_to(std::move(it), r);
+      it = append_u8_to(std::move(it), g);
+      it = append_u8_to(std::move(it), b);
     }
 
     // write suffix
-    *it++ = 'm';
+    *it = 'm';
+    ++it;
 
     return it;
   }
@@ -778,13 +790,56 @@ struct basic_runtime_colorize_format_string {
   std::basic_string_view<CharT> str_;
 };
 
+template <class CharT>
+struct counting_iterator {
+  using difference_type = std::ptrdiff_t;
+
+  std::size_t count = 0;
+
+  struct proxy {
+    counting_iterator* ptr;
+
+    constexpr void operator=(CharT) const { ptr->count++; }
+  };
+
+  constexpr counting_iterator& operator++() { return *this; }
+  constexpr void operator++(int) {}
+  constexpr proxy operator*() { return proxy{this}; }
+};
+
 }  // namespace detail
 
-constexpr auto runtime_colorize(std::string_view str) { return detail::basic_runtime_colorize_string<char>{str}; }
-constexpr auto runtime_colorize_format(std::string_view str)
+[[nodiscard]] constexpr auto runtime_colorize(std::string_view str) { return detail::basic_runtime_colorize_string<char>{str}; }
+[[nodiscard]] constexpr auto runtime_colorize_format(std::string_view str)
 {
   return detail::basic_runtime_colorize_format_string<char>{str};
 }
+
+template <class CharT, class... Args>
+struct basic_colorize_format_string {
+  template <class S>
+    requires detail::StringLike<const S&>
+  consteval basic_colorize_format_string(const S& str) : fmt_(str)
+  {
+    detail::checking_scanner<CharT> scanner(str);
+    scanner.scan();
+  }
+
+#if __cpp_lib_format >= 202311L
+  explicit constexpr basic_colorize_format_string(detail::basic_runtime_colorize_format_string<CharT> runtime_str)
+      : fmt_(std::runtime_format(runtime_str.str_))
+  {
+  }
+#endif
+
+  [[nodiscard]] constexpr std::basic_format_string<CharT, Args...> get() const noexcept { return fmt_; }
+
+private:
+  std::basic_format_string<CharT, Args...> fmt_;
+};
+
+template <class... Args>
+using colorize_format_string = basic_colorize_format_string<char, std::type_identity_t<Args>...>;
 
 template <class CharT>
 struct basic_colorize_string {
@@ -801,40 +856,16 @@ struct basic_colorize_string {
   {
   }
 
-  constexpr std::basic_string_view<CharT> get() const noexcept { return str_; }
+  template <class... Args>
+  constexpr basic_colorize_string(basic_colorize_format_string<CharT, Args...> fmt) : str_(fmt.get().get()) {}
+
+  [[nodiscard]] constexpr std::basic_string_view<CharT> get() const noexcept { return str_; }
 
 private:
   std::basic_string_view<CharT> str_;
 };
 
 using colorize_string = basic_colorize_string<char>;
-
-template <class CharT, class... Args>
-struct basic_colorize_format_string {
-  template <class S>
-    requires detail::StringLike<const S&>
-  consteval basic_colorize_format_string(const S& str) : fmt_(str)
-  {
-    detail::checking_scanner<CharT> scanner(str);
-    scanner.scan();
-  }
-
-  constexpr basic_colorize_format_string(basic_colorize_string<CharT> str) : fmt_(str) {}
-#if __cpp_lib_format >= 202411L
-  explicit constexpr basic_colorize_format_string(detail::basic_runtime_colorize_format_string<CharT> runtime_str)
-      : fmt_(std::runtime_format(runtime_str.str_))
-  {
-  }
-#endif
-
-  constexpr std::basic_format_string<CharT, Args...> get() const noexcept { return fmt_; }
-
-private:
-  std::basic_format_string<CharT, Args...> fmt_;
-};
-
-template <class... Args>
-using colorize_format_string = basic_colorize_format_string<char, std::type_identity_t<Args>...>;
 
 struct colorize_config {
   bool need_color;
@@ -886,19 +917,43 @@ inline constexpr Out colorize_to(Out out, colorize_string col)
   return ctx.out();
 }
 
-inline constexpr std::string colorize(const colorize_config& cfg, colorize_string col)
+[[nodiscard]] inline constexpr std::string colorize(const colorize_config& cfg, colorize_string col)
 {
   std::string str;
   colorize_to(std::back_inserter(str), cfg, col);
   return str;
 }
 
-inline constexpr std::string colorize(colorize_string col)
+[[nodiscard]] inline constexpr std::string colorize(colorize_string col)
 {
   std::string str;
   colorize_to(std::back_inserter(str), col);
   return str;
 }
+
+[[nodiscard]] inline constexpr std::size_t colorized_size(colorize_string col)
+{
+  return colorize_to(detail::counting_iterator<char>{}, col).count;
+}
+
+template <basic_fixed_string Str>
+struct static_colorize_string {
+  static constexpr auto colorized = [] {
+    basic_fixed_string<typename decltype(Str)::value_type, colorized_size(Str)> res;
+    colorize_to(res.begin(), Str);
+    return res;
+  }();
+};
+
+namespace colorize_literals {
+
+template <basic_fixed_string Str>
+[[nodiscard]] constexpr static_colorize_string<Str> operator""_col()
+{
+  return {};
+}
+
+}  // namespace colorize_literals
 
 template <class Out, class... Args>
 inline constexpr Out format_colorize_to(
@@ -915,7 +970,7 @@ inline constexpr Out format_colorize_to(Out out, colorize_format_string<Args...>
 }
 
 template <class... Args>
-inline constexpr std::string format_colorize(
+[[nodiscard]] inline constexpr std::string format_colorize(
     const colorize_config& cfg, colorize_format_string<Args...> fmt, Args&&... args
 )
 {
@@ -923,10 +978,54 @@ inline constexpr std::string format_colorize(
 }
 
 template <class... Args>
-inline constexpr std::string format_colorize(colorize_format_string<Args...> fmt, Args&&... args)
+[[nodiscard]] inline constexpr std::string format_colorize(colorize_format_string<Args...> fmt, Args&&... args)
 {
   return colorize(runtime_colorize(std::format(fmt.get(), std::forward<Args>(args)...)));
 }
+
+template <class Out, basic_fixed_string Str, class... Args>
+inline constexpr Out colorize_format_to(Out out, static_colorize_string<Str>, Args&&... args)
+{
+  return std::format_to(std::move(out), static_colorize_string<Str>::colorized, std::forward<Args>(args)...);
+}
+
+template <basic_fixed_string Str, class... Args>
+[[nodiscard]] inline constexpr std::string colorize_format(static_colorize_string<Str>, Args&&... args)
+{
+  return std::format(static_colorize_string<Str>::colorized, std::forward<Args>(args)...);
+}
+
+#if __cpp_lib_format >= 202311L
+
+template <class Out, class... Args>
+inline constexpr Out colorize_format_to(
+    Out out, const colorize_config& cfg, colorize_format_string<Args...> fmt, Args&&... args
+)
+{
+  return std::format_to(std::move(out), std::runtime_format(colorize(cfg, fmt)), std::forward<Args>(args)...);
+}
+
+template <class Out, class... Args>
+inline constexpr Out colorize_format_to(Out out, colorize_format_string<Args...> fmt, Args&&... args)
+{
+  return std::format_to(std::move(out), std::runtime_format(colorize(fmt)), std::forward<Args>(args)...);
+}
+
+template <class... Args>
+[[nodiscard]] inline constexpr std::string colorize_format(
+    const colorize_config& cfg, colorize_format_string<Args...> fmt, Args&&... args
+)
+{
+  return std::format(std::runtime_format(colorize(cfg, fmt)), std::forward<Args>(args)...);
+}
+
+template <class... Args>
+[[nodiscard]] inline constexpr std::string colorize_format(colorize_format_string<Args...> fmt, Args&&... args)
+{
+  return std::format(std::runtime_format(colorize(fmt)), std::forward<Args>(args)...);
+}
+
+#endif
 
 }  // namespace yk
 
