@@ -809,8 +809,8 @@ struct counting_iterator {
 
 }  // namespace detail
 
-constexpr auto runtime_colorize(std::string_view str) { return detail::basic_runtime_colorize_string<char>{str}; }
-constexpr auto runtime_colorize_format(std::string_view str)
+[[nodiscard]] constexpr auto runtime_colorize(std::string_view str) { return detail::basic_runtime_colorize_string<char>{str}; }
+[[nodiscard]] constexpr auto runtime_colorize_format(std::string_view str)
 {
   return detail::basic_runtime_colorize_format_string<char>{str};
 }
@@ -832,7 +832,7 @@ struct basic_colorize_format_string {
   }
 #endif
 
-  constexpr std::basic_format_string<CharT, Args...> get() const noexcept { return fmt_; }
+  [[nodiscard]] constexpr std::basic_format_string<CharT, Args...> get() const noexcept { return fmt_; }
 
 private:
   std::basic_format_string<CharT, Args...> fmt_;
@@ -859,7 +859,7 @@ struct basic_colorize_string {
   template <class... Args>
   constexpr basic_colorize_string(basic_colorize_format_string<CharT, Args...> fmt) : str_(fmt.get().get()) {}
 
-  constexpr std::basic_string_view<CharT> get() const noexcept { return str_; }
+  [[nodiscard]] constexpr std::basic_string_view<CharT> get() const noexcept { return str_; }
 
 private:
   std::basic_string_view<CharT> str_;
@@ -917,21 +917,21 @@ inline constexpr Out colorize_to(Out out, colorize_string col)
   return ctx.out();
 }
 
-inline constexpr std::string colorize(const colorize_config& cfg, colorize_string col)
+[[nodiscard]] inline constexpr std::string colorize(const colorize_config& cfg, colorize_string col)
 {
   std::string str;
   colorize_to(std::back_inserter(str), cfg, col);
   return str;
 }
 
-inline constexpr std::string colorize(colorize_string col)
+[[nodiscard]] inline constexpr std::string colorize(colorize_string col)
 {
   std::string str;
   colorize_to(std::back_inserter(str), col);
   return str;
 }
 
-inline constexpr std::size_t colorized_size(colorize_string col)
+[[nodiscard]] inline constexpr std::size_t colorized_size(colorize_string col)
 {
   return colorize_to(detail::counting_iterator<char>{}, col).count;
 }
@@ -948,7 +948,7 @@ struct static_colorize_string {
 namespace colorize_literals {
 
 template <basic_fixed_string Str>
-constexpr static_colorize_string<Str> operator""_col()
+[[nodiscard]] constexpr static_colorize_string<Str> operator""_col()
 {
   return {};
 }
@@ -970,7 +970,7 @@ inline constexpr Out format_colorize_to(Out out, colorize_format_string<Args...>
 }
 
 template <class... Args>
-inline constexpr std::string format_colorize(
+[[nodiscard]] inline constexpr std::string format_colorize(
     const colorize_config& cfg, colorize_format_string<Args...> fmt, Args&&... args
 )
 {
@@ -978,7 +978,7 @@ inline constexpr std::string format_colorize(
 }
 
 template <class... Args>
-inline constexpr std::string format_colorize(colorize_format_string<Args...> fmt, Args&&... args)
+[[nodiscard]] inline constexpr std::string format_colorize(colorize_format_string<Args...> fmt, Args&&... args)
 {
   return colorize(runtime_colorize(std::format(fmt.get(), std::forward<Args>(args)...)));
 }
@@ -990,7 +990,7 @@ inline constexpr Out colorize_format_to(Out out, static_colorize_string<Str>, Ar
 }
 
 template <basic_fixed_string Str, class... Args>
-inline constexpr std::string colorize_format(static_colorize_string<Str>, Args&&... args)
+[[nodiscard]] inline constexpr std::string colorize_format(static_colorize_string<Str>, Args&&... args)
 {
   return std::format(static_colorize_string<Str>::colorized, std::forward<Args>(args)...);
 }
@@ -1012,7 +1012,7 @@ inline constexpr Out colorize_format_to(Out out, colorize_format_string<Args...>
 }
 
 template <class... Args>
-inline constexpr std::string colorize_format(
+[[nodiscard]] inline constexpr std::string colorize_format(
     const colorize_config& cfg, colorize_format_string<Args...> fmt, Args&&... args
 )
 {
@@ -1020,7 +1020,7 @@ inline constexpr std::string colorize_format(
 }
 
 template <class... Args>
-inline constexpr std::string colorize_format(colorize_format_string<Args...> fmt, Args&&... args)
+[[nodiscard]] inline constexpr std::string colorize_format(colorize_format_string<Args...> fmt, Args&&... args)
 {
   return std::format(std::runtime_format(colorize(fmt)), std::forward<Args>(args)...);
 }
