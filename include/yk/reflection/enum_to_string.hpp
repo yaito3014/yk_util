@@ -1,7 +1,9 @@
 #ifndef YK_REFLECTION_ENUM_TO_STRING_HPP
 #define YK_REFLECTION_ENUM_TO_STRING_HPP
 
-#if __cpp_lib_reflection >= 202500L
+#include <version>
+
+#if __cpp_lib_reflection >= 202500L && __cpp_lib_define_static >= 202500L
 
 #include <meta>
 #include <string_view>
