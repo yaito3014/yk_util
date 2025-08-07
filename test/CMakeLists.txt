@@ -42,6 +42,19 @@ if(BUILD_TESTING)
     PRIVATE $<$<CXX_COMPILER_ID:Clang>:-Wall -Wextra -pedantic-errors>
     PRIVATE $<$<CXX_COMPILER_ID:MSVC>:/W4 /permissive- /Zc:__cplusplus /Zc:preprocessor /sdl /utf-8>
   )
+  if(MSVC)
+    target_compile_options(
+      yk_util_test
+      PUBLIC
+        /fsanitize=address /wd5072 # ASan intentionally enabled on Release
+    )
+    target_link_options(
+      yk_util_test
+      PUBLIC
+        /ignore:4302 # ASan intentionally enabled on Release
+        /INCREMENTAL:NO # required for ASan
+    )
+  endif()
   target_link_options(yk_util_test PRIVATE ${YK_COMMON_FLAG})
 
   if(NOT MSVC)
