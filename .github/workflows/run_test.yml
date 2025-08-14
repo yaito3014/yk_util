@@ -36,22 +36,26 @@ jobs:
             version: 2022
         build_type: [Release, Debug]
         cpp_version: [23, 26]
-        boost_version: [1.86.0]
+        boost_version: [1.88.0]
         compiler:
           - name: GCC
             version: 14
             executable: g++-14
+            stdlib: libstdc++
           - name: Clang
-            version: 19
-            executable: clang++-19
+            version: 21
+            executable: clang++-21
+            stdlib: libc++
             cxxflags: -stdlib=libc++
           - name: Clang
-            version: 20
-            executable: clang++-20
+            version: 22
+            executable: clang++-22
+            stdlib: libc++
             cxxflags: -stdlib=libc++
           - name: MSVC
-            version: v142
+            version: v143
             executable: cl
+            stdlib: MSVC-STL
         exclude:
           - os:
               name: windows
@@ -80,7 +84,8 @@ jobs:
         run: |
           wget https://apt.llvm.org/llvm.sh
           chmod +x ./llvm.sh
-          sudo ./llvm.sh ${{ matrix.compiler.version }} all
+          sudo ./llvm.sh ${{ matrix.compiler.version }}
+          sudo apt-get install -y libc++-${{ matrix.compiler.version }}-dev libc++abi-${{ matrix.compiler.version }}-dev
 
       - name: Setup GCC
         if: matrix.compiler.name == 'GCC'
@@ -95,7 +100,7 @@ jobs:
         id: cache-boost
         with:
           path: ${{ github.workspace }}/boost/dist
-          key: boost-${{ matrix.boost_version }}-${{ matrix.os.name }}-${{ matrix.compiler.executable }}-${{ matrix.cpp_version }}
+          key: boost-${{ matrix.boost_version }}-${{ matrix.os.name }}-${{ matrix.compiler.name }}-${{ matrix.compiler.version }}-${{ matrix.compiler.stdlib }}-${{ matrix.cpp_version }}
 
       - name: Clone Boost
         if: steps.cache-boost.outputs.cache-hit != 'true'
@@ -140,8 +145,9 @@ jobs:
         run: >
           cmake -B ${{ github.workspace }}/build
           -DCMAKE_CXX_COMPILER=${{ matrix.compiler.executable }}
-          -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
+          -DCMAKE_CXX_FLAGS=${{ matrix.compiler.cxxflags }}
           -DCMAKE_CXX_STANDARD=${{ matrix.cpp_version }}
+          -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
           -DCMAKE_PREFIX_PATH=${{ github.workspace }}/boost/dist
           -S ${{ github.workspace }}
 
