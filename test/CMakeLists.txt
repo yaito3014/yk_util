@@ -62,7 +62,7 @@ if(BUILD_TESTING)
     target_link_libraries(yk_util_test PRIVATE TBB::tbb)
   endif()
 
-  find_package(Boost REQUIRED CONFIG COMPONENTS unit_test_framework)
+  find_package(Boost REQUIRED CONFIG COMPONENTS unit_test_framework exception)
   target_link_libraries(
     yk_util_test PUBLIC yk_util Boost::headers
                         $<$<NOT:$<CXX_COMPILER_ID:Clang>>:Boost::unit_test_framework>
