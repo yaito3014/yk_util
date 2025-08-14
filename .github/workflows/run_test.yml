@@ -57,6 +57,7 @@ jobs:
             version: v143
             executable: cl
             stdlib: MSVC-STL
+            cxxflags: /EHsc
         exclude:
           - os:
               name: windows
@@ -136,10 +137,10 @@ jobs:
         working-directory: ${{ github.workspace }}/boost
         run: |
           cmake -Bbuild -S. ${{ env.cmake_options }} -DCMAKE_BUILD_TYPE=Debug
-          cmake --build build -j --config Debug
+          cmake --build build -j4 --config Debug
           cmake --install build --prefix dist --config Debug
           cmake -Bbuild -S. ${{ env.cmake_options }} -DCMAKE_BUILD_TYPE=Release
-          cmake --build build -j --config Release
+          cmake --build build -j4 --config Release
           cmake --install build --prefix dist --config Release
 
       - name: Configure
@@ -157,12 +158,12 @@ jobs:
         shell: bash
         run: |
           set -o pipefail
-          cmake --build ${{ github.workspace }}/build --verbose --config ${{ matrix.build_type }} --target yk_util_test 2>&1 | tee -a compilation.log
+          cmake --build ${{ github.workspace }}/build -j4 --verbose --config ${{ matrix.build_type }} --target yk_util_test 2>&1 | tee -a compilation.log
 
       - name: Build (Windows)
         if: matrix.os.name == 'windows'
         run: |
-          cmake --build ${{ github.workspace }}/build/test --verbose --config ${{ matrix.build_type }} --target yk_util_test 2>&1 | tee -a compilation.log
+          cmake --build ${{ github.workspace }}/build/test -j4 --verbose --config ${{ matrix.build_type }} --target yk_util_test 2>&1 | tee -a compilation.log
 
       - name: Test (Ubuntu)
         if: matrix.os.name == 'ubuntu'

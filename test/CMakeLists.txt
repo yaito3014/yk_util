@@ -40,7 +40,7 @@ if(BUILD_TESTING)
     PRIVATE ${YK_COMMON_FLAG}
     PRIVATE $<$<CXX_COMPILER_ID:GNU>:-Wall -Wextra -pedantic-errors>
     PRIVATE $<$<CXX_COMPILER_ID:Clang>:-Wall -Wextra -pedantic-errors>
-    PRIVATE $<$<CXX_COMPILER_ID:MSVC>:/W4 /permissive- /Zc:__cplusplus /Zc:preprocessor /sdl /utf-8>
+    PRIVATE $<$<CXX_COMPILER_ID:MSVC>:/W4 /permissive- /EHsc /Zc:__cplusplus /Zc:preprocessor /sdl /utf-8>
   )
   if(MSVC)
     target_compile_options(
