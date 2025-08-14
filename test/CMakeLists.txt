@@ -40,7 +40,7 @@ if(BUILD_TESTING)
     PRIVATE ${YK_COMMON_FLAG}
     PRIVATE $<$<CXX_COMPILER_ID:GNU>:-Wall -Wextra -pedantic-errors>
     PRIVATE $<$<CXX_COMPILER_ID:Clang>:-Wall -Wextra -pedantic-errors>
-    PRIVATE $<$<CXX_COMPILER_ID:MSVC>:/W4 /permissive- /Zc:__cplusplus /Zc:preprocessor /sdl /utf-8>
+    PRIVATE $<$<CXX_COMPILER_ID:MSVC>:/W4 /permissive- /EHsc /Zc:__cplusplus /Zc:preprocessor /sdl /utf-8>
   )
   if(MSVC)
     target_compile_options(
@@ -62,10 +62,10 @@ if(BUILD_TESTING)
     target_link_libraries(yk_util_test PRIVATE TBB::tbb)
   endif()
 
-  find_package(Boost REQUIRED CONFIG COMPONENTS unit_test_framework)
+  find_package(Boost REQUIRED CONFIG COMPONENTS unit_test_framework exception)
   target_link_libraries(
     yk_util_test PUBLIC yk_util Boost::headers
-                        $<$<NOT:$<CXX_COMPILER_ID:Clang>>:Boost::unit_test_framework>
+                        $<$<NOT:$<CXX_COMPILER_ID:Clang>>:Boost::unit_test_framework> Boost::exception
   )
   add_test(NAME yk_util_test COMMAND yk_util_test)
 endif()
