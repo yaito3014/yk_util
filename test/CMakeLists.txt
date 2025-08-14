@@ -65,7 +65,7 @@ if(BUILD_TESTING)
   find_package(Boost REQUIRED CONFIG COMPONENTS unit_test_framework exception)
   target_link_libraries(
     yk_util_test PUBLIC yk_util Boost::headers
-                        $<$<NOT:$<CXX_COMPILER_ID:Clang>>:Boost::unit_test_framework>
+                        $<$<NOT:$<CXX_COMPILER_ID:Clang>>:Boost::unit_test_framework> Boost::exception
   )
   add_test(NAME yk_util_test COMMAND yk_util_test)
 endif()
